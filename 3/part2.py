@@ -15,9 +15,11 @@ with open("data.txt") as dataFile:
 for i in range(len(data)):
     data[i] = [int(char) for char in multiReplace(multiReplace(data[i], "#@:\n", ""), ",x", " ").split(" ") if char != ""]
 
-# Grid is a two dimensional dict, this is probably best as access times are better with dicts and it doesn't need to be populated with empty values
+# Grid is a two dimensional dict, this is probably best as access times are better with dicts and it doesn't need to be populated with empty values at the start
 grid = dict()
+overlaps = dict()
 for claim in data:
+    overlap = False
     for x in range(claim[1], claim[1] + claim[3]):
         try:
             grid[x]
@@ -30,4 +32,11 @@ for claim in data:
             except KeyError:
                 grid[x][y] = claim[0]
             else:
+                overlaps[grid[x][y]] = True
                 grid[x][y] = "X"
+                overlap = True
+    overlaps[claim[0]] = overlap
+
+for key, value in overlaps.items():
+    if not value:
+        print(key)
