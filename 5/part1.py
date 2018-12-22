@@ -4,20 +4,19 @@
 def react(polymerString):
     for i in range(len(polymerString) - 1):
         if polymerString[i] == polymerString[i + 1].swapcase():
-            polymerString = polymerString[:i] + "11" + polymerString[i + 2:]
-    return polymerString.replace("11", "")
+            polymerString = polymerString[:i] + "--" + polymerString[i + 2:]
+    return polymerString.replace("--", "")
 
 
 def reactUntilDone(polymerString):
     lastLen = len(polymerString)
-    result = react(polymerString)
     while True:
-        result = react(result)
-        if len(result) == lastLen:
+        polymerString = react(polymerString)
+        if len(polymerString) == lastLen:
             break
         else:
-            lastLen = len(result)
-    return result
+            lastLen = len(polymerString)
+    return polymerString
 
 
 # Scrape the string from the file
