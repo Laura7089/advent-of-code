@@ -2,20 +2,28 @@
 
 
 def react(polymerString):
-    startLen = len(polymerString)
     for i in range(len(polymerString) - 1):
-        if abs(ord(polymerString[i]) - ord(polymerString[i + 1])) == 32:
-            polymerString = polymerString[:i] + 2 * "\n" + polymerString[i + 2:]
-    polymerString = polymerString.replace("\n", "")
-    return len(polymerString) == startLen
+        if polymerString[i] == polymerString[i + 1].swapcase():
+            polymerString = polymerString[:i] + "11" + polymerString[i + 2:]
+    return polymerString.replace("11", "")
 
 
+# Scrape the string from the file
 with open("data.txt") as dataFile:
-    data = dataFile.readline()
-while True:
-    result = react(data)
-    print(result)
-    if result:
-        break
+    data = dataFile.readline().replace("\n", "")
 
-print(len(data))
+# Set the initial values
+lastLen = len(data)
+result = react(data)
+
+# Loop until we reach an unchanging state
+while True:
+    result = react(result)
+    # print(result)
+    if len(result) == lastLen:
+        break
+    else:
+        lastLen = len(result)
+
+# Print the length of the result
+print(len(result))

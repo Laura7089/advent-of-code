@@ -12,10 +12,9 @@ def multiReplace(targetStr, target, replacement):
 # (id, coordX, coordY, sizeX, sizeY)
 with open("data.txt") as dataFile:
     data = dataFile.readlines()
-for i in range(len(data)):
-    data[i] = [int(char) for char in multiReplace(multiReplace(data[i], "#@:\n", ""), ",x", " ").split(" ") if char != ""]
+data = [[int(char) for char in multiReplace(multiReplace(line, "#@:\n", ""), ",x", " ").split(" ") if char != ""] for line in data]
 
-# Grid is a two dimensional dict
+# Grid is a two dimensional dict with coords as keys and id's or "X" as values
 grid = dict()
 for claim in data:
     for x in range(claim[1], claim[1] + claim[3]):
@@ -31,6 +30,7 @@ for claim in data:
             else:
                 grid[x][y] = "X"
 
+# Count the number of X's in the whole thing
 total = 0
 for column in grid.values():
     for point in column.values():
