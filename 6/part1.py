@@ -14,41 +14,18 @@ def nearestCoord(targetGrid, targetX, targetY):
     while not escape:
         # Increment the layer and set our starting values
         layer += 1
-        x = targetX + layer
-        y = targetY + layer - 1
-        # Down the right side
-        for i in range(y, y - (layer * 2) - 1, -1):
-            y = i
+        toCheck = [i for i in range(layer, (-1 * layer) - 1, -1)]
+        toCheck.extend(list(range((-1 * layer) + 1, layer)))
+        # Generate the coords
+        for i in range(layer * 4):
+            coords.append((toCheck[(i + layer) % len(toCheck)], toCheck[i]))
+
+        # Check all the coords
+        for coord in coords:
             try:
-                if isinstance(targetGrid[x][y], int):
-                    found.append(str(targetGrid[x][y]))
-                    escape = True
-            except IndexError:
-                continue
-        # To the right along the bottom
-        for i in range(x + 1, x - (layer * 2) - 1, -1):
-            x = i
-            try:
-                if isinstance(targetGrid[x][y], int):
-                    found.append(str(targetGrid[x][y]))
-                    escape = True
-            except IndexError:
-                continue
-        # Up the left side
-        for i in range(y + 1, y + (layer * 2) + 1):
-            y = i
-            try:
-                if isinstance(targetGrid[x][y], int):
-                    found.append(str(targetGrid[x][y]))
-                    escape = True
-            except IndexError:
-                continue
-        # To the right along the top
-        for i in range(x + 1, x + (layer * 2) + 1):
-            x = i
-            try:
-                if isinstance(targetGrid[x][y], int):
-                    found.append(str(targetGrid[x][y]))
+                currentVal = targetGrid[coord[0] + targetX][coord[1] + targetY]
+                if isinstance(currentVal, int):
+                    found.append(currentVal)
                     escape = True
             except IndexError:
                 continue
@@ -57,7 +34,7 @@ def nearestCoord(targetGrid, targetX, targetY):
     if len(found) > 1:
         return "."
     else:
-        return found[0]
+        return str(found[0])
 
 
 def renderGrid(targetGrid):
@@ -86,6 +63,7 @@ for i in range(len(coords)):
 # Generate all the areas
 for x in range(len(grid)):
     for y in range(len(grid[0])):
+        # print("Doing (" + str(x) + ", " + str(y) + ")")
         grid[x][y] = nearestCoord(grid, x, y)
 
 # Count up the areas, marking which ones contact the outside borders
