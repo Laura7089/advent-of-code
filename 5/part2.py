@@ -13,7 +13,6 @@ def reactUntilDone(polymerString):
     result = react(polymerString)
     while True:
         result = react(result)
-        # print(result)
         if len(result) == lastLen:
             break
         else:

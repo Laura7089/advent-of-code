@@ -8,22 +8,24 @@ def react(polymerString):
     return polymerString.replace("11", "")
 
 
+def reactUntilDone(polymerString):
+    lastLen = len(polymerString)
+    result = react(polymerString)
+    while True:
+        result = react(result)
+        if len(result) == lastLen:
+            break
+        else:
+            lastLen = len(result)
+    return result
+
+
 # Scrape the string from the file
 with open("data.txt") as dataFile:
     data = dataFile.readline().replace("\n", "")
 
-# Set the initial values
-lastLen = len(data)
-result = react(data)
-
-# Loop until we reach an unchanging state
-while True:
-    result = react(result)
-    # print(result)
-    if len(result) == lastLen:
-        break
-    else:
-        lastLen = len(result)
+# Simulate the reaction
+result = reactUntilDone(data)
 
 # Print the length of the result
 print(len(result))
