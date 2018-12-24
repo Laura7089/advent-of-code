@@ -5,15 +5,20 @@
 with open("data.txt") as dataFile:
     data = [int(i.replace("\n", "")) for i in dataFile.readlines()]
 
-totals = [data[0]]
+total = data[0]
+totals = {total: True}
 index = 1
 while True:
     # Calculate the next total by adding the current data item to the last total
-    nextTotal = totals[-1] + data[index % len(data)]
-    totals.append(nextTotal)
+    nextTotal = total + data[index % len(data)]
     # If we've found a repeat, stop looping
-    if nextTotal in totals[:-1]:
+    try:
+        totals[nextTotal]
+    except KeyError:
+        totals[nextTotal] = True
+        total = nextTotal
+        index += 1
+    else:
         break
-    index += 1
 
-print(totals[-1])
+print(nextTotal)

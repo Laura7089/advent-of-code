@@ -2,8 +2,7 @@
 from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import cpu_count
 from collections import Counter
-cpuPool = ThreadPool(cpu_count())
-
+cpuPool = ThreadPool(cpu_count()) 
 
 def nearestCoord(targetGrid, targetX, targetY):
     # If it's called on a coord, just return that coord number
@@ -21,7 +20,7 @@ def nearestCoord(targetGrid, targetX, targetY):
         layer += 1
         # Generate the coords
         toCheck = nums + list(reversed(nums[1:-1]))
-        coords = cpuPool.map(lambda i: (toCheck[(i + layer) % len(toCheck)], toCheck[i]), range(layer * 4))
+        coords = [(toCheck[(i + layer) % len(toCheck)], toCheck[i]) for i in range(layer * 4)]
 
         # Check all the coords
         for coord in coords:
@@ -63,10 +62,11 @@ for x in range(len(grid)):
     grid[x] = cpuPool.map(lambda y: nearestCoord(grid, x, y), range(len(grid[0])))
 
 # Count up the areas, marking which ones contact the outside borders
-areas = {num: 0 for num in list(range(len(xCoords)))}
+areas = {str(num): 0 for num in list(range(len(xCoords)))}
+areas["."] = 0
 for x in range(len(grid)):
     for key, value in Counter(grid[x]).items():
-        areas[key] += value
+        areas[str(key)] += value
 del areas["."]
 # Delete all the "bad" areas
 # for bad in invalid:
