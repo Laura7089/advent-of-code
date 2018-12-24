@@ -1,27 +1,19 @@
 #!/usr/env python3
-from copy import deepcopy
+import multiprocessing.dummy, operator, functools, itertools
+from collections import Counter
+cpuPool = multiprocessing.dummy.Pool(multiprocessing.cpu_count())
 
-# Constants
+# Scrape the data from the file
 with open("data.txt") as dataFile:
-    data = [dataPoint.replace("\n", "") for dataPoint in dataFile.readlines()]
-alphDict = {char: 0 for char in "abcdefghijklmnopqrstuvwxyz"}
+    data = cpuPool.map(lambda dataPoint: dataPoint.replace("\n", ""), dataFile.readlines())
 
-totals = {i: 0 for i in range(2, len(data[0]) + 1)}
-for num in data:
-    # Copy the letter dictionary
-    freqDict = deepcopy(alphDict)
-    for letter in num:
-        freqDict[letter] += 1
-    # Extremely ugly, but generate a dictionary of the frequencies to remove duplicates & irrelevant values, and reduce access time
-    hashTable = {i: True for i in freqDict.values() if i > 1}
-    for i in hashTable.keys():
-        totals[i] += 1
+# Go through each ID, count the letter frequencies and add them to the frequency list
+frequencies = cpuPool.map(lambda num: {freq: None for freq in Counter(num).values() if freq > 1}.keys(), data)
+frequencies = list(itertools.chain.from_iterable(frequencies))
+print(frequencies)
 
-# Generate the checksum by multiplying together all the non-zero values in the totals dict
-checksum = 1
-for i in totals.values():
-    if i > 1:
-        checksum *= i
+# Calculate all the totals of the frequencies (excluding the low ones)
+totals = [total for total in Counter(frequencies).values() if total > 1]
+checksum = functools.reduce(operator.mul, totals, 1)
 
-# Output the result
 print(checksum)
