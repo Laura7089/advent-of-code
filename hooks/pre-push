@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+
+cd 2019 || exit 1
+for i in *; do
+    cd "$i" || exit 1
+    printf "\n==================\n"
+    printf "Testing 2019/%s...\n" "$i"
+    # python3.8 -m unittest solver.py || exit 1
+    python3.8 solver.py >/dev/null
+    cd ..
+done

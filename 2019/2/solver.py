@@ -78,24 +78,25 @@ class TestMe(unittest.TestCase):
             self.assertEqual(start, result)
 
 
-# Get data
-with open("data.txt") as data_file:
-    original_seq = list(map(int, data_file.read().split(",")))
+if __name__ == "__main__":
+    # Get data
+    with open("data.txt") as data_file:
+        original_seq = list(map(int, data_file.read().split(",")))
 
-# Part 1
-opcode_sequence = original_seq.copy()
-opcode_sequence[1:3] = (12, 2)
-run_code(opcode_sequence)
-print(f"Part1: {opcode_sequence[0]}")
+    # Part 1
+    opcode_sequence = original_seq.copy()
+    opcode_sequence[1:3] = (12, 2)
+    run_code(opcode_sequence)
+    print(f"Part 1: {opcode_sequence[0]}")
 
-# Part 2, Bruteforce solution :/
-for noun in range(100):
-    for verb in range(100):
-        seq = original_seq.copy()
-        seq[1:3] = (noun, verb)
-        run_code(seq)
-        if seq[0] == 19690720:
-            result = (100 * noun) + verb
-            print(f"Part 2: {noun=}, {verb=}, {result=}")
+    # Part 2, Bruteforce solution :/
+    for noun in range(100):
+        for verb in range(100):
+            seq = original_seq.copy()
+            seq[1:3] = (noun, verb)
+            run_code(seq)
+            if seq[0] == 19690720:
+                result = (100 * noun) + verb
+                print(f"Part 2: {noun=}, {verb=}, {result=}")
 
 unittest.main()
