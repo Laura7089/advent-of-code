@@ -36,8 +36,7 @@ def get_fuel_recursive(mass):
     required_fuel = int(mass / 3) - 2
     if required_fuel <= 0:
         return 0
-    else:
-        return required_fuel + get_fuel_recursive(required_fuel)
+    return required_fuel + get_fuel_recursive(required_fuel)
 
 
 with open("data.txt") as data_file:
