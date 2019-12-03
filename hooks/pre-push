@@ -1,12 +1,12 @@
 #!/usr/bin/bash
 
-cd 2019 || exit 1
-for i in *; do
-    cd "$i" || exit 1
-    printf "\n==================\n"
-    printf "Testing 2019/%s...\n" "$i"
-    python3.8 solver.py >/dev/null || exit 1
-    cd ..
+for i in 2019/*/; do
+    (
+        cd "$i" || exit 1
+        printf "\n==================\n"
+        printf "Testing %s...\n" "$i"
+        python3.8 solver.py >/dev/null || exit 1
+    )
 done
 
 printf "================================\n"
