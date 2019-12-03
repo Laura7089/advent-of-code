@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import functools
-import itertools
 import operator
 import unittest
 
@@ -69,59 +68,27 @@ class TestMe(unittest.TestCase):
         )
 
 
-DIRECTIONS = {
-    "U":
-    lambda coord, dist: zip(
-        itertools.repeat(coord[0]),
-        range(
-            coord[1] + 1,
-            coord[1] + dist + 1,
-        ),
-    ),
-    "D":
-    lambda coord, dist: zip(
-        itertools.repeat(coord[0]),
-        range(
-            coord[1] - 1,
-            coord[1] - dist - 1,
-            -1,
-        ),
-    ),
-    "R":
-    lambda coord, dist: zip(
-        range(
-            coord[0] + 1,
-            coord[0] + dist + 1,
-        ),
-        itertools.repeat(coord[1]),
-    ),
-    "L":
-    lambda coord, dist: zip(
-        range(
-            coord[0] - 1,
-            coord[0] - dist - 1,
-            -1,
-        ),
-        itertools.repeat(coord[1]),
-    ),
-}
+DX = {"L": -1, "R": 1, "U": 0, "D": 0}
+DY = {"L": 0, "R": 0, "U": 1, "D": -1}
+
+
+def get_points(wire):
+    posx = 0
+    posy = 0
+    for move in wire:
+        dx = DX[move[0]]
+        dy = DY[move[0]]
+        for increase in range(int(move[1:])):
+            posx += dx
+            posy += dy
+            yield (posx, posy)
 
 
 def find_intersections(*wires):
-    # Create a list containing (wire sequence, list of coords it crosses) pairs, then populate the coords
-    form_wires = [(wire, [(0, 0)]) for wire in wires]
-    for wire, coords in form_wires:
-        for move in wire:
-            coords.extend(DIRECTIONS[move[0]](coords[-1], int(move[1:])))
-    coords = list(zip(*form_wires))[1]
-
-    # Delete the first (0,0) coord from all of them
-    for coords_group in coords:
-        coords_group.pop(0)
-
     # Create a sequence of dictionaries (coord:lowest time wire crossed it)
     coords = [
-        dict(reversed([elem[::-1] for elem in enumerate(x)])) for x in coords
+        dict([elem[::-1] for elem in enumerate(get_points(wire))][::-1])
+        for wire in wires
     ]
     # Get a set of coords that they all cross
     uniques = functools.reduce(
@@ -133,14 +100,12 @@ def find_intersections(*wires):
 
 def find_closest_intersection(intersections, along_wire=False):
     if not along_wire:
-        dists = map(lambda x: abs(x[0]) + abs(x[1]), intersections.keys())
-        return min(dists)
+        return min(abs(x[0]) + abs(x[1]) for x in intersections.keys())
     else:
         return min(intersections.values()) + 2
 
 
-with open("data.txt") as data_file:
-    wires = list(map(lambda x: x.split(","), data_file.readlines()))
+wires = (line.split(",") for line in open("data.txt").readlines())
 
 intersections = find_intersections(*wires)
 closest_part1 = find_closest_intersection(intersections)
