@@ -1,11 +1,11 @@
 #!/usr/bin/bash
 
-for i in 2019/*/; do
+for i in aoc2019py/*/; do
     (
         cd "$i" || exit 1
         printf "\n==================\n"
         printf "Testing %s...\n" "$i"
-        python3.8 solver.py >/dev/null || exit 1
+        python3.8 test.py || exit 1
     )
 done
 
