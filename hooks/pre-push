@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-for i in aoc2019py/*/; do
+for i in aoc2019/*/; do
     (
         cd "$i" || exit 1
         printf "\n==================\n"
