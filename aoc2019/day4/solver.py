@@ -29,9 +29,9 @@ def test_valid_strict(password):
         return False
 
     counter = Counter(str(password))
-    if 2 in counter.values():
-        return True
-    return False
+    if 2 not in counter.values():
+        return False
+    return True
 
 
 if __name__ == "__main__":
