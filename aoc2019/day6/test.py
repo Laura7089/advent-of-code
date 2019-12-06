@@ -40,4 +40,5 @@ I)SAN""".split("\n")
         self.assertEqual(total, 4)
 
 
-unittest.main()
+if __name__ == "__main__":
+    unittest.main()

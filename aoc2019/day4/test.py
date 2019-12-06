@@ -17,4 +17,5 @@ class TestMe(unittest.TestCase):
         self.assertFalse(test_valid_strict(123444))
 
 
-unittest.main()
+if __name__ == "__main__":
+    unittest.main()
