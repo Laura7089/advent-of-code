@@ -1,11 +1,6 @@
 /// Get (0-based) digit from number
-fn get_digit(val: usize, digit: usize) -> Result<usize, String> {
-    let val_len = (val as f32).log(10.0).round() as usize;
-    if digit > val_len {
-        Err(format!("{} is too many digits for {}", digit, val))
-    } else {
-        Ok(val / ((10 as usize).pow(digit as u32)) % 10)
-    }
+fn get_digit(val: usize, digit: usize) -> usize {
+    val / ((10 as usize).pow(digit as u32)) % 10
 }
 
 enum DataValue {
@@ -64,21 +59,21 @@ impl OpCode {
     fn from_raw(code: &[usize]) -> Result<OpCode, String> {
         match code[0] % 100 {
             1 => Ok(Self::Add(
-                DataValue::from(get_digit(code[0], 3)?, code[1])?,
-                DataValue::from(get_digit(code[0], 2)?, code[2])?,
-                DataValue::from(get_digit(code[0], 1)?, code[3])?,
+                DataValue::from(get_digit(code[0], 3), code[1])?,
+                DataValue::from(get_digit(code[0], 2), code[2])?,
+                DataValue::from(get_digit(code[0], 1), code[3])?,
             )),
             2 => Ok(Self::Mult(
-                DataValue::from(get_digit(code[0], 3)?, code[1])?,
-                DataValue::from(get_digit(code[0], 2)?, code[2])?,
-                DataValue::from(get_digit(code[0], 1)?, code[3])?,
+                DataValue::from(get_digit(code[0], 3), code[1])?,
+                DataValue::from(get_digit(code[0], 2), code[2])?,
+                DataValue::from(get_digit(code[0], 1), code[3])?,
             )),
             3 => Ok(Self::Input(DataValue::from(
-                get_digit(code[0], 1)?,
+                get_digit(code[0], 1),
                 code[1],
             )?)),
             4 => Ok(Self::Output(DataValue::from(
-                get_digit(code[0], 1)?,
+                get_digit(code[0], 1),
                 code[1],
             )?)),
             99 => Ok(Self::Halt),
@@ -142,11 +137,8 @@ mod tests {
 
     #[test]
     fn test_get_digit() {
-        assert_eq!(get_digit(12345, 2), Ok(3));
-        assert_eq!(get_digit(100, 1), Ok(0));
-        if let Err(_) = get_digit(100, 10) {
-        } else {
-            panic!("Expected Err(), got none")
-        };
+        assert_eq!(get_digit(12345, 2), 3);
+        assert_eq!(get_digit(100, 1), 0);
+        assert_eq!(get_digit(123421, 8), 0);
     }
 }
