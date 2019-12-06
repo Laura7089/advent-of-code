@@ -5,7 +5,7 @@ for i in aoc2019/*/; do
         cd "$i" || exit 1
         printf "\n==================\n"
         printf "Testing %s...\n" "$i"
-        python3.8 test.py || exit 1
+        python3.8 -m unittest || exit 1
     )
 done
 
