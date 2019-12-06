@@ -1,15 +1,15 @@
 /// Get (0-based) digit from number
-fn get_digit(val: usize, digit: usize) -> usize {
-    val / ((10 as usize).pow(digit as u32)) % 10
+fn get_digit(val: isize, digit: isize) -> usize {
+    val as usize / (10_usize.pow(digit as u32)) % 10
 }
 
 enum DataValue {
-    PositionMode(usize),
-    ImmediateMode(usize),
+    PositionMode(isize),
+    ImmediateMode(isize),
 }
 
 impl DataValue {
-    fn from(type_int: usize, value: usize) -> Result<DataValue, String> {
+    fn from(type_int: usize, value: isize) -> Result<DataValue, String> {
         match type_int {
             0 => {
                 if value < 0 {
@@ -29,11 +29,11 @@ impl DataValue {
         }
     }
 
-    fn eval(&self, data: &[usize]) -> Result<usize, String> {
+    fn eval(&self, data: &[isize]) -> Result<isize, String> {
         match self {
             Self::PositionMode(pos) => {
                 let length = data.len();
-                if *pos >= data.len() {
+                if *pos as usize >= data.len() {
                     Err(format!(
                         "The position {} is out of range of this input of length {}",
                         pos, length
@@ -42,7 +42,7 @@ impl DataValue {
                     Ok(data[*pos as usize])
                 }
             }
-            Self::ImmediateMode(val) => Ok(*val),
+            Self::ImmediateMode(val) => Ok(*val as isize),
         }
     }
 }
@@ -56,7 +56,7 @@ enum OpCode {
 }
 
 impl OpCode {
-    fn from_raw(code: &[usize]) -> Result<OpCode, String> {
+    fn from_raw(code: &[isize]) -> Result<OpCode, String> {
         match code[0] % 100 {
             1 => Ok(Self::Add(
                 DataValue::from(get_digit(code[0], 3), code[1])?,
@@ -81,7 +81,7 @@ impl OpCode {
         }
     }
 
-    fn data_len(&self) -> usize {
+    fn data_len(&self) -> isize {
         match self {
             Self::Add(_, _, _) => 3,
             Self::Mult(_, _, _) => 3,
@@ -91,18 +91,18 @@ impl OpCode {
         }
     }
 
-    fn exec(&self, seq: &mut [usize]) -> Result<Option<()>, String> {
+    fn exec(&self, seq: &mut [isize]) -> Result<Option<()>, String> {
         match self {
             Self::Add(src1, src2, dest) => {
-                seq[dest.eval(seq)?] = src1.eval(seq)? + src2.eval(seq)?;
+                seq[dest.eval(seq)? as usize] = src1.eval(seq)? + src2.eval(seq)?;
                 Ok(Some(()))
             }
             Self::Mult(src1, src2, dest) => {
-                seq[dest.eval(seq)?] = src1.eval(seq)? + src2.eval(seq)?;
+                seq[dest.eval(seq)? as usize] = src1.eval(seq)? + src2.eval(seq)?;
                 Ok(Some(()))
             }
             Self::Input(DataValue::PositionMode(src)) => {
-                seq[*src] = 0;
+                seq[*src as usize] = 0;
                 Ok(Some(()))
             }
             Self::Input(DataValue::ImmediateMode(_)) => {
@@ -117,11 +117,11 @@ impl OpCode {
     }
 }
 
-fn run_code(code: &mut [usize]) -> Result<(), String> {
-    let mut current_pos = 0;
+fn run_code(code: &mut [isize]) -> Result<(), String> {
+    let mut current_pos = 0_usize;
     let mut current_opcode = OpCode::from_raw(code)?;
     while current_opcode.exec(code)? == Some(()) {
-        current_pos += current_opcode.data_len();
+        current_pos += current_opcode.data_len() as usize;
         if current_pos >= code.len() {
             return Err(String::from("Iterated outside of code without halting"));
         } else {
