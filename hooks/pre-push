@@ -5,7 +5,15 @@ for i in aoc2019/*/; do
         cd "$i" || exit 1
         printf "\n==================\n"
         printf "Testing %s...\n" "$i"
+
+        printf "\n------------------\n"
+        printf "PYTHON\n"
         python3.8 -m unittest || exit 1
+        if [[ -f "Cargo.toml" ]]; then
+            printf "\n------------------\n"
+            printf "RUST\n"
+            cargo test || exit 1
+        fi
     )
 done
 

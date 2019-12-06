@@ -1,25 +1,24 @@
 /// Get (0-based) digit from number
-fn get_digit(val: isize, digit: isize) -> usize {
-    val as usize / (10_usize.pow(digit as u32)) % 10
+pub fn get_digit(val: isize, digit: u8) -> u8 {
+    (val as usize / (10_usize.pow(digit as u32)) % 10) as u8
 }
 
-enum DataValue {
-    PositionMode(isize),
+pub enum DataValue {
+    PositionMode(usize),
     ImmediateMode(isize),
 }
 
 impl DataValue {
-    fn from(type_int: usize, value: isize) -> Result<DataValue, String> {
+    pub fn from(type_int: u8, value: isize) -> Result<DataValue, String> {
         match type_int {
             0 => {
                 if value < 0 {
-                    Err(format!(
+                    return Err(format!(
                         "{} is negative and cannot be used as a positional parameter",
                         value
-                    ))
-                } else {
-                    Ok(DataValue::PositionMode(value))
+                    ));
                 }
+                Ok(DataValue::PositionMode(value as usize))
             }
             1 => Ok(DataValue::ImmediateMode(value)),
             _ => Err(format!(
@@ -29,25 +28,24 @@ impl DataValue {
         }
     }
 
-    fn eval(&self, data: &[isize]) -> Result<isize, String> {
+    pub fn eval(&self, data: &[isize]) -> Result<isize, String> {
         match self {
             Self::PositionMode(pos) => {
                 let length = data.len();
                 if *pos as usize >= data.len() {
-                    Err(format!(
+                    return Err(format!(
                         "The position {} is out of range of this input of length {}",
                         pos, length
-                    ))
-                } else {
-                    Ok(data[*pos as usize])
+                    ));
                 }
+                Ok(data[*pos as usize])
             }
-            Self::ImmediateMode(val) => Ok(*val as isize),
+            Self::ImmediateMode(val) => Ok(*val),
         }
     }
 }
 
-enum OpCode {
+pub enum OpCode {
     Add(DataValue, DataValue, DataValue),
     Mult(DataValue, DataValue, DataValue),
     Input(DataValue),
@@ -56,7 +54,7 @@ enum OpCode {
 }
 
 impl OpCode {
-    fn from_raw(code: &[isize]) -> Result<OpCode, String> {
+    pub fn from_raw(code: &[isize]) -> Result<OpCode, String> {
         match code[0] % 100 {
             1 => Ok(Self::Add(
                 DataValue::from(get_digit(code[0], 3), code[1])?,
@@ -81,7 +79,7 @@ impl OpCode {
         }
     }
 
-    fn data_len(&self) -> isize {
+    pub fn data_len(&self) -> isize {
         match self {
             Self::Add(_, _, _) => 3,
             Self::Mult(_, _, _) => 3,
@@ -91,14 +89,14 @@ impl OpCode {
         }
     }
 
-    fn exec(&self, seq: &mut [isize]) -> Result<Option<()>, String> {
+    pub fn exec(&self, seq: &mut [isize]) -> Result<Option<()>, String> {
         match self {
             Self::Add(src1, src2, dest) => {
                 seq[dest.eval(seq)? as usize] = src1.eval(seq)? + src2.eval(seq)?;
                 Ok(Some(()))
             }
             Self::Mult(src1, src2, dest) => {
-                seq[dest.eval(seq)? as usize] = src1.eval(seq)? + src2.eval(seq)?;
+                seq[dest.eval(seq)? as usize] = src1.eval(seq)? * src2.eval(seq)?;
                 Ok(Some(()))
             }
             Self::Input(DataValue::PositionMode(src)) => {
@@ -117,7 +115,7 @@ impl OpCode {
     }
 }
 
-fn run_code(code: &mut [isize]) -> Result<(), String> {
+pub fn run_code(code: &mut [isize]) -> Result<(), String> {
     let mut current_pos = 0_usize;
     let mut current_opcode = OpCode::from_raw(code)?;
     while current_opcode.exec(code)? == Some(()) {
