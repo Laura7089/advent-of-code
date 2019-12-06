@@ -2,15 +2,12 @@
 
 
 class UnorderedTree:
-    def __init__(self, val, subtrees=[], parent=None):
-        self.val, self.subtrees, self.parent = val, subtrees, parent
+    def __init__(self, val, children=[], parent=None):
+        self.val, self.children, self.parent = val, children, parent
 
     def add_child(self, child):
         child.parent = self
-        self.subtrees.append(child)
-
-    def is_leaf(self):
-        return self.subtrees == []
+        self.children.append(child)
 
     def is_root(self):
         return self.parent is None
@@ -36,8 +33,7 @@ def make_tree(data, sep=")"):
     for parent_val, child_val in (x.split(sep) for x in data):
         for val in (parent_val, child_val):
             if trees.get(val) is None:
-                t = UnorderedTree(val)
-                trees[val] = t
+                trees[val] = UnorderedTree(val)
         trees[parent_val].add_child(trees[child_val])
     return trees
 
