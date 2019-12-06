@@ -19,7 +19,7 @@ E)J
 J)K
 K)L""".split("\n")
         _, trees = make_tree(data)
-        self.assertEqual(total_depth(trees), 42)
+        self.assertEqual(total_depth(trees.values()), 42)
 
     def test_part2(self):
         data = """COM)B
