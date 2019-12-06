@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-class Tree:
+class UnorderedTree:
     def __init__(self, val, subtrees=[], parent=None):
         self.val, self.subtrees, self.parent = val, subtrees, parent
 
@@ -36,17 +36,15 @@ def make_tree(data, sep=")"):
     for parent_val, child_val in (x.split(sep) for x in data):
         for val in (parent_val, child_val):
             if trees.get(val) is None:
-                t = Tree(val)
+                t = UnorderedTree(val)
                 trees[val] = t
         trees[parent_val].add_child(trees[child_val])
     return trees
 
 
 if __name__ == "__main__":
-    data = map(lambda x: x.replace("\n", ""),
-               open("data.txt", "rt").readlines())
-
-    trees = make_tree(data)
+    trees = make_tree(
+        x.replace("\n", "") for x in open("data.txt", "rt").readlines())
 
     part1 = sum(t.get_depth() for t in trees.values())
     print(f"{part1=}")
