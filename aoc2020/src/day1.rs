@@ -8,14 +8,14 @@ pub fn parse_input(input: &str) -> Vec<u32> {
 #[aoc(day1, part1)]
 fn solve_input_part1(input: &[u32]) -> u32 {
     let mut target;
-    for i in input {
-        if i > &TOTAL_TARGET {
+    for (i, elem1) in input.iter().enumerate() {
+        if elem1 > &TOTAL_TARGET {
             continue;
         }
-        target = TOTAL_TARGET - i;
-        for o in input {
-            if o == &target {
-                return i * o;
+        target = TOTAL_TARGET - elem1;
+        for elem2 in input[i..].iter() {
+            if elem2 == &target {
+                return elem1 * elem2;
             }
         }
     }
@@ -25,16 +25,16 @@ fn solve_input_part1(input: &[u32]) -> u32 {
 #[aoc(day1, part2)]
 fn solve_input_part2(input: &[u32]) -> u32 {
     let mut target;
-    for i in input {
-        for o in input {
-            let sub = i + o;
+    for (i, elem1) in input.iter().enumerate() {
+        for (o, elem2) in input[i..].iter().enumerate() {
+            let sub = elem1 + elem2;
             if sub > TOTAL_TARGET {
                 continue;
             }
-            target = TOTAL_TARGET - i - o;
-            for p in input {
-                if p == &target {
-                    return i * o * p;
+            target = TOTAL_TARGET - sub;
+            for elem3 in input[o..].iter() {
+                if elem3 == &target {
+                    return elem1 * elem2 * elem3;
                 }
             }
         }
