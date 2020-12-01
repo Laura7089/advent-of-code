@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-from itertools import product, islice
+from itertools import islice, product
 
-with open("input.txt", "rt") as data_file:
+DATA_PATH = "../input/2020/day1.txt"
+
+with open(DATA_PATH, "rt") as data_file:
     int_list = [
         int(val.replace("\n", "")) for val in data_file.readlines()
         if val != "\n"

@@ -6,7 +6,7 @@ pub fn parse_input(input: &str) -> Vec<u32> {
 }
 
 #[aoc(day1, part1)]
-fn solve_input_part1(input: &[u32]) -> u32 {
+pub fn solve_input_part1(input: &[u32]) -> u32 {
     let mut target;
     for (i, elem1) in input.iter().enumerate() {
         if elem1 > &TOTAL_TARGET {
@@ -23,7 +23,7 @@ fn solve_input_part1(input: &[u32]) -> u32 {
 }
 
 #[aoc(day1, part2)]
-fn solve_input_part2(input: &[u32]) -> u32 {
+pub fn solve_input_part2(input: &[u32]) -> u32 {
     let mut target;
     for (i, elem1) in input.iter().enumerate() {
         for (o, elem2) in input[i..].iter().enumerate() {
