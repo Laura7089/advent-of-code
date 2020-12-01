@@ -2,10 +2,7 @@ const TOTAL_TARGET: u32 = 2020;
 
 #[aoc_generator(day1)]
 pub fn parse_input(input: &str) -> Vec<u32> {
-    input
-        .lines()
-        .map(|line| line.trim().parse().unwrap())
-        .collect()
+    crate::input::list_of_numbers(input)
 }
 
 #[aoc(day1, part1)]
