@@ -4,7 +4,6 @@ extern crate aoc_runner;
 
 pub mod day1;
 pub mod day2;
-pub mod input;
 
 pub fn list_of_numbers(input: &str) -> Vec<u32> {
     input
