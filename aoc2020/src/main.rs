@@ -13,4 +13,17 @@ fn main() {
             &fs::read_to_string("input/2020/day1.txt").expect("No data found!")
         ))
     );
+
+    println!(
+        "Day 2 part 1: {}",
+        aoc2020::day2::solve_input_part1(&aoc2020::day2::parse_input(
+            &fs::read_to_string("input/2020/day2.txt").expect("No data found!")
+        ))
+    );
+    println!(
+        "Day 2 part 2: {}",
+        aoc2020::day2::solve_input_part2(&aoc2020::day2::parse_input(
+            &fs::read_to_string("input/2020/day2.txt").expect("No data found!")
+        ))
+    );
 }
