@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq)]
 pub struct PasswordWithPolicy {
-    pub letter: Vec<u8>,
+    pub letter: u8,
     pub password: Vec<u8>,
     pub num_first: u32,
     pub num_second: u32,
@@ -25,15 +25,14 @@ pub fn parse_input(input: &str) -> Vec<PasswordWithPolicy> {
                     .expect("Bad number formatting")
                     .parse()
                     .expect("Bad number formatting"),
-                letter: Vec::from(
-                    line_iter
-                        .next()
-                        .expect("Missing letter and password")
-                        .split(':')
-                        .next()
-                        .expect("Bad letter formatting")
-                        .as_bytes(),
-                ),
+                letter: line_iter
+                    .next()
+                    .expect("Missing letter and password")
+                    .split(':')
+                    .next()
+                    .expect("Bad letter formatting")
+                    .as_bytes()[0],
+
                 password: Vec::from(line_iter.next().expect("Missing password").as_bytes()),
             }
         })
@@ -46,15 +45,13 @@ pub fn solve_input_part1(input: &[PasswordWithPolicy]) -> u32 {
 }
 
 fn valid_password_part1(password: &&PasswordWithPolicy) -> bool {
-    // TODO: Make compatible with multi-byte "letters"
-    let mut letters_in_password = 0u32;
-    for letter in password.password.iter() {
-        letters_in_password += (letter == &password.letter[0]) as u32;
-        if letters_in_password > password.num_second {
-            return false;
-        }
-    }
-    letters_in_password >= password.num_first
+    let occurences = password
+        .password
+        .iter()
+        .filter(|b| b == &&password.letter)
+        .take(password.num_second as usize + 1)
+        .count() as u32;
+    occurences >= password.num_first && occurences <= password.num_second
 }
 
 #[aoc(day2, part2)]
@@ -63,10 +60,8 @@ pub fn solve_input_part2(input: &[PasswordWithPolicy]) -> u32 {
 }
 
 fn valid_password_part2(password: &&PasswordWithPolicy) -> bool {
-    // TODO: Make compatible with multi-byte "letters"
-    let search_byte = password.letter[0];
-    (password.password[password.num_first as usize - 1] == search_byte)
-        ^ (password.password[password.num_second as usize - 1] == search_byte)
+    (password.password[password.num_first as usize - 1] == password.letter)
+        ^ (password.password[password.num_second as usize - 1] == password.letter)
 }
 
 #[cfg(test)]
@@ -74,17 +69,33 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    #[test_case("1-3 a: abcde".to_string(), PasswordWithPolicy{ num_first: 1, num_second: 3, letter: "a".to_string(), password: "abcde".to_string() })]
-    #[test_case("1-3 b: cdefg".to_string(), PasswordWithPolicy{ num_first: 1, num_second: 3, letter: "b".to_string(), password: "cdefg".to_string() })]
-    #[test_case("2-9 c: ccccccccc".to_string(), PasswordWithPolicy{ num_first: 2, num_second: 9, letter: "c".to_string(), password: "ccccccccc".to_string() })]
-    fn parser(input: String, expected: PasswordWithPolicy) {
-        assert_eq!(parse_input(&input)[0], expected);
+    #[test_case("1-3 a: abcde", (1, 3), 'a', "abcde" )]
+    #[test_case("1-3 b: cdefg", (1, 3), 'b', "cdefg" )]
+    #[test_case("2-9 c: ccccccccc", (2, 9), 'c', "ccccccccc" )]
+    fn parser(input: &str, (num_first, num_second): (u32, u32), letter: char, password: &str) {
+        assert_eq!(
+            parse_input(input)[0],
+            PasswordWithPolicy {
+                num_first,
+                num_second,
+                letter: letter as u8,
+                password: Vec::from(password.as_bytes())
+            }
+        );
     }
 
-    #[test_case(PasswordWithPolicy{ num_first: 1, num_second: 3, letter: "a".to_string(), password: "abcde".to_string() }, true)]
-    #[test_case(PasswordWithPolicy{ num_first: 1, num_second: 3, letter: "b".to_string(), password: "cdefg".to_string() }, false)]
-    #[test_case(PasswordWithPolicy{ num_first: 2, num_second: 9, letter: "c".to_string(), password: "ccccccccc".to_string() }, true)]
-    fn part1(input: PasswordWithPolicy, expected: bool) {
-        assert_eq!(valid_password_part1(&&input), expected);
+    #[test_case((1, 3), 'a', "abcde", true)]
+    #[test_case(( 1, 3), 'b', "cdefg", false)]
+    #[test_case(( 2, 9), 'c', "ccccccccc", true)]
+    fn part1((num_first, num_second): (u32, u32), letter: char, password: &str, expected: bool) {
+        assert_eq!(
+            valid_password_part1(&&PasswordWithPolicy {
+                num_first,
+                num_second,
+                letter: letter as u8,
+                password: Vec::from(password.as_bytes())
+            }),
+            expected
+        );
     }
 }
