@@ -6,4 +6,11 @@ pub mod day1;
 pub mod day2;
 pub mod input;
 
+pub fn list_of_numbers(input: &str) -> Vec<u32> {
+    input
+        .lines()
+        .map(|line| line.trim().parse().unwrap())
+        .collect()
+}
+
 aoc_lib! { year = 2020 }
