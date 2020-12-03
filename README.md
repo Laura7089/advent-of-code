@@ -13,3 +13,5 @@ If you want to run manually, do:
 ```
 cargo run [--release] -- <dir containing your dayX.txt input files>
 ```
+
+Tests are available under `cargo test`, and benchmarks can be run with the `cargo-aoc` tool.
