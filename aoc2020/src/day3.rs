@@ -60,16 +60,62 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    const EXAMPLE_STRING: &'static str = "..##.......\n#...#...#..\n.#....#..#.\n..#.#...#.#\n.#...##..#.\n..#.##.....\n.#.#.#....#\n.#........#\n#.##...#...\n#...##....#\n.#..#...#.#";
+    const EXAMPLE_STRING: &'static str = "..##.......
+#...#...#..
+.#....#..#.
+..#.#...#.#
+.#...##..#.
+..#.##.....
+.#.#.#....#
+.#........#
+#.##...#...
+#...##....#
+.#..#...#.#";
 
-    #[test_case("..##.......\n#...#...#..", vec![vec![false, false, true, true, false, false, false, false, false, false, false], vec![true, false, false, false, true, false, false, false, true, false, false]], 11, 2; "Sample of site example")]
-    fn parser(input: &str, grid: Vec<Vec<bool>>, width: usize, length: usize) {
+    #[test]
+    fn parser_example() {
+        let expected_grid = vec![
+            vec![
+                false, false, true, true, false, false, false, false, false, false, false,
+            ],
+            vec![
+                true, false, false, false, true, false, false, false, true, false, false,
+            ],
+            vec![
+                false, true, false, false, false, false, true, false, false, true, false,
+            ],
+            vec![
+                false, false, true, false, true, false, false, false, true, false, true,
+            ],
+            vec![
+                false, true, false, false, false, true, true, false, false, true, false,
+            ],
+            vec![
+                false, false, true, false, true, true, false, false, false, false, false,
+            ],
+            vec![
+                false, true, false, true, false, true, false, false, false, false, true,
+            ],
+            vec![
+                false, true, false, false, false, false, false, false, false, false, true,
+            ],
+            vec![
+                true, false, true, true, false, false, false, true, false, false, false,
+            ],
+            vec![
+                true, false, false, false, true, true, false, false, false, false, true,
+            ],
+            vec![
+                false, true, false, false, true, false, false, false, true, false, true,
+            ],
+        ];
+
         assert_eq!(
-            get_slope(input),
+            get_slope(EXAMPLE_STRING),
             ForestedSlope {
-                grid,
-                width,
-                length
+                grid: expected_grid,
+                width: 11,
+                length: 11,
             }
         );
     }
