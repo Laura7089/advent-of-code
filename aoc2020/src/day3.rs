@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 const TREE_CHAR: u8 = '#' as u8;
 
 #[derive(Debug, PartialEq)]
@@ -9,19 +7,15 @@ pub struct ForestedSlope {
     pub width: usize,
 }
 
-impl Index<(usize, usize)> for ForestedSlope {
+impl std::ops::Index<(usize, usize)> for ForestedSlope {
     type Output = bool;
-
     fn index(&self, (x, y): (usize, usize)) -> &Self::Output {
-        if y >= self.length {
-            panic!("Index out of bounds - off the end of the slope");
-        }
         &self.grid[y][x % self.width]
     }
 }
 
-impl ForestedSlope {
-    pub fn from(input: &str) -> Self {
+impl From<&str> for ForestedSlope {
+    fn from(input: &str) -> Self {
         let grid: Vec<Vec<bool>> = input
             .lines()
             .map(|l| l.as_bytes().iter().map(|s| s == &TREE_CHAR).collect())
@@ -32,9 +26,11 @@ impl ForestedSlope {
             grid,
         }
     }
+}
 
+impl ForestedSlope {
     pub fn trees_along_slope(&self, (xmul, ymul): &(usize, usize)) -> usize {
-        (0..self.length / ymul)
+        (0..=(self.length - 1) / ymul)
             .filter(|&i| self[(i * xmul, i * ymul)])
             .count()
     }
