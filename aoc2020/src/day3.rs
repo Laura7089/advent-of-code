@@ -1,9 +1,5 @@
 use std::ops::Index;
 
-const TREE_CHAR: u8 = '#' as u8;
-const PART_ONE_SLOPE: (usize, usize) = (3, 1);
-const PART_TWO_STEPS: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
-
 #[derive(Debug, PartialEq)]
 pub struct ForestedSlope {
     grid: Vec<Vec<bool>>,
@@ -23,24 +19,32 @@ impl Index<(usize, usize)> for ForestedSlope {
 }
 
 impl ForestedSlope {
-    fn trees_along_slope(&self, (xmul, ymul): &(usize, usize)) -> usize {
+    pub fn from(input: &str) -> Self {
+        let grid: Vec<Vec<bool>> = input
+            .lines()
+            .map(|l| l.as_bytes().iter().map(|s| s == &TREE_CHAR).collect())
+            .collect();
+        Self {
+            length: grid.len(),
+            width: grid[0].len(),
+            grid,
+        }
+    }
+
+    pub fn trees_along_slope(&self, (xmul, ymul): &(usize, usize)) -> usize {
         (0..self.length / ymul)
             .filter(|&i| self[(i * xmul, i * ymul)])
             .count()
     }
 }
 
+const TREE_CHAR: u8 = '#' as u8;
+const PART_ONE_SLOPE: (usize, usize) = (3, 1);
+const PART_TWO_STEPS: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
+
 #[aoc_generator(day3)]
 pub fn get_slope(input: &str) -> ForestedSlope {
-    let grid: Vec<Vec<bool>> = input
-        .lines()
-        .map(|l| l.as_bytes().iter().map(|s| s == &TREE_CHAR).collect())
-        .collect();
-    ForestedSlope {
-        length: grid.len(),
-        width: grid[0].len(),
-        grid,
-    }
+    ForestedSlope::from(input)
 }
 
 #[aoc(day3, part1)]
