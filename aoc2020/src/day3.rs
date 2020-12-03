@@ -1,5 +1,7 @@
 use std::ops::Index;
+
 const TREE_CHAR: u8 = '#' as u8;
+const PART_ONE_SLOPE: (usize, usize) = (3, 1);
 const PART_TWO_STEPS: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
 
 #[derive(Debug, PartialEq)]
@@ -20,6 +22,14 @@ impl Index<(usize, usize)> for ForestedSlope {
     }
 }
 
+impl ForestedSlope {
+    fn trees_along_slope(&self, (xmul, ymul): &(usize, usize)) -> usize {
+        (0..self.length / ymul)
+            .filter(|&i| self[(i * xmul, i * ymul)])
+            .count()
+    }
+}
+
 #[aoc_generator(day3)]
 pub fn get_slope(input: &str) -> ForestedSlope {
     let grid: Vec<Vec<bool>> = input
@@ -35,24 +45,14 @@ pub fn get_slope(input: &str) -> ForestedSlope {
 
 #[aoc(day3, part1)]
 pub fn solve_input_part1(input: &ForestedSlope) -> usize {
-    (0..input.length).filter(|&i| input[(i * 3, i)]).count()
+    input.trees_along_slope(&PART_ONE_SLOPE)
 }
 
 #[aoc(day3, part2)]
 pub fn solve_input_part2(input: &ForestedSlope) -> usize {
-    // let mut total = 1;
-    // for (xmul, ymul) in PART_TWO_STEPS.iter() {
-    //     total *= (0..input.length / ymul)
-    //         .filter(|&i| input[(i * xmul, i * ymul)])
-    //         .count();
-    // }
-    // total
-
-    PART_TWO_STEPS.iter().fold(1, |prev, (xmul, ymul)| {
-        prev * (0..input.length / ymul)
-            .filter(|&i| input[(i * xmul, i * ymul)])
-            .count()
-    })
+    PART_TWO_STEPS
+        .iter()
+        .fold(1, |prev, slope| prev * input.trees_along_slope(slope))
 }
 
 #[cfg(test)]
