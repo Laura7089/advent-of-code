@@ -1,6 +1,8 @@
 use std::ops::Index;
+const TREE_CHAR: u8 = '#' as u8;
+const PART_TWO_STEPS: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ForestedSlope {
     grid: Vec<Vec<bool>>,
     pub length: usize,
@@ -22,7 +24,7 @@ impl Index<(usize, usize)> for ForestedSlope {
 pub fn get_slope(input: &str) -> ForestedSlope {
     let grid: Vec<Vec<bool>> = input
         .lines()
-        .map(|l| l.as_bytes().iter().map(|s| s == &('#' as u8)).collect())
+        .map(|l| l.as_bytes().iter().map(|s| s == &TREE_CHAR).collect())
         .collect();
     ForestedSlope {
         length: grid.len(),
@@ -35,8 +37,6 @@ pub fn get_slope(input: &str) -> ForestedSlope {
 pub fn solve_input_part1(input: &ForestedSlope) -> usize {
     (0..input.length).filter(|&i| input[(i * 3, i)]).count()
 }
-
-const PART_TWO_STEPS: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
 
 #[aoc(day3, part2)]
 pub fn solve_input_part2(input: &ForestedSlope) -> usize {
@@ -53,4 +53,36 @@ pub fn solve_input_part2(input: &ForestedSlope) -> usize {
             .filter(|&i| input[(i * xmul, i * ymul)])
             .count()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    const EXAMPLE_STRING: &'static str = "..##.......\n#...#...#..\n.#....#..#.\n..#.#...#.#\n.#...##..#.\n..#.##.....\n.#.#.#....#\n.#........#\n#.##...#...\n#...##....#\n.#..#...#.#";
+
+    #[test_case("..##.......\n#...#...#..", vec![vec![false, false, true, true, false, false, false, false, false, false, false], vec![true, false, false, false, true, false, false, false, true, false, false]], 11, 2; "Sample of site example")]
+    fn parser(input: &str, grid: Vec<Vec<bool>>, width: usize, length: usize) {
+        assert_eq!(
+            get_slope(input),
+            ForestedSlope {
+                grid,
+                width,
+                length
+            }
+        );
+    }
+
+    #[test_case(get_slope(EXAMPLE_STRING), 7)]
+    #[test_case(get_slope(EXAMPLE_STRING), 6 => panics "")]
+    fn part1(input: ForestedSlope, output: usize) {
+        assert_eq!(solve_input_part1(&input), output);
+    }
+
+    #[test_case(get_slope(EXAMPLE_STRING), 336)]
+    #[test_case(get_slope(EXAMPLE_STRING), 335 => panics "")]
+    fn part2(input: ForestedSlope, output: usize) {
+        assert_eq!(solve_input_part2(&input), output);
+    }
 }
