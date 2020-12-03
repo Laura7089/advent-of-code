@@ -1,5 +1,7 @@
 use std::ops::Index;
 
+const TREE_CHAR: u8 = '#' as u8;
+
 #[derive(Debug, PartialEq)]
 pub struct ForestedSlope {
     grid: Vec<Vec<bool>>,
@@ -38,10 +40,6 @@ impl ForestedSlope {
     }
 }
 
-const TREE_CHAR: u8 = '#' as u8;
-const PART_ONE_SLOPE: (usize, usize) = (3, 1);
-const PART_TWO_STEPS: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
-
 #[aoc_generator(day3)]
 pub fn get_slope(input: &str) -> ForestedSlope {
     ForestedSlope::from(input)
@@ -49,12 +47,12 @@ pub fn get_slope(input: &str) -> ForestedSlope {
 
 #[aoc(day3, part1)]
 pub fn solve_input_part1(input: &ForestedSlope) -> usize {
-    input.trees_along_slope(&PART_ONE_SLOPE)
+    input.trees_along_slope(&(3, 1))
 }
 
 #[aoc(day3, part2)]
 pub fn solve_input_part2(input: &ForestedSlope) -> usize {
-    PART_TWO_STEPS
+    [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)]
         .iter()
         .fold(1, |prev, slope| prev * input.trees_along_slope(slope))
 }
