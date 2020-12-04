@@ -29,9 +29,9 @@ impl From<&str> for ForestedSlope {
 }
 
 impl ForestedSlope {
-    pub fn trees_along_slope(&self, (xmul, ymul): &(usize, usize)) -> usize {
-        (0..=(self.length - 1) / ymul)
-            .filter(|&i| self[(i * xmul, i * ymul)])
+    pub fn trees_along_slope(&self, direction: &(usize, usize)) -> usize {
+        (0..=(self.length - 1) / direction.1)
+            .filter(|&i| self[(i * direction.0, i * direction.1)])
             .count()
     }
 }
