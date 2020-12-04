@@ -4,7 +4,7 @@ const EXPECTED_PASSPORTS: usize = 500;
 const EXPECTED_PASSPORT_LENGTH: usize = 150;
 
 const BIRTH_YEAR_LIMITS: (u32, u32) = (1920, 2002);
-const ISSUE_YEAR_LIMITS: (u32, u32) = (1920, 2002);
+const ISSUE_YEAR_LIMITS: (u32, u32) = (2010, 2020);
 const EXPR_YEAR_LIMITS: (u32, u32) = (2020, 2030);
 
 #[derive(Debug, PartialEq)]
@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn parser_example() {
         assert_eq!(
-            parse_input(
+            parse_input_part1(
                 "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
 byr:1937 iyr:2017 cid:147 hgt:183cm
 
@@ -183,7 +183,7 @@ iyr:2011 ecl:brn hgt:59in"
                     birth_year: 1937,
                     issue_year: 2017,
                     expiration_year: 2020,
-                    height: "183cm".into(),
+                    height: Height::Centimetres(183),
                     hair_colour: "#fffffd".into(),
                     eye_colour: "gry".into(),
                     passport_id: 860033327,
@@ -194,7 +194,7 @@ iyr:2011 ecl:brn hgt:59in"
                     birth_year: 1931,
                     issue_year: 2013,
                     expiration_year: 2024,
-                    height: "179cm".into(),
+                    height: Height::Centimetres(179),
                     hair_colour: "#ae17e1".into(),
                     eye_colour: "brn".into(),
                     passport_id: 760753108,
@@ -203,5 +203,40 @@ iyr:2011 ecl:brn hgt:59in"
                 Err(ValidationError::MissingField("byr".into())),
             ]
         );
+    }
+
+    #[test_case("pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980\nhcl:#623a2f", 1980, 2012, 2030, Height::Inches(74), "#623a2f", "grn", 087499704, None; "1")]
+    fn parse_valid_passport(
+        input: &str,
+        byr: u32,
+        iyr: u32,
+        eyr: u32,
+        hgt: Height,
+        hcl: &str,
+        ecl: &str,
+        pid: u32,
+        cid: Option<u32>,
+    ) {
+        assert_eq!(
+            parse_input(input),
+            vec![Ok(Passport {
+                birth_year: byr,
+                issue_year: iyr,
+                expiration_year: eyr,
+                height: hgt,
+                hair_colour: hcl.into(),
+                eye_colour: ecl.into(),
+                passport_id: pid,
+                country_id: cid
+            })]
+        );
+    }
+
+    #[test_case("eyr:1972 cid:100\nhcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926", ValidationError::BadFieldFormatting("eyr".into()); "1")]
+    #[test_case("iyr:2019\nhcl:#602927 eyr:1967 hgt:170cm\necl:grn pid:012533040 byr:1946", ValidationError::BadFieldFormatting("eyr".into()); "2")]
+    #[test_case("hcl:dab227 iyr:2012\necl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:27", ValidationError::BadFieldFormatting("hcl".into()); "3")]
+    #[test_case("hgt:59cm ecl:zzz\neyr:2038 hcl:74454a iyr:2023\npid:3556412378 byr:2007", ValidationError::BadFieldFormatting("byr".into()); "4")]
+    fn parse_invalid_passport(input: &str, err: ValidationError) {
+        assert_eq!(parse_input(input), vec![Err(err)]);
     }
 }
