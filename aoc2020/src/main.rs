@@ -33,4 +33,24 @@ fn main() {
             &fs::read_to_string(format!("{}/day3.txt", input_dir)).expect("No data found!")
         ))
     );
+
+    println!(
+        "Day 4 part 1: {}\nDay 4 part 2: {}\n",
+        aoc2020::day4::solve_input_part1(&aoc2020::day4::parse_input(
+            &fs::read_to_string(format!("{}/day4.txt", input_dir)).expect("No data found!")
+        )),
+        aoc2020::day4::solve_input_part2(&aoc2020::day4::parse_input(
+            &fs::read_to_string(format!("{}/day4.txt", input_dir)).expect("No data found!")
+        ))
+    );
+
+    println!(
+        "Day 5 part 1: {}\nDay 5 part 2: {}\n",
+        aoc2020::day5::solve_input_part1(&aoc2020::day5::parse_input(
+            &fs::read_to_string(format!("{}/day5.txt", input_dir)).expect("No data found!")
+        )),
+        aoc2020::day5::solve_input_part2(&aoc2020::day5::parse_input(
+            &fs::read_to_string(format!("{}/day5.txt", input_dir)).expect("No data found!")
+        ))
+    );
 }

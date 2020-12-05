@@ -6,14 +6,16 @@ pub struct Seat {
 
 impl Seat {
     pub fn from_specifier(spec: &str) -> Result<Self, std::num::ParseIntError> {
-        let id = u32::from_str_radix(
-            &spec
-                .replace("B", "1")
-                .replace("F", "0")
-                .replace("R", "1")
-                .replace("L", "0"),
-            2,
-        )?;
+        let id = spec
+            .chars()
+            .enumerate()
+            .map(|(i, c)| match c {
+                'B' | 'R' => 2_u32.pow(9 - (i as u32)),
+                'F' | 'L' => 0,
+                _ => panic!("Bad character in input"),
+            })
+            .sum();
+
         Ok(Self {
             row: id >> 3,
             column: id & 7,
