@@ -188,7 +188,7 @@ iyr:2011 ecl:brn hgt:59in"
                     issue_year: 2017,
                     expiration_year: 2020,
                     height: Height::Centimetres(183),
-                    hair_colour: "#fffffd".into(),
+                    hair_colour: 16777213,
                     eye_colour: "gry".into(),
                     passport_id: 860033327,
                     country_id: Some("147".into()),
@@ -199,7 +199,7 @@ iyr:2011 ecl:brn hgt:59in"
                     issue_year: 2013,
                     expiration_year: 2024,
                     height: Height::Centimetres(179),
-                    hair_colour: "#ae17e1".into(),
+                    hair_colour: 11409377,
                     eye_colour: "brn".into(),
                     passport_id: 760753108,
                     country_id: None,
@@ -209,14 +209,14 @@ iyr:2011 ecl:brn hgt:59in"
         );
     }
 
-    #[test_case("pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980\nhcl:#623a2f", 1980, 2012, 2030, Height::Inches(74), "#623a2f", "grn", 087499704, None; "1")]
+    #[test_case("pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980\nhcl:#623a2f", 1980, 2012, 2030, Height::Inches(74), 6437423, "grn", 087499704, None; "1")]
     fn parse_valid_passport(
         input: &str,
         byr: u32,
         iyr: u32,
         eyr: u32,
         hgt: Height,
-        hcl: &str,
+        hcl: u32,
         ecl: &str,
         pid: u32,
         cid: Option<String>,
@@ -228,7 +228,7 @@ iyr:2011 ecl:brn hgt:59in"
                 issue_year: iyr,
                 expiration_year: eyr,
                 height: hgt,
-                hair_colour: hcl.into(),
+                hair_colour: hcl,
                 eye_colour: ecl.into(),
                 passport_id: pid,
                 country_id: cid
@@ -242,5 +242,15 @@ iyr:2011 ecl:brn hgt:59in"
     #[test_case("hgt:59cm ecl:zzz\neyr:2038 hcl:74454a iyr:2023\npid:3556412378 byr:2007", ValidationError::BadFieldFormatting("byr".into()); "4")]
     fn parse_invalid_passport(input: &str, err: ValidationError) {
         assert_eq!(parse_input(input), vec![Err(err)]);
+    }
+
+    #[test]
+    fn my_data_part1() {
+        assert_eq!(
+            solve_input_part1(&parse_input(
+                &std::fs::read_to_string("./input/2020/day4.txt").unwrap()
+            )),
+            260
+        );
     }
 }
