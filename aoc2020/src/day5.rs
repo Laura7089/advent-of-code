@@ -1,3 +1,4 @@
+#[derive(PartialEq, Debug)]
 pub struct Seat {
     pub row: u32,
     pub column: u32,
@@ -72,6 +73,17 @@ mod tests {
                 &std::fs::read_to_string("./input/2020/day5.txt").unwrap()
             )),
             741
+        );
+    }
+
+    #[test_case("FBFBBFFRLR", 44, 5, 357)]
+    #[test_case("BFFFBBFRRR", 70, 7, 567)]
+    #[test_case("FFFBBBFRRR", 14, 7, 119)]
+    #[test_case("BBFFBBFRLL", 102, 4, 820)]
+    fn seat_from_specifier(input: &str, row: u32, column: u32, id: u32) {
+        assert_eq!(
+            Seat::from_specifier(input).unwrap(),
+            Seat { row, column, id }
         );
     }
 }
