@@ -64,6 +64,17 @@ mod tests {
         assert_eq!(parse_input(input), expected);
     }
 
+    #[test_case("abc\n\na\nb\nc\n\nab\nac\n\na\na\na\na\n\nb", 11)]
+    fn test_part1(input: &str, expected: usize) {
+        assert_eq!(solve_input_part1(&parse_input(input)), expected);
+    }
+
+    #[test_case("abc\n\na\nb\nc\n\nab\nac\n\na\na\na\na\n\nb", 6)]
+    fn test_part2(input: &str, expected: usize) {
+        assert_eq!(solve_input_part2(&parse_input(input)), expected);
+    }
+
+
     #[test]
     fn my_input_part1() {
         assert_eq!(
