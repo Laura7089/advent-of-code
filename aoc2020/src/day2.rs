@@ -1,8 +1,8 @@
 #[derive(Debug, PartialEq)]
 pub struct PasswordWithPolicy {
     pub nums: (usize, usize),
-    pub letter: u8,
-    pub password: Vec<u8>,
+    pub letter: char,
+    pub password: String,
 }
 
 #[aoc_generator(day2)]
@@ -10,30 +10,27 @@ pub fn parse_input(input: &str) -> Vec<PasswordWithPolicy> {
     input
         .lines()
         .map(|line| {
-            let mut line_iter = line.split(' ');
-            let mut nums = line_iter.next().expect("Empty line!").split('-');
+            let mut min = 0;
+            let mut worker: String = String::with_capacity(3);
 
-            PasswordWithPolicy {
-                nums: (
-                    nums.next()
-                        .expect("Bad number formatting")
-                        .parse()
-                        .expect("Bad number formatting"),
-                    nums.next()
-                        .expect("Bad number formatting")
-                        .parse()
-                        .expect("Bad number formatting"),
-                ),
-                letter: line_iter
-                    .next()
-                    .expect("Missing letter and password")
-                    .split(':')
-                    .next()
-                    .expect("Bad letter formatting")
-                    .as_bytes()[0],
-
-                password: Vec::from(line_iter.next().expect("Missing password").as_bytes()),
+            for (i, c) in line.chars().enumerate() {
+                match c {
+                    '-' => {
+                        min = worker.parse().unwrap();
+                        worker.clear();
+                    }
+                    ' ' => {
+                        return PasswordWithPolicy {
+                            nums: (min, worker.parse().unwrap()),
+                            letter: line.chars().nth(i + 1).unwrap(),
+                            password: line[i + 4..].to_string(),
+                        };
+                    }
+                    _ => worker.push(c),
+                }
             }
+
+            panic!("Bad line formatting");
         })
         .collect()
 }
@@ -46,8 +43,8 @@ pub fn solve_input_part1(input: &[PasswordWithPolicy]) -> usize {
 fn valid_password_part1(password: &&PasswordWithPolicy) -> bool {
     let occurences = password
         .password
-        .iter()
-        .filter(|b| b == &&password.letter)
+        .chars()
+        .filter(|b| b == &password.letter)
         .take(password.nums.1 + 1)
         .count();
     occurences >= password.nums.0 && occurences <= password.nums.1
@@ -59,8 +56,8 @@ pub fn solve_input_part2(input: &[PasswordWithPolicy]) -> usize {
 }
 
 fn valid_password_part2(password: &&PasswordWithPolicy) -> bool {
-    (password.password[password.nums.0 - 1] == password.letter)
-        ^ (password.password[password.nums.1 - 1] == password.letter)
+    (password.password.as_bytes()[password.nums.0 - 1] as char == password.letter)
+        ^ (password.password.as_bytes()[password.nums.1 - 1] as char == password.letter)
 }
 
 #[cfg(test)]
@@ -76,8 +73,8 @@ mod tests {
             parse_input(input)[0],
             PasswordWithPolicy {
                 nums,
-                letter: letter as u8,
-                password: Vec::from(password.as_bytes())
+                letter: letter,
+                password: password.to_string()
             }
         );
     }
@@ -89,8 +86,8 @@ mod tests {
         assert_eq!(
             valid_password_part1(&&PasswordWithPolicy {
                 nums,
-                letter: letter as u8,
-                password: Vec::from(password.as_bytes())
+                letter: letter,
+                password: password.to_string(),
             }),
             expected
         );
