@@ -92,4 +92,24 @@ mod tests {
             expected
         );
     }
+
+    #[test]
+    fn my_input_part1() {
+        assert_eq!(
+            solve_input_part1(&parse_input(
+                &std::fs::read_to_string("./input/2020/day2.txt").unwrap()
+            )),
+            474
+        );
+    }
+
+    #[test]
+    fn my_input_part2() {
+        assert_eq!(
+            solve_input_part2(&parse_input(
+                &std::fs::read_to_string("./input/2020/day2.txt").unwrap()
+            )),
+            745
+        );
+    }
 }
