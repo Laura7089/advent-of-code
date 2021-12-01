@@ -16,10 +16,13 @@ pub fn solve_part1(input: &[u32]) -> u32 {
 
 #[aoc(day1, part2)]
 pub fn solve_part2(input: &[u32]) -> u32 {
-    let totals: Vec<u32> = (2..input.len())
-        .map(|i| input[i - 2] + input[i - 1] + input[i])
-        .collect();
-    solve_part1(&totals)
+    let mut count = 0;
+    for i in 3..input.len() {
+        if input[i - 3] < input[i] {
+            count += 1;
+        }
+    }
+    count
 }
 
 #[cfg(test)]
