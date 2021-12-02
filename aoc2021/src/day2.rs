@@ -1,0 +1,78 @@
+#[derive(PartialEq, Debug)]
+pub enum Command {
+    Forward(u32),
+    Attitude(i32),
+}
+
+#[aoc_generator(day2)]
+pub fn parse_input(input: &str) -> Vec<Command> {
+    input
+        .lines()
+        .map(|l| {
+            let mut split = l.split(" ");
+            let command = split.next().unwrap();
+            let num = split.next().unwrap().parse().unwrap();
+            match command.chars().next() {
+                Some('f') => Command::Forward(num as u32),
+                Some('u') => Command::Attitude(num * -1),
+                Some('d') => Command::Attitude(num),
+                _ => panic!("Invalid input line '{}'", l),
+            }
+        })
+        .collect()
+}
+
+#[aoc(day2, part1)]
+pub fn solve_part1(input: &[Command]) -> u32 {
+    let (depth, hori) = input.iter().fold((0, 0), |(d, h), c| match c {
+        Command::Forward(x) => (d, h + x),
+        Command::Attitude(x) => (d + x, h),
+    });
+    depth as u32 * hori
+}
+
+#[aoc(day2, part2)]
+pub fn solve_part2(input: &[Command]) -> u32 {
+    let (depth, hori, _aim) = input.iter().fold((0, 0, 0), |(d, h, a), c| match c {
+        Command::Forward(x) => (d + (a * *x as i32) as u32, h + x, a),
+        Command::Attitude(x) => (d, h, a + x),
+    });
+
+    depth as u32 * hori
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &'static str = "forward 5
+down 5
+forward 8
+up 3
+down 8
+forward 2";
+
+    const EXAMPLE_PARSED: [Command; 6] = [
+        Command::Forward(5),
+        Command::Attitude(5),
+        Command::Forward(8),
+        Command::Attitude(-3),
+        Command::Attitude(8),
+        Command::Forward(2),
+    ];
+
+    #[test]
+    fn test_generator() {
+        assert_eq!(&parse_input(EXAMPLE_INPUT), &EXAMPLE_PARSED);
+    }
+
+    #[test]
+    fn test_part1() {
+        assert_eq!(solve_part1(&EXAMPLE_PARSED), 150);
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(solve_part2(&EXAMPLE_PARSED), 900);
+    }
+}
