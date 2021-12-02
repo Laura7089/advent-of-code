@@ -24,6 +24,7 @@ pub fn parse_input(input: &str) -> Vec<Command> {
 
 #[aoc(day2, part1)]
 pub fn solve_part1(input: &[Command]) -> u32 {
+    // Rust's type inference will give (i32, u32)
     let (depth, hori) = input.iter().fold((0, 0), |(d, h), c| match c {
         Command::Forward(x) => (d, h + x),
         Command::Attitude(x) => (d + x, h),
@@ -33,11 +34,11 @@ pub fn solve_part1(input: &[Command]) -> u32 {
 
 #[aoc(day2, part2)]
 pub fn solve_part2(input: &[Command]) -> u32 {
+    // Rust's type inference will give (i32, u32, i32)
     let (depth, hori, _aim) = input.iter().fold((0, 0, 0), |(d, h, a), c| match c {
         Command::Forward(x) => (d + (a * *x as i32) as u32, h + x, a),
         Command::Attitude(x) => (d, h, a + x),
     });
-
     depth as u32 * hori
 }
 
