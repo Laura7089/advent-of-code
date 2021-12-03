@@ -12,10 +12,11 @@ pub fn parse_input(input: &str) -> Vec<Command> {
             let mut split = l.split(" ");
             let command = split.next().unwrap();
             let num = split.next().unwrap().parse().unwrap();
-            match command.chars().next() {
-                Some('f') => Command::Forward(num as u32),
-                Some('u') => Command::Attitude(num * -1),
-                Some('d') => Command::Attitude(num),
+            // Match against first letter only to avoid unneeded comparisons
+            match command.chars().next().unwrap() {
+                'f' => Command::Forward(num as u32),
+                'u' => Command::Attitude(num * -1),
+                'd' => Command::Attitude(num),
                 _ => panic!("Invalid input line '{}'", l),
             }
         })
