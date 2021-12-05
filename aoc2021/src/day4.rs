@@ -20,16 +20,6 @@ impl<const SIZE: usize> BingoBoard<SIZE> {
             }
         }
 
-        // Diagonal 1
-        if (0..SIZE).fold(true, |r, n| r && self.marks[n][n]) {
-            return true;
-        }
-
-        // Diagonal 2
-        if (0..SIZE).fold(true, |r, n| r && self.marks[SIZE - n - 1][n]) {
-            return true;
-        }
-
         false
     }
 
@@ -84,6 +74,7 @@ pub fn solve_part1(input: &(Vec<usize>, Vec<BingoBoard<5>>)) -> usize {
 
     for call in input.0.iter() {
         for i in 0..boards.len() {
+            // Note: mutates board
             let marked = boards[i].search_mark(*call);
             if marked && boards[i].has_won() {
                 let total_unmarked: usize = boards[i]
@@ -201,32 +192,6 @@ mod tests {
             marks: [
                 [true, false, false],
                 [true, false, false],
-                [true, false, false]
-            ]
-        }
-        .has_won());
-    }
-
-    #[test]
-    fn test_winner3() {
-        assert!(BingoBoard {
-            numbers: [[0; 3]; 3],
-            marks: [
-                [true, false, false],
-                [false, true, false],
-                [false, false, true]
-            ]
-        }
-        .has_won());
-    }
-
-    #[test]
-    fn test_winner4() {
-        assert!(BingoBoard {
-            numbers: [[0; 3]; 3],
-            marks: [
-                [false, false, true],
-                [false, true, false],
                 [true, false, false]
             ]
         }
