@@ -1,3 +1,5 @@
+type Generated = (Vec<usize>, Vec<BingoBoard<5>>);
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct BingoBoard<const SIZE: usize> {
     pub numbers: [[usize; SIZE]; SIZE],
@@ -34,10 +36,22 @@ impl<const SIZE: usize> BingoBoard<SIZE> {
         }
         false
     }
+
+    pub fn total_unmarked(&self) -> usize {
+        self.numbers
+            .iter()
+            .flatten()
+            .zip(self.marks.iter().flatten())
+            .filter_map(|(num, mark)| match mark {
+                false => Some(num),
+                true => None,
+            })
+            .sum()
+    }
 }
 
 #[aoc_generator(day4)]
-pub fn parse_input(input: &str) -> (Vec<usize>, Vec<BingoBoard<5>>) {
+pub fn parse_input(input: &str) -> Generated {
     let called_numbers = input
         .lines()
         .next()
@@ -69,7 +83,7 @@ pub fn parse_input(input: &str) -> (Vec<usize>, Vec<BingoBoard<5>>) {
 }
 
 #[aoc(day4, part1)]
-pub fn solve_part1(input: &(Vec<usize>, Vec<BingoBoard<5>>)) -> usize {
+pub fn solve_part1(input: &Generated) -> usize {
     let mut boards = input.1.clone();
 
     for call in input.0.iter() {
@@ -77,22 +91,40 @@ pub fn solve_part1(input: &(Vec<usize>, Vec<BingoBoard<5>>)) -> usize {
             // Note: mutates board
             let marked = boards[i].search_mark(*call);
             if marked && boards[i].has_won() {
-                let total_unmarked: usize = boards[i]
-                    .numbers
-                    .iter()
-                    .flatten()
-                    .zip(boards[i].marks.iter().flatten())
-                    .filter_map(|(num, mark)| match mark {
-                        false => Some(num),
-                        true => None,
-                    })
-                    .sum();
-
-                return dbg!(total_unmarked) * dbg!(call);
+                return boards[i].total_unmarked() * call;
             }
         }
     }
     panic!("No winners found!")
+}
+
+#[aoc(day4, part2)]
+pub fn solve_part2(input: &Generated) -> usize {
+    let mut boards = input.1.clone();
+
+    for call in input.0.iter() {
+        // Find winning boards
+        let mut to_pop = Vec::new();
+        for i in 0..boards.len() {
+            let marked = boards[i].search_mark(*call);
+            if marked && boards[i].has_won() {
+                to_pop.push(i);
+            }
+        }
+
+        // Remove winning boards
+        to_pop.sort();
+        to_pop.into_iter().rev().for_each(|i| {
+            boards.remove(i);
+        });
+
+        // Check
+        if boards.len() == 1 {
+            return boards[0].total_unmarked() * call;
+        }
+    }
+
+    panic!("No one won before we ran out of calls!")
 }
 
 #[cfg(test)]
@@ -170,6 +202,11 @@ mod tests {
     #[test]
     fn test_solve_part1() {
         assert_eq!(solve_part1(&parse_input(INPUT_RAW)), 4512);
+    }
+
+    #[test]
+    fn test_solve_part2() {
+        assert_eq!(solve_part2(&parse_input(INPUT_RAW)), 1924);
     }
 
     #[test]
