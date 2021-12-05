@@ -200,12 +200,12 @@ mod tests {
     }
 
     #[test]
-    fn test_solve_part1() {
+    fn test_solve_part1_example() {
         assert_eq!(solve_part1(&parse_input(INPUT_RAW)), 4512);
     }
 
     #[test]
-    fn test_solve_part2() {
+    fn test_solve_part2_example() {
         assert_eq!(solve_part2(&parse_input(INPUT_RAW)), 1924);
     }
 
