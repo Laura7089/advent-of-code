@@ -8,6 +8,7 @@ pub mod day3;
 pub mod day4;
 pub mod day5;
 pub mod day6;
+pub mod day7;
 
 pub fn list_of_numbers(input: &str) -> Vec<u32> {
     input
