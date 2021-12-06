@@ -5,10 +5,10 @@ use std::fs;
 fn main() {
     let input_dir = env::args().nth(1).unwrap_or("input/2021".to_string());
 
-    let solves: [(
+    let solves: Vec<(
         Box<dyn FnOnce(&str) -> usize>,
         Box<dyn FnOnce(&str) -> usize>,
-    ); 5] = [
+    )> = vec![
         (
             Box::new(|s| day1::solve_part1(&day1::parse_input(s))),
             Box::new(|s| day1::solve_part2(&day1::parse_input(s))),
@@ -18,8 +18,8 @@ fn main() {
             Box::new(|s| day2::solve_part2(&day2::parse_input(s))),
         ),
         (
-            Box::new(|s| day3::solve_part1(&day3::parse_input(s))),
-            Box::new(|s| day3::solve_part2(&day3::parse_input(s))),
+            Box::new(|s| day3::solve_part1(&s)),
+            Box::new(|s| day3::solve_part2(&s)),
         ),
         (
             Box::new(|s| day4::solve_part1(&day4::parse_input(s))),
