@@ -200,17 +200,17 @@ mod tests {
     }
 
     #[test]
-    fn test_solve_part1_example() {
+    fn part1_example() {
         assert_eq!(solve_part1(&parse_input(INPUT_RAW)), 4512);
     }
 
     #[test]
-    fn test_solve_part2_example() {
+    fn part2_example() {
         assert_eq!(solve_part2(&parse_input(INPUT_RAW)), 1924);
     }
 
     #[test]
-    fn test_winner1() {
+    fn board_winner1() {
         assert!(BingoBoard {
             numbers: [[0; 3]; 3],
             marks: [
@@ -223,7 +223,7 @@ mod tests {
     }
 
     #[test]
-    fn test_winner2() {
+    fn board_winner2() {
         assert!(BingoBoard {
             numbers: [[0; 3]; 3],
             marks: [
@@ -233,5 +233,17 @@ mod tests {
             ]
         }
         .has_won());
+    }
+
+    #[test]
+    fn part1_myinput() {
+        let input = crate::get_input_for_day(4);
+        assert_eq!(solve_part1(&parse_input(&input)), 25410);
+    }
+
+    #[test]
+    fn part2_myinput() {
+        let input = crate::get_input_for_day(4);
+        assert_eq!(solve_part2(&parse_input(&input)), unimplemented!());
     }
 }

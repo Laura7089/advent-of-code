@@ -40,4 +40,16 @@ mod tests {
     fn part2_example() {
         assert_eq!(solve_part2(&EXAMPLE_INPUT), 5);
     }
+
+    #[test]
+    fn part1_myinput() {
+        let input = crate::get_input_for_day(1);
+        assert_eq!(solve_part1(&parse_input(&input)), 1696);
+    }
+
+    #[test]
+    fn part2_myinput() {
+        let input = crate::get_input_for_day(1);
+        assert_eq!(solve_part2(&parse_input(&input)), 1737);
+    }
 }

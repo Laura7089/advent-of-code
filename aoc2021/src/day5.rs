@@ -44,7 +44,7 @@ pub fn solve_part1(input: &[Line]) -> usize {
 }
 
 #[aoc(day5, part2)]
-pub fn solve_part2(input: &[Line]) -> usize {
+pub fn solve_part2(_input: &[Line]) -> usize {
     0
 }
 
@@ -64,7 +64,7 @@ mod tests {
 5,5 -> 8,2";
 
     #[test]
-    fn test_parse_input() {
+    fn generator() {
         assert_eq!(
             parse_input(EXAMPLE_INPUT),
             vec![
@@ -83,12 +83,24 @@ mod tests {
     }
 
     #[test]
-    fn test_solve_part1_example() {
+    fn part1_example() {
         assert_eq!(solve_part1(&parse_input(EXAMPLE_INPUT)), 5);
     }
 
     #[test]
-    fn test_solve_part2_example() {
+    fn part2_example() {
         assert_eq!(solve_part2(&parse_input(EXAMPLE_INPUT)), 12);
+    }
+
+    #[test]
+    fn part1_myinput() {
+        let input = crate::get_input_for_day(5);
+        assert_eq!(solve_part1(&parse_input(&input)), 5169);
+    }
+
+    #[test]
+    fn part2_myinput() {
+        let input = crate::get_input_for_day(5);
+        assert_eq!(solve_part2(&parse_input(&input)), unimplemented!());
     }
 }

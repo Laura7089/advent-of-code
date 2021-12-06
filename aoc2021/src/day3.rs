@@ -10,6 +10,7 @@ pub fn solve_part1(input: &str) -> usize {
 
     let input_parsed: Vec<usize> = input.into_iter().map(|l| l.parse().unwrap()).collect();
     let threshold = input_parsed.len() >> 1;
+    println!("Threshold: {}", threshold);
 
     let mut gamma_rate = 0;
     for pos in 0..bit_length {
@@ -19,15 +20,19 @@ pub fn solve_part1(input: &str) -> usize {
             // Filters out lines with 0 at pos
             .filter(|&&line| (line >> pos) & 1 == 1)
             .count();
+        println!("Counted {} 1s in position {}", count, pos);
 
-        gamma_rate += ((count > threshold) as usize) << pos;
+        let inc = ((count > threshold) as usize) << pos;
+        println!("Adding {:011b} to gamma rate", inc);
+
+        gamma_rate += inc;
     }
 
-    gamma_rate * (!gamma_rate & dbg!(bit_mask(bit_length)))
+    gamma_rate * (gamma_rate ^ bit_mask(bit_length))
 }
 
 #[aoc(day3, part2)]
-pub fn solve_part2(input: &str) -> usize {
+pub fn solve_part2(_input: &str) -> usize {
     // let mut oxy_vec: Vec<String> = input.input_raw.lines().map(str::to_string).collect();
     // let mut co2_vec = oxy_vec.clone();
 
@@ -73,12 +78,24 @@ mod tests {
 01010";
 
     #[test]
-    fn test_part1_example() {
+    fn part1_example() {
         assert_eq!(solve_part1(&INPUT), 198);
     }
 
     #[test]
-    fn test_part2_example() {
+    fn part2_example() {
         assert_eq!(solve_part2(&INPUT), 230);
+    }
+
+    #[test]
+    fn part1_myinput() {
+        let input = crate::get_input_for_day(3);
+        assert_eq!(solve_part1(&input), 2261546);
+    }
+
+    #[test]
+    fn part2_myinput() {
+        let input = crate::get_input_for_day(3);
+        assert_eq!(solve_part2(&input), unimplemented!());
     }
 }

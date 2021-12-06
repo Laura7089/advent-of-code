@@ -64,17 +64,29 @@ forward 2";
     ];
 
     #[test]
-    fn test_generator() {
+    fn generator() {
         assert_eq!(&parse_input(EXAMPLE_INPUT), &EXAMPLE_PARSED);
     }
 
     #[test]
-    fn test_part1() {
+    fn part1_example() {
         assert_eq!(solve_part1(&EXAMPLE_PARSED), 150);
     }
 
     #[test]
-    fn test_part2() {
+    fn part2_example() {
         assert_eq!(solve_part2(&EXAMPLE_PARSED), 900);
+    }
+
+    #[test]
+    fn part1_myinput() {
+        let input = crate::get_input_for_day(2);
+        assert_eq!(solve_part1(&parse_input(&input)), 1648020);
+    }
+
+    #[test]
+    fn part2_myinput() {
+        let input = crate::get_input_for_day(2);
+        assert_eq!(solve_part2(&parse_input(&input)), 1759818555);
     }
 }
