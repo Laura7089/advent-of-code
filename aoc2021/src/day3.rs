@@ -17,9 +17,10 @@ pub fn parse_input(input: &str) -> BitsCounted {
         }
     }
 
+    let threshold = (input.lines().count() as f32 / 2.0).ceil() as usize;
     let most_common_string = ones
         .iter()
-        .map(|count| if count > &(total_lines / 2) { '1' } else { '0' })
+        .map(|count| if count >= &threshold { '1' } else { '0' })
         .collect();
 
     BitsCounted {

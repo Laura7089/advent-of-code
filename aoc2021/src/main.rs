@@ -5,7 +5,10 @@ use std::fs;
 fn main() {
     let input_dir = env::args().nth(1).unwrap_or("input/2021".to_string());
 
-    let solves: [(Box<dyn FnOnce(&str) -> u32>, Box<dyn FnOnce(&str) -> u32>); 2] = [
+    let solves: [(
+        Box<dyn FnOnce(&str) -> usize>,
+        Box<dyn FnOnce(&str) -> usize>,
+    ); 5] = [
         (
             Box::new(|s| day1::solve_part1(&day1::parse_input(s))),
             Box::new(|s| day1::solve_part2(&day1::parse_input(s))),
@@ -13,6 +16,18 @@ fn main() {
         (
             Box::new(|s| day2::solve_part1(&day2::parse_input(s))),
             Box::new(|s| day2::solve_part2(&day2::parse_input(s))),
+        ),
+        (
+            Box::new(|s| day3::solve_part1(&day3::parse_input(s))),
+            Box::new(|s| day3::solve_part2(&day3::parse_input(s))),
+        ),
+        (
+            Box::new(|s| day4::solve_part1(&day4::parse_input(s))),
+            Box::new(|s| day4::solve_part2(&day4::parse_input(s))),
+        ),
+        (
+            Box::new(|s| day5::solve_part1(&day5::parse_input(s))),
+            Box::new(|s| day5::solve_part2(&day5::parse_input(s))),
         ),
     ];
 

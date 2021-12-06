@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 type Line = [[usize; 2]; 2];
 
 #[aoc_generator(day5)]
@@ -6,21 +8,14 @@ pub fn parse_input(input: &str) -> Vec<Line> {
         .lines()
         .map(|line| {
             let mut split = line.split(" -> ");
-            let start_point = {
+            let mut line = [[0_usize; 2]; 2];
+            for i in 0..2 {
                 let mut raw = split.next().unwrap().split(",");
-                [
-                    raw.next().unwrap().parse().unwrap(),
-                    raw.next().unwrap().parse().unwrap(),
-                ]
-            };
-            let end_point = {
-                let mut raw = split.next().unwrap().split(",");
-                [
-                    raw.next().unwrap().parse().unwrap(),
-                    raw.next().unwrap().parse().unwrap(),
-                ]
-            };
-            [start_point, end_point]
+                for o in 0..2 {
+                    line[i][o] = raw.next().unwrap().parse().unwrap();
+                }
+            }
+            line
         })
         .collect()
 }
@@ -31,26 +26,26 @@ pub fn solve_part1(input: &[Line]) -> usize {
     let mut field = vec![vec![0_usize; size_limit]; size_limit];
 
     for line in input.iter() {
-        if line[0][0] == line[1][0] {
-            // Vertical line
-            let x = line[0][0];
-            let (y0, y1) = (line[0][1], line[1][1]);
-            let range = if y0 < y1 { y0..=y1 } else { y1..=y0 };
-            for y in range {
-                field[x][y] += 1;
-            }
-        } else if line[0][1] == line[1][1] {
-            // Horizontal line
-            let y = line[0][1];
-            let (x0, x1) = (line[0][0], line[1][0]);
-            let range = if x0 < x1 { x0..=x1 } else { x1..=x0 };
-            for x in range {
-                field[x][y] += 1;
-            }
+        let (x0, x1) = (line[0][0], line[1][0]);
+        let (y0, y1) = (line[0][1], line[1][1]);
+
+        match (x0.cmp(&x1), y0.cmp(&y1)) {
+            // Vertical
+            (Ordering::Equal, Ordering::Less) => (y0..=y1).for_each(|y| field[x0][y] += 1),
+            (Ordering::Equal, Ordering::Greater) => (y1..=y0).for_each(|y| field[x0][y] += 1),
+            // Horizontal
+            (Ordering::Less, Ordering::Equal) => (x0..=x1).for_each(|x| field[x][y0] += 1),
+            (Ordering::Greater, Ordering::Equal) => (x1..=x0).for_each(|x| field[x][y0] += 1),
+            _ => (),
         }
     }
 
     field.iter().flatten().filter(|c| c > &&1).count()
+}
+
+#[aoc(day5, part2)]
+pub fn solve_part2(input: &[Line]) -> usize {
+    0
 }
 
 #[cfg(test)]
@@ -90,5 +85,10 @@ mod tests {
     #[test]
     fn test_solve_part1_example() {
         assert_eq!(solve_part1(&parse_input(EXAMPLE_INPUT)), 5);
+    }
+
+    #[test]
+    fn test_solve_part2_example() {
+        assert_eq!(solve_part2(&parse_input(EXAMPLE_INPUT)), 12);
     }
 }
