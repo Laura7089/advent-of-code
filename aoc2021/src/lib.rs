@@ -1,3 +1,4 @@
+#![allow(unreachable_code)]
 #[macro_use]
 extern crate aoc_runner_derive;
 
@@ -8,6 +9,7 @@ pub mod day4;
 pub mod day5;
 pub mod day6;
 pub mod day7;
+pub mod day8;
 
 #[cfg(test)]
 fn get_input_for_day(day: usize) -> String {
