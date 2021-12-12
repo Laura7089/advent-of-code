@@ -2,7 +2,7 @@ const OUTPUT_DIGITS: usize = 4;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DigitCode {
-    segs: [bool; 7],
+    pub segs: [bool; 7],
 }
 
 impl DigitCode {
@@ -88,108 +88,97 @@ fn solve_part1(input: &[InputLine]) -> usize {
 
 #[aoc(day8, part2)]
 fn solve_part2(input: &[InputLine]) -> usize {
-    let input: Vec<InputLine> = input.to_vec();
-    input
-        .into_iter()
-        .map(|line| {
-            let mut digits = [DigitCode::new(); 10];
-            // Unpack input struct
-            let InputLine {
-                digit_codes,
-                output,
-            } = line;
-            let mut digit_codes: Vec<DigitCode> = digit_codes.to_vec();
+    let mut total = 0;
 
-            // We use a 3-step method to match the digits
-            // We pop them as we match them
-            // Each step depends on the matches from the last
-            // After each step, we check that we got them all
+    for &line in input.into_iter() {
+        let mut digits = [DigitCode::new(); 10];
+        // Unpack input struct and copy into a shrinkable Vec
+        let InputLine {
+            digit_codes,
+            output,
+        } = line;
+        let mut digit_codes: Vec<DigitCode> = digit_codes.to_vec();
 
-            // Step 1: "Easy digits"
-            for i in (0..digit_codes.len()).rev() {
-                match digit_codes[i].len() {
-                    2 => digits[1] = digit_codes.remove(i),
-                    3 => digits[7] = digit_codes.remove(i),
-                    4 => digits[4] = digit_codes.remove(i),
-                    7 => digits[8] = digit_codes.remove(i),
-                    _ => (),
-                }
+        // We use a 3-step method to match the digits
+        // We pop them as we match them
+        // Each step depends on the matches from the last
+        // After each step, we check that we got them all
+
+        // Step 1: "Easy digits"
+        for i in (0..digit_codes.len()).rev() {
+            match digit_codes[i].len() {
+                2 => digits[1] = digit_codes.remove(i),
+                3 => digits[7] = digit_codes.remove(i),
+                4 => digits[4] = digit_codes.remove(i),
+                7 => digits[8] = digit_codes.remove(i),
+                _ => (),
             }
+        }
+        assert_eq!(digit_codes.len(), 6);
 
-            assert_eq!(digit_codes.len(), 6);
-
-            // Step 2: Digits based on easy digits
-            for i in (0..digit_codes.len()).rev() {
-                match digit_codes[i].len() {
-                    5 => {
-                        // Whichever one is a superset of digits[1] is 3
-                        if digits[1].is_subset(&digit_codes[i]) {
-                            digits[3] = digit_codes.remove(i);
-                            continue;
-                        }
+        // Step 2: Digits based on easy digits
+        for i in (0..digit_codes.len()).rev() {
+            match digit_codes[i].len() {
+                5 => {
+                    if digits[1].is_subset(&digit_codes[i]) {
+                        // 3 is a superset of 1
+                        digits[3] = digit_codes.remove(i);
                     }
-                    6 => {
-                        // 1 diff with digits[1] = 6
-                        if digits[1].diff(&digit_codes[i]) == 1 {
-                            digits[6] = digit_codes.remove(i);
-                            continue;
-                        }
-                        // Superset of digits[7] = 9
-                        if digits[7].is_subset(&digit_codes[i]) {
-                            digits[9] = digit_codes.remove(i);
-                            continue;
-                        }
-                    }
-                    _ => panic!(),
                 }
-            }
-
-            assert_eq!(digit_codes.len(), 3);
-
-            // Step 3: The stragglers
-            for i in (0..digit_codes.len()).rev() {
-                match digit_codes[i].len() {
-                    // Either 2 or 5
-                    5 => {
-                        if digit_codes[i].is_subset(&digits[9]) {
-                            // 5 is a subset of 9
-                            digits[5] = digit_codes.remove(i);
-                            continue;
-                        } else {
-                            // It can only be 2
-                            digits[2] = digit_codes.remove(i);
-                            continue;
-                        }
-                    }
-                    // Only 6-length left is 0
-                    6 => {
+                6 => {
+                    if digits[1].diff(&digit_codes[i]) == 6 {
+                        // 6 diff with digits[1] = 6
+                        digits[6] = digit_codes.remove(i);
+                    } else if digits[4].is_subset(&digit_codes[i]) {
+                        // 4 is a subset of 9
+                        digits[9] = digit_codes.remove(i);
+                    } else if digits[4].segs[digit_codes[i]
+                        .segs
+                        .iter()
+                        .enumerate()
+                        .find(|(_, d)| d == &&false)
+                        .unwrap()
+                        .0]
+                    {
+                        // The only missing seg in 0 is there in 4
                         digits[0] = digit_codes.remove(i);
-                        continue;
                     }
-                    _ => panic!(),
                 }
+                _ => panic!(),
             }
+        }
+        assert_eq!(digit_codes.len(), 2);
 
-            assert_eq!(digit_codes.len(), 0);
+        // Step 3: The stragglers
+        if digit_codes[0].is_subset(&digits[9]) {
+            // 5 is a subset of 9
+            digits[5] = digit_codes.remove(0);
+            digits[2] = digit_codes.remove(0);
+        } else {
+            // It can only be 2
+            digits[2] = digit_codes.remove(0);
+            digits[5] = digit_codes.remove(0);
+        }
+        assert_eq!(digit_codes.len(), 0);
 
-            // Calculate the output number
-            output
-                .into_iter()
-                .enumerate()
-                .map(|(pos, od)| {
-                    // Poor way of matching into the digits array
-                    for (i, c) in digits.iter().enumerate() {
-                        if &od == c {
-                            // Multiply into correct position
-                            let mult = (10_usize).pow(3 - pos as u32);
-                            return i * mult;
-                        }
+        total += output
+            .into_iter()
+            .enumerate()
+            .map(|(pos, od)| {
+                // Poor way of matching into the digits array
+                for (i, c) in digits.iter().enumerate() {
+                    if &od == c {
+                        // Multiply into correct position
+                        let mult = (10_usize).pow(3 - pos as u32);
+                        return i * mult;
                     }
-                    panic!("No matching digit found");
-                })
-                .sum::<usize>()
-        })
-        .sum()
+                }
+                panic!("No matching digit found");
+            })
+            .sum::<usize>()
+    }
+
+    total
 }
 
 #[cfg(test)]
@@ -215,7 +204,7 @@ gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
 
     #[test]
     fn part2_example() {
-        assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), 5353);
+        assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), 61229);
     }
 
     #[test]
@@ -227,6 +216,37 @@ gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
     #[test]
     fn part2_myinput() {
         let input = crate::get_input_for_day(8);
-        assert_eq!(solve_part2(&parse_input(&input)), unimplemented!());
+        assert_eq!(solve_part2(&parse_input(&input)), 933305);
+    }
+
+    #[test]
+    fn deduction_logic() {
+        let one = DigitCode {
+            segs: [false, false, true, false, false, true, false],
+        };
+        let three = DigitCode {
+            segs: [true, false, true, true, false, true, true],
+        };
+        let four = DigitCode {
+            segs: [false, true, true, true, false, true, false],
+        };
+        let five = DigitCode {
+            segs: [true, true, false, true, false, true, true],
+        };
+        let six = DigitCode {
+            segs: [true, true, false, true, true, true, true],
+        };
+        let seven = DigitCode {
+            segs: [true, false, true, false, false, true, false],
+        };
+        let nine = DigitCode {
+            segs: [true, true, true, true, false, true, true],
+        };
+
+        assert!(one.is_subset(&three));
+        assert_eq!(six.diff(&one), 6);
+        assert!(seven.is_subset(&nine));
+        assert!(five.is_subset(&nine));
+        assert!(four.is_subset(&nine));
     }
 }
