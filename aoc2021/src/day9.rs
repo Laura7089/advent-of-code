@@ -58,8 +58,7 @@ fn parse_input(input: &str) -> CompressedField<usize> {
         row_len,
         map: input
             .lines()
-            .map(str::bytes)
-            .flatten()
+            .flat_map(str::bytes)
             .map(|p| p as usize - 48)
             .collect(),
     }
@@ -76,7 +75,7 @@ fn solve_part1(input: &CompressedField<usize>) -> usize {
                 .adjacents(x, y)
                 .iter()
                 .filter_map(|p| *p)
-                .fold(true, |prev, point| prev && point > current);
+                .all(|point| point > current);
 
             if is_low_point {
                 total_risk += current + 1;

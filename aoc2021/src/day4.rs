@@ -10,14 +10,14 @@ impl<const SIZE: usize> BingoBoard<SIZE> {
     pub fn has_won(&self) -> bool {
         // Rows
         for y in 0..SIZE {
-            if (0..SIZE).fold(true, |r, x| r && self.marks[y][x]) {
+            if (0..SIZE).all(|x| self.marks[y][x]) {
                 return true;
             }
         }
 
         // Columns
         for x in 0..SIZE {
-            if (0..SIZE).fold(true, |r, y| r && self.marks[y][x]) {
+            if (0..SIZE).all(|y| self.marks[y][x]) {
                 return true;
             }
         }

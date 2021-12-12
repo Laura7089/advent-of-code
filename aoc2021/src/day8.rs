@@ -65,8 +65,7 @@ fn solve_part1(input: &[InputLine]) -> usize {
     let input: Vec<InputLine> = input.to_vec();
     input
         .into_iter()
-        .map(|i| i.1.into_iter())
-        .flatten()
+        .flat_map(|i| i.1.into_iter())
         .filter(|elem| {
             let length = elem.len();
             length == 2 || length == 4 || length == 3 || length == 7
@@ -151,8 +150,8 @@ fn solve_part2(input: &[InputLine]) -> usize {
             .enumerate()
             .map(
                 // Match the digits against our `digits` array, place them and sum them
-                |(pos, od)| match digits.iter().enumerate().find(|(_, c)| &&od == c) {
-                    Some((i, _)) => i * (10_usize).pow(3 - pos as u32),
+                |(pos, od)| match digits.iter().position(|c| &od == c) {
+                    Some(i) => i * (10_usize).pow(3 - pos as u32),
                     None => panic!("No matching digit found"),
                 },
             )
