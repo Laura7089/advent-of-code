@@ -32,7 +32,9 @@ impl<T: Copy> CompressedField<T> {
 
         adjacents
     }
+}
 
+impl<T> CompressedField<T> {
     fn height(&self) -> usize {
         self.map.len() / self.row_len
     }
@@ -42,6 +44,8 @@ impl<T> std::ops::Index<(usize, usize)> for CompressedField<T> {
     type Output = T;
 
     fn index(&self, (x, y): (usize, usize)) -> &Self::Output {
+        assert!(x < self.row_len);
+        assert!(y < self.height());
         &self.map[(y * self.row_len) + x]
     }
 }
@@ -105,13 +109,13 @@ mod tests {
 
     #[test]
     fn part2_example() {
-        assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), unimplemented!());
+        assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), 1134);
     }
 
     #[test]
     fn part1_myinput() {
-        let _input = crate::get_input_for_day(9);
-        assert_eq!(solve_part1(&parse_input(&_input)), unimplemented!());
+        let input = crate::get_input_for_day(9);
+        assert_eq!(solve_part1(&parse_input(&input)), 475);
     }
 
     #[test]
