@@ -103,20 +103,13 @@ pub fn solve_part2(input: &Generated) -> usize {
     let mut boards = input.1.clone();
 
     for call in input.0.iter() {
-        // Find winning boards
-        let mut to_pop = Vec::new();
-        for i in 0..boards.len() {
+        // Find and remove winning boards
+        for i in (0..boards.len()).rev() {
             let marked = boards[i].search_mark(*call);
             if marked && boards[i].has_won() {
-                to_pop.push(i);
+                boards.remove(i);
             }
         }
-
-        // Remove winning boards
-        to_pop.sort();
-        to_pop.into_iter().rev().for_each(|i| {
-            boards.remove(i);
-        });
 
         // Check
         if boards.len() == 1 {
