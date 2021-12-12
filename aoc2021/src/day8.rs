@@ -1,14 +1,11 @@
 const OUTPUT_DIGITS: usize = 4;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct DigitCode {
     pub segs: [bool; 7],
 }
 
 impl DigitCode {
-    fn new() -> Self {
-        Self { segs: [false; 7] }
-    }
     fn from_str(input: &str) -> Self {
         let mut segs = [false; 7];
         input.bytes().for_each(|c| segs[c as usize - 97] = true);
@@ -25,25 +22,15 @@ impl DigitCode {
                 return false;
             }
         }
-        return true;
+        true
     }
 
     fn diff(&self, other: &Self) -> usize {
-        let mut count = 0;
-        for i in 0..7 {
-            if self.segs[i] != other.segs[i] {
-                count += 1;
-            }
-        }
-        count
+        (0..7).filter(|&i| self.segs[i] != other.segs[i]).count()
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct InputLine {
-    digit_codes: [DigitCode; 10],
-    output: [DigitCode; OUTPUT_DIGITS],
-}
+pub type InputLine = ([DigitCode; 10], [DigitCode; OUTPUT_DIGITS]);
 
 #[aoc_generator(day8)]
 fn parse_input(input: &str) -> Vec<InputLine> {
@@ -51,23 +38,24 @@ fn parse_input(input: &str) -> Vec<InputLine> {
         .lines()
         .map(|line| {
             let mut split = line.split(" | ");
-            let digit_codes = split.next().expect("Bad formatting");
-            let output_values = split.next().expect("Bad formatting");
-
-            InputLine {
-                digit_codes: digit_codes
+            (
+                split
+                    .next()
+                    .expect("Bad formatting")
                     .split(" ")
                     .map(DigitCode::from_str)
                     .collect::<Vec<_>>()
                     .try_into()
                     .expect("Wrong number of unique codes"),
-                output: output_values
+                split
+                    .next()
+                    .expect("Bad formatting")
                     .split_whitespace()
                     .map(DigitCode::from_str)
                     .collect::<Vec<_>>()
                     .try_into()
                     .expect("Wrong number of output digits"),
-            }
+            )
         })
         .collect()
 }
@@ -77,7 +65,7 @@ fn solve_part1(input: &[InputLine]) -> usize {
     let input: Vec<InputLine> = input.to_vec();
     input
         .into_iter()
-        .map(|i| i.output.into_iter())
+        .map(|i| i.1.into_iter())
         .flatten()
         .filter(|elem| {
             let length = elem.len();
@@ -91,12 +79,9 @@ fn solve_part2(input: &[InputLine]) -> usize {
     let mut total = 0;
 
     for &line in input.into_iter() {
-        let mut digits = [DigitCode::new(); 10];
+        let mut digits = [DigitCode::default(); 10];
         // Unpack input struct and copy into a shrinkable Vec
-        let InputLine {
-            digit_codes,
-            output,
-        } = line;
+        let (digit_codes, output) = line;
         let mut digit_codes: Vec<DigitCode> = digit_codes.to_vec();
 
         // We use a 3-step method to match the digits
@@ -164,17 +149,13 @@ fn solve_part2(input: &[InputLine]) -> usize {
         total += output
             .into_iter()
             .enumerate()
-            .map(|(pos, od)| {
-                // Poor way of matching into the digits array
-                for (i, c) in digits.iter().enumerate() {
-                    if &od == c {
-                        // Multiply into correct position
-                        let mult = (10_usize).pow(3 - pos as u32);
-                        return i * mult;
-                    }
-                }
-                panic!("No matching digit found");
-            })
+            .map(
+                // Match the digits against our `digits` array, place them and sum them
+                |(pos, od)| match digits.iter().enumerate().find(|(_, c)| &&od == c) {
+                    Some((i, _)) => i * (10_usize).pow(3 - pos as u32),
+                    None => panic!("No matching digit found"),
+                },
+            )
             .sum::<usize>()
     }
 
