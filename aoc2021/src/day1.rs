@@ -5,24 +5,16 @@ pub fn parse_input(input: &str) -> Vec<usize> {
 
 #[aoc(day1, part1)]
 pub fn solve_part1(input: &[usize]) -> usize {
-    let mut count = 0;
-    for i in 1..input.len() {
-        if input[i - 1] < input[i] {
-            count += 1;
-        }
-    }
-    count
+    (1..input.len())
+        .filter(|i| input[i - 1] < input[*i])
+        .count()
 }
 
 #[aoc(day1, part2)]
 pub fn solve_part2(input: &[usize]) -> usize {
-    let mut count = 0;
-    for i in 3..input.len() {
-        if input[i - 3] < input[i] {
-            count += 1;
-        }
-    }
-    count
+    (3..input.len())
+        .filter(|i| input[i - 3] < input[*i])
+        .count()
 }
 
 #[cfg(test)]
