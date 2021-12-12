@@ -53,7 +53,7 @@ fn solve_part1(input: &[usize]) -> usize {
 }
 
 #[aoc(day6, part2)]
-fn solve_part2(input: &[usize]) -> usize {
+fn solve_part2(_input: &[usize]) -> usize {
     unimplemented!()
 }
 

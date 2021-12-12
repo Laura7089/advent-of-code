@@ -9,6 +9,7 @@ pub fn solve_part1(input: &str) -> usize {
     let bit_length = input[0].len();
 
     let input_parsed: Vec<usize> = input.into_iter().map(|l| l.parse().unwrap()).collect();
+    // "Round up" division
     let threshold = input_parsed.len() >> 1;
     println!("Threshold: {}", threshold);
 
