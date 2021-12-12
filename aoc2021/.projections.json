@@ -38,14 +38,14 @@
       "",
       "    #[test]",
       "    fn part1_myinput() {",
-      "        let input = crate::get_input_for_day({});",
-      "        assert_eq!(solve_part1(&parse_input(&input)), unimplemented!());",
+      "        let _input = crate::get_input_for_day({});",
+      "        assert_eq!(solve_part1(&parse_input(&_input)), unimplemented!());",
       "    }",
       "",
       "    #[test]",
       "    fn part2_myinput() {",
-      "        let input = crate::get_input_for_day({});",
-      "        assert_eq!(solve_part2(&parse_input(&input)), unimplemented!());",
+      "        let _input = crate::get_input_for_day({});",
+      "        assert_eq!(solve_part2(&parse_input(&_input)), unimplemented!());",
       "    }",
       "}"
     ]

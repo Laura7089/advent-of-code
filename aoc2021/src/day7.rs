@@ -61,4 +61,10 @@ mod tests {
         let input = crate::get_input_for_day(7);
         assert_eq!(solve_part1(&parse_input(&input)), 336040);
     }
+
+    #[test]
+    fn part2_myinput() {
+        let input = crate::get_input_for_day(7);
+        assert_eq!(solve_part2(&parse_input(&input)), unimplemented!());
+    }
 }
