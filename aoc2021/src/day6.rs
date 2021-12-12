@@ -75,13 +75,13 @@ mod tests {
 
     #[test]
     fn part1_myinput() {
-        let input = crate::get_input_for_day(6);
+        let _input = crate::get_input_for_day(6);
         assert_eq!(solve_part1(&parse_input(&EXAMPLE_INPUT)), unimplemented!());
     }
 
     #[test]
     fn part2_myinput() {
-        let input = crate::get_input_for_day(6);
+        let _input = crate::get_input_for_day(6);
         assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), unimplemented!());
     }
 }
