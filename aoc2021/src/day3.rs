@@ -1,30 +1,39 @@
+use std::cmp::Ordering;
+
 #[inline]
 fn bit_mask(length: usize) -> usize {
     (1 << length) - 1
+}
+
+fn most_common(nums: &[usize], pos: usize) -> usize {
+    // "Round up" halving
+    let threshold = (nums.len() + 1) / 2;
+
+    let count = nums
+        .iter()
+        // Filters out lines with 0 at pos
+        .filter(|&&line| (line >> pos) & 1 == 1)
+        .count();
+
+    match count.cmp(&threshold) {
+        Ordering::Less => 0,
+        Ordering::Equal => 1,
+        Ordering::Greater => 1,
+    }
 }
 
 #[aoc(day3, part1)]
 pub fn solve_part1(input: &str) -> usize {
     let input: Vec<String> = input.lines().map(str::to_string).collect();
     let bit_length = input[0].len();
-
-    let input_parsed: Vec<usize> = input.into_iter().map(|l| l.parse().unwrap()).collect();
-    // "Round up" division
-    let threshold = input_parsed.len() >> 1;
-    println!("Threshold: {}", threshold);
+    let input_parsed: Vec<usize> = input
+        .into_iter()
+        .map(|l| usize::from_str_radix(&l, 2).unwrap())
+        .collect();
 
     let mut gamma_rate = 0;
     for pos in 0..bit_length {
-        // Count the 1s in each position (note this iterates from the "right")
-        let count = input_parsed
-            .iter()
-            // Filters out lines with 0 at pos
-            .filter(|&&line| (line >> pos) & 1 == 1)
-            .count();
-        println!("Counted {} 1s in position {}", count, pos);
-
-        let inc = ((count > threshold) as usize) << pos;
-        println!("Adding {:011b} to gamma rate", inc);
+        let inc = most_common(&input_parsed, pos) << pos;
 
         gamma_rate += inc;
     }
@@ -33,32 +42,39 @@ pub fn solve_part1(input: &str) -> usize {
 }
 
 #[aoc(day3, part2)]
-pub fn solve_part2(_input: &str) -> usize {
-    // let mut oxy_vec: Vec<String> = input.input_raw.lines().map(str::to_string).collect();
-    // let mut co2_vec = oxy_vec.clone();
+pub fn solve_part2(input: &str) -> usize {
+    let input: Vec<String> = input.lines().map(str::to_string).collect();
+    let bit_length = input[0].len();
 
-    // for digit in 0..input.most_common.len() {
-    //     oxy_vec = dbg!(oxy_vec
-    //         .into_iter()
-    //         .filter(|n| n.chars().nth(digit).unwrap() == dbg!(input.most_common[digit]))
-    //         .collect());
-    //     if oxy_vec.len() == 1 {
-    //         break;
-    //     }
-    // }
+    let mut oxy_vec: Vec<usize> = input
+        .into_iter()
+        .map(|l| usize::from_str_radix(&l, 2).unwrap())
+        .collect();
+    let mut co2_vec = oxy_vec.clone();
 
-    // for digit in 0..input.most_common.len() {
-    //     co2_vec = co2_vec
-    //         .into_iter()
-    //         .filter(|n| n.chars().nth(digit).unwrap() != input.most_common[digit])
-    //         .collect();
-    //     if co2_vec.len() == 1 {
-    //         break;
-    //     }
-    // }
+    let mut pos = bit_length;
+    while oxy_vec.len() > 1 {
+        pos -= 1;
+        let mc = most_common(&oxy_vec, pos);
+        oxy_vec = oxy_vec
+            .into_iter()
+            .filter(|n| (n >> pos) & 1 == mc)
+            .collect();
+    }
+    let oxy_rating = oxy_vec[0];
 
-    // usize::from_str_radix(&oxy_vec[0], 2).unwrap() * usize::from_str_radix(&co2_vec[0], 2).unwrap()
-    0
+    let mut pos = bit_length;
+    while co2_vec.len() > 1 {
+        pos -= 1;
+        let mc = most_common(&co2_vec, pos);
+        co2_vec = co2_vec
+            .into_iter()
+            .filter(|n| (n >> pos) & 1 != mc)
+            .collect();
+    }
+    let co2_rating = co2_vec[0];
+
+    oxy_rating * co2_rating
 }
 
 #[cfg(test)]
@@ -97,6 +113,6 @@ mod tests {
     #[test]
     fn part2_myinput() {
         let input = crate::get_input_for_day(3);
-        assert_eq!(solve_part2(&input), unimplemented!());
+        assert_eq!(solve_part2(&input), 6775520);
     }
 }
