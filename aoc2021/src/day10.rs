@@ -1,36 +1,21 @@
 fn is_corrupt(line: &str) -> (Option<char>, Vec<char>) {
     let mut open_stack = Vec::with_capacity(line.len() / 2);
 
-    for char in line.chars() {
-        match char {
-            '{' => open_stack.push('{'),
-            '[' => open_stack.push('['),
-            '(' => open_stack.push('('),
-            '<' => open_stack.push('<'),
-            '}' => {
-                if open_stack[open_stack.len() - 1] != '{' {
-                    return (Some('}'), open_stack);
-                } else {
-                    open_stack.pop();
-                }
-            }
-            ']' => {
-                if open_stack[open_stack.len() - 1] != '[' {
-                    return (Some(']'), open_stack);
-                } else {
-                    open_stack.pop();
-                }
-            }
-            ')' => {
-                if open_stack[open_stack.len() - 1] != '(' {
-                    return (Some(')'), open_stack);
-                } else {
-                    open_stack.pop();
-                }
-            }
-            '>' => {
-                if open_stack[open_stack.len() - 1] != '<' {
-                    return (Some('>'), open_stack);
+    for character in line.chars() {
+        match character {
+            '{' | '[' | '(' | '<' => open_stack.push(character),
+            '}' | ']' | ')' | '>' => {
+                // This could probably be done with ascii maths
+                let opener = match character {
+                    '}' => '{',
+                    ']' => '[',
+                    ')' => '(',
+                    '>' => '<',
+                    _ => panic!(),
+                };
+
+                if open_stack[open_stack.len() - 1] != opener {
+                    return (Some(character), open_stack);
                 } else {
                     open_stack.pop();
                 }
