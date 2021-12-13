@@ -52,8 +52,8 @@ impl<const SIZE: usize> BingoBoard<SIZE> {
 
 #[aoc_generator(day4)]
 pub fn parse_input(input: &str) -> Generated {
-    let called_numbers = input
-        .lines()
+    let mut split = input.split("\n\n");
+    let called_numbers = split
         .next()
         .unwrap()
         .split(",")
@@ -61,12 +61,10 @@ pub fn parse_input(input: &str) -> Generated {
         .collect::<Result<Vec<usize>, _>>()
         .unwrap();
 
-    let boards = input
-        .split("\n\n")
-        .skip(1) // Skip the called numbers list
+    let boards = split
         .map(|board_raw| {
             let mut numbers = [[0_usize; 5]; 5];
-            for (y, row) in board_raw.split("\n").enumerate() {
+            for (y, row) in board_raw.lines().enumerate() {
                 for (x, n) in row.split_whitespace().enumerate() {
                     numbers[y][x] = n.parse().unwrap();
                 }
@@ -101,11 +99,14 @@ pub fn solve_part1(input: &Generated) -> usize {
 #[aoc(day4, part2)]
 pub fn solve_part2(input: &Generated) -> usize {
     let mut boards = input.1.clone();
+    let mut winner = None;
+    let (calls, _) = input;
+    let mut exit_call = 0;
 
-    for call in input.0.iter() {
+    for calli in 0..calls.iter().len() {
         // Find and remove winning boards
         for i in (0..boards.len()).rev() {
-            let marked = boards[i].search_mark(*call);
+            let marked = boards[i].search_mark(calls[calli]);
             if marked && boards[i].has_won() {
                 boards.remove(i);
             }
@@ -113,11 +114,23 @@ pub fn solve_part2(input: &Generated) -> usize {
 
         // Check
         if boards.len() == 1 {
-            return boards[0].total_unmarked() * call;
+            winner = Some(boards[0]);
+            exit_call = calli;
+            break;
         }
     }
 
-    panic!("No one won before we ran out of calls!")
+    match winner {
+        Some(mut winner) => {
+            for call in calls.into_iter().skip(exit_call) {
+                if winner.search_mark(*call) && winner.has_won() {
+                    return winner.total_unmarked() * call;
+                }
+            }
+        }
+        None => panic!("No one won before we ran out of calls!"),
+    }
+    panic!("The last board didn't win before the calls ran out!");
 }
 
 #[cfg(test)]
@@ -237,6 +250,6 @@ mod tests {
     #[test]
     fn part2_myinput() {
         let input = crate::get_input_for_day(4);
-        assert_eq!(solve_part2(&parse_input(&input)), unimplemented!());
+        assert_eq!(solve_part2(&parse_input(&input)), 2730);
     }
 }
