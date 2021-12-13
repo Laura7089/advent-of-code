@@ -44,8 +44,45 @@ pub fn solve_part1(input: &[Line]) -> usize {
 }
 
 #[aoc(day5, part2)]
-pub fn solve_part2(_input: &[Line]) -> usize {
-    0
+pub fn solve_part2(input: &[Line]) -> usize {
+    let size_limit = input.iter().flatten().flatten().max().unwrap() + 1;
+    println!("{}", size_limit);
+    let mut field = vec![vec![0_usize; size_limit]; size_limit];
+
+    for line in input.iter() {
+        let (x0, x1) = (line[0][0], line[1][0]);
+        let (y0, y1) = (line[0][1], line[1][1]);
+
+        match (x0.cmp(&x1), y0.cmp(&y1)) {
+            // Vertical
+            (Ordering::Equal, Ordering::Less) => (y0..=y1).for_each(|y| field[x0][y] += 1),
+            (Ordering::Equal, Ordering::Greater) => (y1..=y0).for_each(|y| field[x0][y] += 1),
+            // Horizontal
+            (Ordering::Less, Ordering::Equal) => (x0..=x1).for_each(|x| field[x][y0] += 1),
+            (Ordering::Greater, Ordering::Equal) => (x1..=x0).for_each(|x| field[x][y0] += 1),
+            // Up Diagonals
+            (Ordering::Less, Ordering::Less) => {
+                let line_len = y1 - y0;
+                (0..=line_len).for_each(|i| field[x0 + i][y0 + i] += 1);
+            }
+            (Ordering::Greater, Ordering::Less) => {
+                let line_len = y1 - y0;
+                (0..=line_len).for_each(|i| field[x0 - i][y0 + i] += 1);
+            }
+            // Down Diagonals
+            (Ordering::Less, Ordering::Greater) => {
+                let line_len = y0 - y1;
+                (0..=line_len).for_each(|i| field[x0 + i][y0 - i] += 1);
+            }
+            (Ordering::Greater, Ordering::Greater) => {
+                let line_len = y0 - y1;
+                (0..=line_len).for_each(|i| field[x0 - i][y0 - i] += 1);
+            }
+            _ => (),
+        }
+    }
+
+    field.iter().flatten().filter(|c| c > &&1).count()
 }
 
 #[cfg(test)]
@@ -101,6 +138,6 @@ mod tests {
     #[test]
     fn part2_myinput() {
         let input = crate::get_input_for_day(5);
-        assert_eq!(solve_part2(&parse_input(&input)), unimplemented!());
+        assert_eq!(solve_part2(&parse_input(&input)), 22083);
     }
 }
