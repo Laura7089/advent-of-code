@@ -1,4 +1,10 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
+use std::ops::{Index, Mul};
+
+const NUM_LARGEST: usize = 3;
+
+type Idx = (usize, usize);
 
 #[derive(Debug, Clone)]
 struct CompressedField<T> {
@@ -7,26 +13,26 @@ struct CompressedField<T> {
 }
 
 impl<T: Copy> CompressedField<T> {
-    fn adjacents(&self, x: usize, y: usize) -> [Option<T>; 4] {
+    fn adjacents(&self, x: usize, y: usize) -> [Option<Idx>; 4] {
         // Members of this array are the adjacent squares, clockwise from above
         let mut adjacents = [None; 4];
         assert!(x < self.row_len && y < self.height());
 
         match (x.cmp(&0), x.cmp(&(self.row_len - 1))) {
-            (Ordering::Equal, _) => adjacents[1] = Some(self[(x + 1, y)]),
-            (_, Ordering::Equal) => adjacents[3] = Some(self[(x - 1, y)]),
+            (Ordering::Equal, _) => adjacents[1] = Some((x + 1, y)),
+            (_, Ordering::Equal) => adjacents[3] = Some((x - 1, y)),
             _ => {
-                adjacents[1] = Some(self[(x + 1, y)]);
-                adjacents[3] = Some(self[(x - 1, y)])
+                adjacents[1] = Some((x + 1, y));
+                adjacents[3] = Some((x - 1, y))
             }
         }
 
         match (y.cmp(&0), y.cmp(&(self.height() - 1))) {
-            (Ordering::Equal, _) => adjacents[0] = Some(self[(x, y + 1)]),
-            (_, Ordering::Equal) => adjacents[2] = Some(self[(x, y - 1)]),
+            (Ordering::Equal, _) => adjacents[0] = Some((x, y + 1)),
+            (_, Ordering::Equal) => adjacents[2] = Some((x, y - 1)),
             _ => {
-                adjacents[0] = Some(self[(x, y + 1)]);
-                adjacents[2] = Some(self[(x, y - 1)])
+                adjacents[0] = Some((x, y + 1));
+                adjacents[2] = Some((x, y - 1))
             }
         }
 
@@ -40,7 +46,30 @@ impl<T> CompressedField<T> {
     }
 }
 
-impl<T> std::ops::Index<(usize, usize)> for CompressedField<T> {
+impl<T: PartialOrd + Copy> CompressedField<T> {
+    fn low_points(&self) -> Vec<Idx> {
+        let mut low_points = Vec::with_capacity(self.height());
+
+        for y in 0..self.height() {
+            for x in 0..self.row_len {
+                let current = self[(x, y)];
+                let is_low_point = self
+                    .adjacents(x, y)
+                    .iter()
+                    .filter_map(|p| *p)
+                    .all(|point| self[point] > current);
+
+                if is_low_point {
+                    low_points.push((x, y));
+                }
+            }
+        }
+
+        low_points
+    }
+}
+
+impl<T> Index<(usize, usize)> for CompressedField<T> {
     type Output = T;
 
     fn index(&self, (x, y): (usize, usize)) -> &Self::Output {
@@ -66,29 +95,53 @@ fn parse_input(input: &str) -> CompressedField<usize> {
 
 #[aoc(day9, part1)]
 fn solve_part1(input: &CompressedField<usize>) -> usize {
-    let mut total_risk = 0;
+    let low_points = input.low_points();
+    low_points.iter().map(|i| input[*i]).sum::<usize>() + low_points.len()
+}
 
-    for y in 0..input.height() {
-        for x in 0..input.row_len {
-            let current = input[(x, y)];
-            let is_low_point = input
-                .adjacents(x, y)
-                .iter()
-                .filter_map(|p| *p)
-                .all(|point| point > current);
+#[aoc(day9, part2)]
+fn solve_part2(input: &CompressedField<usize>) -> usize {
+    let mut largest_sizes = [0_usize; NUM_LARGEST];
 
-            if is_low_point {
-                total_risk += current + 1;
+    for (lx, ly) in input.low_points().into_iter() {
+        // Note: Use the field height as a capacity so it scales correctly
+        // Stores the final basin
+        let mut basin = HashSet::with_capacity(input.height());
+        // Stores the uninspected edges
+        let mut basin_edge = Vec::with_capacity(input.height());
+        basin.insert((lx, ly));
+        basin_edge.push((lx, ly));
+
+        // Look through the outer edge of the basin
+        while let Some((x, y)) = basin_edge.pop() {
+            let current_val = input[(x, y)];
+
+            // Iterate through the squares adjacent to it
+            for adj in input.adjacents(x, y).into_iter().filter_map(|p| p) {
+                let adj_val = input[adj];
+                // If:
+                // - it's not 9
+                // - it's higher than the current square
+                // - we haven't already recorded it
+                if adj_val != 9 && current_val < adj_val && !basin.contains(&adj) {
+                    basin.insert(adj);
+                    basin_edge.push(adj);
+                }
+            }
+        }
+
+        // Add it to the array of largest sizes if it's larger than any of them
+        largest_sizes.sort();
+        for n in largest_sizes.iter_mut() {
+            if &basin.len() > n {
+                *n = basin.len();
+                break;
+            } else {
             }
         }
     }
 
-    total_risk
-}
-
-#[aoc(day9, part2)]
-fn solve_part2(_input: &CompressedField<usize>) -> usize {
-    unimplemented!()
+    largest_sizes.into_iter().reduce(usize::mul).unwrap()
 }
 
 #[cfg(test)]
@@ -120,6 +173,6 @@ mod tests {
     #[test]
     fn part2_myinput() {
         let _input = crate::get_input_for_day(9);
-        assert_eq!(solve_part2(&parse_input(&_input)), unimplemented!());
+        assert_eq!(solve_part2(&parse_input(&_input)), 1092012);
     }
 }
