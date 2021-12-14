@@ -7,21 +7,21 @@ const NUM_STEPS: usize = 100;
 
 type Field = ArrayField<u8, WIDTH, HEIGHT>;
 
-fn flash(idx: Idx, field: &mut Field, flashed: &mut HashSet<Idx>) -> usize {
+fn try_flash(idx: Idx, field: &mut Field) -> usize {
     let mut flashes = 0;
 
-    if field[idx] > 9 && !flashed.contains(&idx) {
+    if field[idx] > 9 {
         // Flash!
         field[idx] = 0;
-        flashed.insert(idx);
         flashes += 1;
 
         // Increment and check adjacents
-        for adj in field.adjacents_diag(idx).into_iter().filter_map(|i| i) {
-            if !flashed.contains(&adj) {
+        for adj in field.adjacents(idx).into_iter().filter_map(|i| i) {
+            // Don't inc things that have already flashed
+            if field[adj] != 0 {
                 field[adj] += 1;
             }
-            flashes += flash(adj, field, flashed);
+            flashes += try_flash(adj, field);
         }
     }
 
@@ -59,11 +59,9 @@ fn solve_part1(input: &Field) -> usize {
             .flat_map(|l| l.iter_mut())
             .for_each(|n| *n += 1);
 
-        let mut flashed = HashSet::new();
-
         for x in 0..WIDTH {
             for y in 0..HEIGHT {
-                flashes += flash((x, y), &mut field, &mut flashed);
+                flashes += try_flash((x, y), &mut field);
             }
         }
     }
@@ -74,12 +72,15 @@ fn solve_part1(input: &Field) -> usize {
 #[aoc(day11, part2)]
 fn solve_part2(input: &Field) -> usize {
     let mut field = input.clone();
-    let mut flashed = HashSet::new();
     let mut day = 0;
 
-    while flashed.len() != WIDTH * HEIGHT {
-        // Set up the day
-        flashed = HashSet::new();
+    // Apparently this is faster than a hashmap
+    while !field
+        .field
+        .iter()
+        .flat_map(|c| c.iter())
+        .all(|n| n == &0_u8)
+    {
         day += 1;
 
         // Increment all octopi
@@ -91,7 +92,7 @@ fn solve_part2(input: &Field) -> usize {
 
         for x in 0..WIDTH {
             for y in 0..HEIGHT {
-                flash((x, y), &mut field, &mut flashed);
+                try_flash((x, y), &mut field);
             }
         }
     }

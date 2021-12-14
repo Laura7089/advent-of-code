@@ -15,7 +15,7 @@ pub mod day7;
 pub mod day8;
 pub mod day9;
 
-pub mod compressed_field;
+pub mod field2d;
 
 #[cfg(test)]
 fn get_input_for_day(day: usize) -> String {

@@ -13,6 +13,7 @@ pub fn low_points(field: &CompressedField<usize>) -> Vec<(usize, usize)> {
             let is_low_point = field
                 .adjacents((x, y))
                 .iter()
+                .step_by(2)
                 .filter_map(|p| *p)
                 .all(|point| field[point] > current);
 
@@ -63,7 +64,12 @@ fn solve_part2(input: &CompressedField<usize>) -> usize {
             let current_val = input[(x, y)];
 
             // Iterate through the squares adjacent to it
-            for adj in input.adjacents((x, y)).into_iter().filter_map(|p| p) {
+            for adj in input
+                .adjacents((x, y))
+                .into_iter()
+                .step_by(2)
+                .filter_map(|p| p)
+            {
                 let adj_val = input[adj];
                 // If:
                 // - it's not 9
