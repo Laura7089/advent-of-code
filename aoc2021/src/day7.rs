@@ -1,3 +1,5 @@
+const SEARCH_AREA: [i32; 3] = [-1, 0, 1];
+
 #[aoc_generator(day7)]
 pub fn parse_input(input: &str) -> Vec<usize> {
     input.split(",").map(|n| n.parse().unwrap()).collect()
@@ -24,20 +26,23 @@ pub fn solve_part1(input: &[usize]) -> usize {
 
 #[aoc(day7, part2)]
 pub fn solve_part2(input: &[usize]) -> usize {
-    // Best position is the mean
-    let best_pos = (input.iter().sum::<usize>() as f64 / input.len() as f64).ceil() as usize;
+    // Best position is within SEARCH_AREA + mean
+    let mean = (input.iter().sum::<usize>() as f64 / input.len() as f64).ceil() as usize;
 
-    input
-        .into_iter()
-        .map(|pos| {
-            let dist = if best_pos > *pos {
-                best_pos - pos
-            } else {
-                pos - best_pos
-            };
-            (dist * (dist + 1)) / 2
+    SEARCH_AREA
+        .iter()
+        .map(|offset| {
+            let spot = (mean as i32 + offset) as usize;
+            input
+                .iter()
+                .map(|pos| {
+                    let dist = if spot > *pos { spot - pos } else { pos - spot };
+                    (dist * (dist + 1)) / 2
+                })
+                .sum()
         })
-        .sum()
+        .min()
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -65,6 +70,6 @@ mod tests {
     #[test]
     fn part2_myinput() {
         let input = crate::get_input_for_day(7);
-        assert_eq!(solve_part2(&parse_input(&input)), unimplemented!());
+        assert_eq!(solve_part2(&parse_input(&input)), 94813675);
     }
 }
