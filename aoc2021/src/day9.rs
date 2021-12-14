@@ -14,7 +14,7 @@ struct CompressedField<T> {
 
 impl<T: Copy> CompressedField<T> {
     fn adjacents(&self, x: usize, y: usize) -> [Option<Idx>; 4] {
-        // Members of this array are the adjacent squares, clockwise from above
+        // Members of this are adjacent squares, clockwise from top
         let mut adjacents = [None; 4];
         assert!(x < self.row_len && y < self.height());
 
@@ -69,10 +69,10 @@ impl<T: PartialOrd + Copy> CompressedField<T> {
     }
 }
 
-impl<T> Index<(usize, usize)> for CompressedField<T> {
+impl<T> Index<Idx> for CompressedField<T> {
     type Output = T;
 
-    fn index(&self, (x, y): (usize, usize)) -> &Self::Output {
+    fn index(&self, (x, y): Idx) -> &Self::Output {
         assert!(x < self.row_len);
         assert!(y < self.height());
         &self.map[(y * self.row_len) + x]
@@ -104,11 +104,11 @@ fn solve_part2(input: &CompressedField<usize>) -> usize {
     let mut largest_sizes = [0_usize; NUM_LARGEST];
 
     for (lx, ly) in input.low_points().into_iter() {
-        // Note: Use the field height as a capacity so it scales correctly
+        // Note: Use the field width as a capacity so it scales correctly
         // Stores the final basin
-        let mut basin = HashSet::with_capacity(input.height());
+        let mut basin = HashSet::with_capacity(input.row_len);
         // Stores the uninspected edges
-        let mut basin_edge = Vec::with_capacity(input.height());
+        let mut basin_edge = Vec::with_capacity(input.row_len);
         basin.insert((lx, ly));
         basin_edge.push((lx, ly));
 
