@@ -1,82 +1,28 @@
-use std::cmp::Ordering;
+use crate::compressed_field::CompressedField;
 use std::collections::HashSet;
-use std::ops::{Index, Mul};
+use std::ops::Mul;
 
 const NUM_LARGEST: usize = 3;
 
-type Idx = (usize, usize);
+pub fn low_points(field: &CompressedField<usize>) -> Vec<(usize, usize)> {
+    let mut low_points = Vec::with_capacity(field.height());
 
-#[derive(Debug, Clone)]
-struct CompressedField<T> {
-    pub map: Vec<T>,
-    pub row_len: usize,
-}
+    for y in 0..field.height() {
+        for x in 0..field.row_len {
+            let current = field[(x, y)];
+            let is_low_point = field
+                .adjacents((x, y))
+                .iter()
+                .filter_map(|p| *p)
+                .all(|point| field[point] > current);
 
-impl<T: Copy> CompressedField<T> {
-    fn adjacents(&self, x: usize, y: usize) -> [Option<Idx>; 4] {
-        // Members of this are adjacent squares, clockwise from top
-        let mut adjacents = [None; 4];
-        assert!(x < self.row_len && y < self.height());
-
-        match (x.cmp(&0), x.cmp(&(self.row_len - 1))) {
-            (Ordering::Equal, _) => adjacents[1] = Some((x + 1, y)),
-            (_, Ordering::Equal) => adjacents[3] = Some((x - 1, y)),
-            _ => {
-                adjacents[1] = Some((x + 1, y));
-                adjacents[3] = Some((x - 1, y))
+            if is_low_point {
+                low_points.push((x, y));
             }
         }
-
-        match (y.cmp(&0), y.cmp(&(self.height() - 1))) {
-            (Ordering::Equal, _) => adjacents[0] = Some((x, y + 1)),
-            (_, Ordering::Equal) => adjacents[2] = Some((x, y - 1)),
-            _ => {
-                adjacents[0] = Some((x, y + 1));
-                adjacents[2] = Some((x, y - 1))
-            }
-        }
-
-        adjacents
     }
-}
 
-impl<T> CompressedField<T> {
-    fn height(&self) -> usize {
-        self.map.len() / self.row_len
-    }
-}
-
-impl<T: PartialOrd + Copy> CompressedField<T> {
-    fn low_points(&self) -> Vec<Idx> {
-        let mut low_points = Vec::with_capacity(self.height());
-
-        for y in 0..self.height() {
-            for x in 0..self.row_len {
-                let current = self[(x, y)];
-                let is_low_point = self
-                    .adjacents(x, y)
-                    .iter()
-                    .filter_map(|p| *p)
-                    .all(|point| self[point] > current);
-
-                if is_low_point {
-                    low_points.push((x, y));
-                }
-            }
-        }
-
-        low_points
-    }
-}
-
-impl<T> Index<Idx> for CompressedField<T> {
-    type Output = T;
-
-    fn index(&self, (x, y): Idx) -> &Self::Output {
-        assert!(x < self.row_len);
-        assert!(y < self.height());
-        &self.map[(y * self.row_len) + x]
-    }
+    low_points
 }
 
 #[aoc_generator(day9)]
@@ -95,7 +41,7 @@ fn parse_input(input: &str) -> CompressedField<usize> {
 
 #[aoc(day9, part1)]
 fn solve_part1(input: &CompressedField<usize>) -> usize {
-    let low_points = input.low_points();
+    let low_points = low_points(input);
     low_points.iter().map(|i| input[*i]).sum::<usize>() + low_points.len()
 }
 
@@ -103,7 +49,7 @@ fn solve_part1(input: &CompressedField<usize>) -> usize {
 fn solve_part2(input: &CompressedField<usize>) -> usize {
     let mut largest_sizes = [0_usize; NUM_LARGEST];
 
-    for (lx, ly) in input.low_points().into_iter() {
+    for (lx, ly) in low_points(input).into_iter() {
         // Note: Use the field width as a capacity so it scales correctly
         // Stores the final basin
         let mut basin = HashSet::with_capacity(input.row_len);
@@ -117,7 +63,7 @@ fn solve_part2(input: &CompressedField<usize>) -> usize {
             let current_val = input[(x, y)];
 
             // Iterate through the squares adjacent to it
-            for adj in input.adjacents(x, y).into_iter().filter_map(|p| p) {
+            for adj in input.adjacents((x, y)).into_iter().filter_map(|p| p) {
                 let adj_val = input[adj];
                 // If:
                 // - it's not 9

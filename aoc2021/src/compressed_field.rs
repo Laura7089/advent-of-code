@@ -44,17 +44,17 @@ impl<T> CompressedField<T> {
         // First four are the non-diagonal adjacents
         // Second four are the diagonals, clockwise from top-right
         let mut adjacents = [None; 8];
-        self.adjacents((x, y))
-            .into_iter()
-            .enumerate()
-            .for_each(|(i, n)| adjacents[i] = n);
+        adjacents[..4].clone_from_slice(&self.adjacents((x, y)));
 
-        // TODO: generate an array of bools and iterate the points over it to compress code
+        assert!(x < self.row_len);
+        assert!(y < self.height());
+
+        // TODO: generate an array of bools and iterate the points over it to compress this horror
         match (
             x.cmp(&0),
             x.cmp(&(self.row_len - 1)),
             y.cmp(&0),
-            y.cmp(&(self.row_len - 1)),
+            y.cmp(&(self.height() - 1)),
         ) {
             // Point is in the bottom-left
             (Equal, _, Equal, _) => adjacents[4] = Some((x + 1, y + 1)),
