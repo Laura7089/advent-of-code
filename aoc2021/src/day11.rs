@@ -1,10 +1,13 @@
-use crate::compressed_field::{CompressedField, Idx};
+use crate::field2d::{array_field::ArrayField, Field2D, Idx};
 use std::collections::HashSet;
 
-const DIMENSIONS: (usize, usize) = (10, 10);
+const WIDTH: usize = 10;
+const HEIGHT: usize = 10;
 const NUM_STEPS: usize = 100;
 
-fn flash(idx: Idx, field: &mut CompressedField<u8>, flashed: &mut HashSet<Idx>) -> usize {
+type Field = ArrayField<u8, WIDTH, HEIGHT>;
+
+fn flash(idx: Idx, field: &mut Field, flashed: &mut HashSet<Idx>) -> usize {
     let mut flashes = 0;
 
     if field[idx] > 9 && !flashed.contains(&idx) {
@@ -26,26 +29,40 @@ fn flash(idx: Idx, field: &mut CompressedField<u8>, flashed: &mut HashSet<Idx>) 
 }
 
 #[aoc_generator(day11)]
-fn parse_input(input: &str) -> CompressedField<u8> {
-    CompressedField {
-        map: input.lines().flat_map(str::bytes).map(|n| n - 48).collect(),
-        row_len: DIMENSIONS.0,
+fn parse_input(input: &str) -> Field {
+    Field {
+        field: input
+            .lines()
+            .map(|l| {
+                l.bytes()
+                    .map(|n| n - 48)
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap()
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap(),
     }
 }
 
 #[aoc(day11, part1)]
-fn solve_part1(input: &CompressedField<u8>) -> usize {
+fn solve_part1(input: &Field) -> usize {
     let mut field = input.clone();
     let mut flashes = 0;
 
     for _ in 1..=NUM_STEPS {
         // Increment all octopi
-        field.map.iter_mut().for_each(|n| *n += 1);
+        field
+            .field
+            .iter_mut()
+            .flat_map(|l| l.iter_mut())
+            .for_each(|n| *n += 1);
 
         let mut flashed = HashSet::new();
 
-        for x in 0..DIMENSIONS.0 {
-            for y in 0..DIMENSIONS.1 {
+        for x in 0..WIDTH {
+            for y in 0..HEIGHT {
                 flashes += flash((x, y), &mut field, &mut flashed);
             }
         }
@@ -55,21 +72,25 @@ fn solve_part1(input: &CompressedField<u8>) -> usize {
 }
 
 #[aoc(day11, part2)]
-fn solve_part2(input: &CompressedField<u8>) -> usize {
+fn solve_part2(input: &Field) -> usize {
     let mut field = input.clone();
     let mut flashed = HashSet::new();
     let mut day = 0;
 
-    while flashed.len() != DIMENSIONS.0 * DIMENSIONS.1 {
+    while flashed.len() != WIDTH * HEIGHT {
         // Set up the day
         flashed = HashSet::new();
         day += 1;
 
         // Increment all octopi
-        field.map.iter_mut().for_each(|n| *n += 1);
+        field
+            .field
+            .iter_mut()
+            .flat_map(|l| l.iter_mut())
+            .for_each(|n| *n += 1);
 
-        for x in 0..DIMENSIONS.0 {
-            for y in 0..DIMENSIONS.1 {
+        for x in 0..WIDTH {
+            for y in 0..HEIGHT {
                 flash((x, y), &mut field, &mut flashed);
             }
         }

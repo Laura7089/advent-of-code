@@ -1,4 +1,4 @@
-use crate::compressed_field::CompressedField;
+use crate::field2d::{compressed_field::CompressedField, Field2D};
 use std::collections::HashSet;
 use std::ops::Mul;
 
@@ -8,7 +8,7 @@ pub fn low_points(field: &CompressedField<usize>) -> Vec<(usize, usize)> {
     let mut low_points = Vec::with_capacity(field.height());
 
     for y in 0..field.height() {
-        for x in 0..field.row_len {
+        for x in 0..field.width() {
             let current = field[(x, y)];
             let is_low_point = field
                 .adjacents((x, y))
@@ -29,14 +29,14 @@ pub fn low_points(field: &CompressedField<usize>) -> Vec<(usize, usize)> {
 fn parse_input(input: &str) -> CompressedField<usize> {
     let row_len = input.lines().next().unwrap().len();
 
-    CompressedField {
-        row_len,
-        map: input
+    CompressedField::new(
+        input
             .lines()
             .flat_map(str::bytes)
             .map(|p| p as usize - 48)
             .collect(),
-    }
+        row_len,
+    )
 }
 
 #[aoc(day9, part1)]
@@ -52,9 +52,9 @@ fn solve_part2(input: &CompressedField<usize>) -> usize {
     for (lx, ly) in low_points(input).into_iter() {
         // Note: Use the field width as a capacity so it scales correctly
         // Stores the final basin
-        let mut basin = HashSet::with_capacity(input.row_len);
+        let mut basin = HashSet::with_capacity(input.width());
         // Stores the uninspected edges
-        let mut basin_edge = Vec::with_capacity(input.row_len);
+        let mut basin_edge = Vec::with_capacity(input.width());
         basin.insert((lx, ly));
         basin_edge.push((lx, ly));
 
