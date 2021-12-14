@@ -38,7 +38,7 @@ fn solve_part1(input: &CompressedField<u8>) -> usize {
     let mut field = input.clone();
     let mut flashes = 0;
 
-    for day in 1..=NUM_STEPS {
+    for _ in 1..=NUM_STEPS {
         // Increment all octopi
         field.map.iter_mut().for_each(|n| *n += 1);
 
