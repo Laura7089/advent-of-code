@@ -1,6 +1,4 @@
-use std::cmp::Ordering;
-
-#[inline]
+#[inline(always)]
 fn bit_mask(length: usize) -> usize {
     (1 << length) - 1
 }
@@ -15,20 +13,15 @@ fn most_common(nums: &[usize], pos: usize) -> usize {
         .filter(|&&line| (line >> pos) & 1 == 1)
         .count();
 
-    match count.cmp(&threshold) {
-        Ordering::Less => 0,
-        Ordering::Equal => 1,
-        Ordering::Greater => 1,
-    }
+    (count >= threshold) as usize
 }
 
 #[aoc(day3, part1)]
 pub fn solve_part1(input: &str) -> usize {
-    let input: Vec<String> = input.lines().map(str::to_string).collect();
-    let bit_length = input[0].len();
+    let bit_length = input.lines().next().unwrap().len();
     let input_parsed: Vec<usize> = input
-        .into_iter()
-        .map(|l| usize::from_str_radix(&l, 2).unwrap())
+        .lines()
+        .map(|l| usize::from_str_radix(l, 2).unwrap())
         .collect();
 
     let mut gamma_rate = 0;
@@ -43,12 +36,11 @@ pub fn solve_part1(input: &str) -> usize {
 
 #[aoc(day3, part2)]
 pub fn solve_part2(input: &str) -> usize {
-    let input: Vec<String> = input.lines().map(str::to_string).collect();
-    let bit_length = input[0].len();
+    let bit_length = input.lines().next().unwrap().len();
 
     let mut oxy_vec: Vec<usize> = input
-        .into_iter()
-        .map(|l| usize::from_str_radix(&l, 2).unwrap())
+        .lines()
+        .map(|l| usize::from_str_radix(l, 2).unwrap())
         .collect();
     let mut co2_vec = oxy_vec.clone();
 
