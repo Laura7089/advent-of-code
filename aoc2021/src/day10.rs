@@ -21,7 +21,7 @@ fn is_corrupt(line: &str) -> (Option<u8>, Vec<u8>) {
 }
 
 #[aoc(day10, part1)]
-fn solve_part1(input: &str) -> usize {
+pub fn solve_part1(input: &str) -> usize {
     input
         .lines()
         .filter_map(|c| is_corrupt(c).0)
@@ -36,7 +36,7 @@ fn solve_part1(input: &str) -> usize {
 }
 
 #[aoc(day10, part2)]
-fn solve_part2(input: &str) -> usize {
+pub fn solve_part2(input: &str) -> usize {
     let incomplete: Vec<Vec<u8>> = input
         .lines()
         .map(is_corrupt)

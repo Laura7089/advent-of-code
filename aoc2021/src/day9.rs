@@ -26,7 +26,7 @@ pub fn low_points(field: &CompressedField<usize>) -> Vec<(usize, usize)> {
 }
 
 #[aoc_generator(day9)]
-fn parse_input(input: &str) -> CompressedField<usize> {
+pub fn parse_input(input: &str) -> CompressedField<usize> {
     let row_len = input.lines().next().unwrap().len();
 
     CompressedField::new(
@@ -40,13 +40,13 @@ fn parse_input(input: &str) -> CompressedField<usize> {
 }
 
 #[aoc(day9, part1)]
-fn solve_part1(input: &CompressedField<usize>) -> usize {
+pub fn solve_part1(input: &CompressedField<usize>) -> usize {
     let low_points = low_points(input);
     low_points.iter().map(|i| input[*i]).sum::<usize>() + low_points.len()
 }
 
 #[aoc(day9, part2)]
-fn solve_part2(input: &CompressedField<usize>) -> usize {
+pub fn solve_part2(input: &CompressedField<usize>) -> usize {
     let mut largest_sizes = [0_usize; NUM_LARGEST];
 
     for (lx, ly) in low_points(input).into_iter() {

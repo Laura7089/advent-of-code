@@ -33,7 +33,7 @@ impl DigitCode {
 pub type InputLine = ([DigitCode; 10], [DigitCode; OUTPUT_DIGITS]);
 
 #[aoc_generator(day8)]
-fn parse_input(input: &str) -> Vec<InputLine> {
+pub fn parse_input(input: &str) -> Vec<InputLine> {
     input
         .lines()
         .map(|line| {
@@ -61,7 +61,7 @@ fn parse_input(input: &str) -> Vec<InputLine> {
 }
 
 #[aoc(day8, part1)]
-fn solve_part1(input: &[InputLine]) -> usize {
+pub fn solve_part1(input: &[InputLine]) -> usize {
     let input: Vec<InputLine> = input.to_vec();
     input
         .into_iter()
@@ -74,7 +74,7 @@ fn solve_part1(input: &[InputLine]) -> usize {
 }
 
 #[aoc(day8, part2)]
-fn solve_part2(input: &[InputLine]) -> usize {
+pub fn solve_part2(input: &[InputLine]) -> usize {
     let mut total = 0;
 
     for &line in input.into_iter() {

@@ -2,7 +2,10 @@ const SEARCH_AREA: [i32; 3] = [-1, 0, 1];
 
 #[aoc_generator(day7)]
 pub fn parse_input(input: &str) -> Vec<usize> {
-    input.split(",").map(|n| n.parse().unwrap()).collect()
+    input
+        .split(",")
+        .map(|n| n.trim().parse().unwrap())
+        .collect()
 }
 
 #[aoc(day7, part1)]

@@ -28,7 +28,7 @@ fn try_flash(idx: Idx, field: &mut Field) -> usize {
 }
 
 #[aoc_generator(day11)]
-fn parse_input(input: &str) -> Field {
+pub fn parse_input(input: &str) -> Field {
     Field {
         field: input
             .lines()
@@ -46,7 +46,7 @@ fn parse_input(input: &str) -> Field {
 }
 
 #[aoc(day11, part1)]
-fn solve_part1(input: &Field) -> usize {
+pub fn solve_part1(input: &Field) -> usize {
     let mut field = input.clone();
     let mut flashes = 0;
 
@@ -69,7 +69,7 @@ fn solve_part1(input: &Field) -> usize {
 }
 
 #[aoc(day11, part2)]
-fn solve_part2(input: &Field) -> usize {
+pub fn solve_part2(input: &Field) -> usize {
     let mut field = input.clone();
     let mut day = 0;
 

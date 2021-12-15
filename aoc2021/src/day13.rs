@@ -9,7 +9,7 @@ pub enum Fold {
 type Input = (Vec<[usize; 2]>, Vec<Fold>);
 
 #[aoc_generator(day13)]
-fn parse_input(input: &str) -> Input {
+pub fn parse_input(input: &str) -> Input {
     let mut split = input.split("\n\n");
 
     let pairs: Vec<[usize; 2]> = split
@@ -45,9 +45,9 @@ fn parse_input(input: &str) -> Input {
 }
 
 #[aoc(day13, part1)]
-fn solve_part1((points, instrs): &Input) -> usize {
+pub fn solve_part1((points, instrs): &Input) -> usize {
     let max = points.iter().flat_map(|p| p.iter()).max().unwrap() + 1;
-    let mut grid = CompressedField::new(vec![false; max.pow(2)], *max);
+    let mut grid = CompressedField::new(vec![false; max.pow(2)], max);
 
     points.iter().for_each(|[x, y]| grid[(*x, *y)] = true);
 
@@ -66,7 +66,7 @@ fn solve_part1((points, instrs): &Input) -> usize {
 }
 
 #[aoc(day13, part2)]
-fn solve_part2(_input: &Input) -> usize {
+pub fn solve_part2(_input: &Input) -> usize {
     unimplemented!()
 }
 
