@@ -40,6 +40,7 @@ pub mod compressed_field {
 
     impl<T> CompressedField<T> {
         pub fn new(field: Vec<T>, row_len: usize) -> Self {
+            assert!(row_len <= field.len().pow(2));
             Self { field, row_len }
         }
     }
