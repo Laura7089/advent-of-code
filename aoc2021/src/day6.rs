@@ -45,7 +45,7 @@ fn solve_part1(input: &[usize]) -> usize {
             "Fish {} will spawn {} times in the coming {} days",
             fish, num_spawns, DAY_COUNT
         );
-        let children = 2_usize.pow(num_spawns as u32);
+        let children = 2_usize.pow(num_spawns as u32 - 1);
 
         total += children;
     }
