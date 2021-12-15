@@ -1,5 +1,4 @@
 use crate::field2d::{array_field::ArrayField, Field2D, Idx};
-use std::collections::HashSet;
 
 const WIDTH: usize = 10;
 const HEIGHT: usize = 10;

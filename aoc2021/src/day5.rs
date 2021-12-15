@@ -1,4 +1,5 @@
-use std::cmp::Ordering;
+use crate::field2d::compressed_field::CompressedField;
+use std::cmp::Ordering::*;
 
 type Line = [[usize; 2]; 2];
 
@@ -23,7 +24,7 @@ pub fn parse_input(input: &str) -> Vec<Line> {
 #[aoc(day5, part1)]
 pub fn solve_part1(input: &[Line]) -> usize {
     let size_limit = input.iter().flatten().flatten().max().unwrap() + 1;
-    let mut field = vec![vec![0_usize; size_limit]; size_limit];
+    let mut field = CompressedField::new(vec![0_usize; size_limit.pow(2)], size_limit);
 
     for line in input.iter() {
         let (x0, x1) = (line[0][0], line[1][0]);
@@ -31,23 +32,22 @@ pub fn solve_part1(input: &[Line]) -> usize {
 
         match (x0.cmp(&x1), y0.cmp(&y1)) {
             // Vertical
-            (Ordering::Equal, Ordering::Less) => (y0..=y1).for_each(|y| field[x0][y] += 1),
-            (Ordering::Equal, Ordering::Greater) => (y1..=y0).for_each(|y| field[x0][y] += 1),
+            (Equal, Less) => (y0..=y1).for_each(|y| field[(x0, y)] += 1),
+            (Equal, Greater) => (y1..=y0).for_each(|y| field[(x0, y)] += 1),
             // Horizontal
-            (Ordering::Less, Ordering::Equal) => (x0..=x1).for_each(|x| field[x][y0] += 1),
-            (Ordering::Greater, Ordering::Equal) => (x1..=x0).for_each(|x| field[x][y0] += 1),
+            (Less, Equal) => (x0..=x1).for_each(|x| field[(x, y0)] += 1),
+            (Greater, Equal) => (x1..=x0).for_each(|x| field[(x, y0)] += 1),
             _ => (),
         }
     }
 
-    field.iter().flatten().filter(|c| c > &&1).count()
+    field.field.iter().filter(|c| c > &&1).count()
 }
 
 #[aoc(day5, part2)]
 pub fn solve_part2(input: &[Line]) -> usize {
     let size_limit = input.iter().flatten().flatten().max().unwrap() + 1;
-    println!("{}", size_limit);
-    let mut field = vec![vec![0_usize; size_limit]; size_limit];
+    let mut field = CompressedField::new(vec![0_usize; size_limit * size_limit], size_limit);
 
     for line in input.iter() {
         let (x0, x1) = (line[0][0], line[1][0]);
@@ -55,34 +55,34 @@ pub fn solve_part2(input: &[Line]) -> usize {
 
         match (x0.cmp(&x1), y0.cmp(&y1)) {
             // Vertical
-            (Ordering::Equal, Ordering::Less) => (y0..=y1).for_each(|y| field[x0][y] += 1),
-            (Ordering::Equal, Ordering::Greater) => (y1..=y0).for_each(|y| field[x0][y] += 1),
+            (Equal, Less) => (y0..=y1).for_each(|y| field[(x0, y)] += 1),
+            (Equal, Greater) => (y1..=y0).for_each(|y| field[(x0, y)] += 1),
             // Horizontal
-            (Ordering::Less, Ordering::Equal) => (x0..=x1).for_each(|x| field[x][y0] += 1),
-            (Ordering::Greater, Ordering::Equal) => (x1..=x0).for_each(|x| field[x][y0] += 1),
+            (Less, Equal) => (x0..=x1).for_each(|x| field[(x, y0)] += 1),
+            (Greater, Equal) => (x1..=x0).for_each(|x| field[(x, y0)] += 1),
             // Up Diagonals
-            (Ordering::Less, Ordering::Less) => {
+            (Less, Less) => {
                 let line_len = y1 - y0;
-                (0..=line_len).for_each(|i| field[x0 + i][y0 + i] += 1);
+                (0..=line_len).for_each(|i| field[(x0 + i, y0 + i)] += 1);
             }
-            (Ordering::Greater, Ordering::Less) => {
+            (Greater, Less) => {
                 let line_len = y1 - y0;
-                (0..=line_len).for_each(|i| field[x0 - i][y0 + i] += 1);
+                (0..=line_len).for_each(|i| field[(x0 - i, y0 + i)] += 1);
             }
             // Down Diagonals
-            (Ordering::Less, Ordering::Greater) => {
+            (Less, Greater) => {
                 let line_len = y0 - y1;
-                (0..=line_len).for_each(|i| field[x0 + i][y0 - i] += 1);
+                (0..=line_len).for_each(|i| field[(x0 + i, y0 - i)] += 1);
             }
-            (Ordering::Greater, Ordering::Greater) => {
+            (Greater, Greater) => {
                 let line_len = y0 - y1;
-                (0..=line_len).for_each(|i| field[x0 - i][y0 - i] += 1);
+                (0..=line_len).for_each(|i| field[(x0 - i, y0 - i)] += 1);
             }
             _ => (),
         }
     }
 
-    field.iter().flatten().filter(|c| c > &&1).count()
+    field.field.iter().filter(|c| c > &&1).count()
 }
 
 #[cfg(test)]

@@ -1,18 +1,11 @@
-fn is_corrupt(line: &str) -> (Option<char>, Vec<char>) {
+fn is_corrupt(line: &str) -> (Option<u8>, Vec<u8>) {
     let mut open_stack = Vec::with_capacity(line.len() / 2);
 
-    for character in line.chars() {
+    for character in line.bytes() {
         match character {
-            '{' | '[' | '(' | '<' => open_stack.push(character),
-            '}' | ']' | ')' | '>' => {
-                // This could probably be done with ascii maths
-                let opener = match character {
-                    '}' => '{',
-                    ']' => '[',
-                    ')' => '(',
-                    '>' => '<',
-                    _ => panic!(),
-                };
+            b'{' | b'[' | b'(' | b'<' => open_stack.push(character),
+            b'}' | b']' | b')' | b'>' => {
+                let opener = (character - 2).clamp(40, 125);
 
                 if open_stack[open_stack.len() - 1] != opener {
                     return (Some(character), open_stack);
@@ -33,10 +26,10 @@ fn solve_part1(input: &str) -> usize {
         .lines()
         .filter_map(|c| is_corrupt(c).0)
         .map(|c| match c {
-            ')' => 3,
-            ']' => 57,
-            '}' => 1197,
-            '>' => 25137,
+            b')' => 3,
+            b']' => 57,
+            b'}' => 1197,
+            b'>' => 25137,
             _ => panic!(),
         })
         .sum()
@@ -44,7 +37,7 @@ fn solve_part1(input: &str) -> usize {
 
 #[aoc(day10, part2)]
 fn solve_part2(input: &str) -> usize {
-    let incomplete: Vec<Vec<char>> = input
+    let incomplete: Vec<Vec<u8>> = input
         .lines()
         .map(is_corrupt)
         // Select only non-corrupt ones
@@ -54,18 +47,16 @@ fn solve_part2(input: &str) -> usize {
     let mut scores = vec![0; incomplete.len()];
 
     for (i, stack) in incomplete.into_iter().enumerate() {
-        let mut score = 0;
-        for ch in stack.into_iter().rev() {
-            score *= 5;
-            score += match ch {
-                '(' => 1,
-                '[' => 2,
-                '{' => 3,
-                '<' => 4,
-                _ => panic!(),
-            };
-        }
-        scores[i] = score;
+        scores[i] = stack.into_iter().rev().fold(0, |s, c| {
+            (s * 5)
+                + match c {
+                    b'(' => 1,
+                    b'[' => 2,
+                    b'{' => 3,
+                    b'<' => 4,
+                    _ => panic!(),
+                }
+        });
     }
 
     scores.sort();

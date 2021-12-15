@@ -1,6 +1,5 @@
 use crate::field2d::{compressed_field::CompressedField, Field2D};
 use std::collections::HashSet;
-use std::ops::Mul;
 
 const NUM_LARGEST: usize = 3;
 
@@ -93,7 +92,7 @@ fn solve_part2(input: &CompressedField<usize>) -> usize {
         }
     }
 
-    largest_sizes.into_iter().reduce(usize::mul).unwrap()
+    largest_sizes.into_iter().product()
 }
 
 #[cfg(test)]
