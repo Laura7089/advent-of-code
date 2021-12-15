@@ -54,11 +54,11 @@ pub fn solve_part1((points, instrs): &Input) -> usize {
     for ins in instrs.iter() {
         match ins {
             Fold::X(divide) => {
-                for x in 0..=(max - divide) {
-                    for y in 0..=max {}
+                for _x in 0..=(max - divide) {
+                    for _y in 0..=max {}
                 }
             }
-            Fold::Y(divide) => {}
+            Fold::Y(_divide) => {}
         }
     }
 

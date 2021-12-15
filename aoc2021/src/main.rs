@@ -1,7 +1,7 @@
 use aoc2021::*;
 use std::env;
 use std::fs;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 fn main() {
     let input_dir = env::args().nth(1).unwrap_or("input/2021".to_string());
@@ -30,7 +30,7 @@ fn main() {
             Box::new(|s| day5::solve_part1(&day5::parse_input(s))),
             Box::new(|s| day5::solve_part2(&day5::parse_input(s))),
         ),
-        (Box::new(|s| 0), Box::new(|s| 0)),
+        (Box::new(|_| 0), Box::new(|_| 0)),
         (
             Box::new(|s| day7::solve_part1(&day7::parse_input(s))),
             Box::new(|s| day7::solve_part2(&day7::parse_input(s))),
