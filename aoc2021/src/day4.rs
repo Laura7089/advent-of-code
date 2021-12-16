@@ -103,7 +103,7 @@ pub fn solve_part2(input: &Generated) -> usize {
     let (calls, _) = input;
     let mut exit_call = 0;
 
-    for calli in 0..calls.iter().len() {
+    for calli in 0..calls.len() {
         // Find and remove winning boards
         for i in (0..boards.len()).rev() {
             let marked = boards[i].search_mark(calls[calli]);
@@ -122,7 +122,7 @@ pub fn solve_part2(input: &Generated) -> usize {
 
     match winner {
         Some(mut winner) => {
-            for call in calls.into_iter().skip(exit_call) {
+            for call in calls.iter().skip(exit_call) {
                 if winner.search_mark(*call) && winner.has_won() {
                     return winner.total_unmarked() * call;
                 }

@@ -7,7 +7,7 @@ pub enum Cave {
 }
 
 impl Cave {
-    pub fn from_str(id: &str) -> Self {
+    pub fn from_snippet(id: &str) -> Self {
         match id {
             "start" => Self::Start,
             "end" => Self::End,
@@ -25,8 +25,8 @@ fn parse_input(input: &str) -> Vec<(Cave, Cave)> {
         .map(|line| {
             let mut split = line.split('-');
             (
-                Cave::from_str(split.next().unwrap()),
-                Cave::from_str(split.next().unwrap()),
+                Cave::from_snippet(split.next().unwrap()),
+                Cave::from_snippet(split.next().unwrap()),
             )
         })
         .collect()

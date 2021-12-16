@@ -3,57 +3,56 @@ use std::env;
 use std::fs;
 use std::time::Instant;
 
+type DayBox = Box<dyn FnOnce(&str) -> usize>;
+
 fn main() {
     let input_dir = env::args().nth(1).unwrap_or("input/2021".to_string());
 
-    let solves: Vec<(
-        Box<dyn FnOnce(&str) -> usize>,
-        Box<dyn FnOnce(&str) -> usize>,
-    )> = vec![
-        (
+    let solves: Vec<[DayBox; 2]> = vec![
+        [
             Box::new(|s| day1::solve_part1(&day1::parse_input(s))),
             Box::new(|s| day1::solve_part2(&day1::parse_input(s))),
-        ),
-        (
+        ],
+        [
             Box::new(|s| day2::solve_part1(&day2::parse_input(s))),
             Box::new(|s| day2::solve_part2(&day2::parse_input(s))),
-        ),
-        (
+        ],
+        [
             Box::new(|s| day3::solve_part1(s)),
             Box::new(|s| day3::solve_part2(s)),
-        ),
-        (
+        ],
+        [
             Box::new(|s| day4::solve_part1(&day4::parse_input(s))),
             Box::new(|s| day4::solve_part2(&day4::parse_input(s))),
-        ),
-        (
+        ],
+        [
             Box::new(|s| day5::solve_part1(&day5::parse_input(s))),
             Box::new(|s| day5::solve_part2(&day5::parse_input(s))),
-        ),
-        (Box::new(|_| 0), Box::new(|_| 0)),
-        (
+        ],
+        [Box::new(|_| 0), Box::new(|_| 0)],
+        [
             Box::new(|s| day7::solve_part1(&day7::parse_input(s))),
             Box::new(|s| day7::solve_part2(&day7::parse_input(s))),
-        ),
-        (
+        ],
+        [
             Box::new(|s| day8::solve_part1(&day8::parse_input(s))),
             Box::new(|s| day8::solve_part2(&day8::parse_input(s))),
-        ),
-        (
+        ],
+        [
             Box::new(|s| day9::solve_part1(&day9::parse_input(s))),
             Box::new(|s| day9::solve_part2(&day9::parse_input(s))),
-        ),
-        (
+        ],
+        [
             Box::new(|s| day10::solve_part1(s)),
             Box::new(|s| day10::solve_part2(s)),
-        ),
-        (
+        ],
+        [
             Box::new(|s| day11::solve_part1(&day11::parse_input(s))),
             Box::new(|s| day11::solve_part2(&day11::parse_input(s))),
-        ),
+        ],
     ];
 
-    for (day, (part1, part2)) in solves.into_iter().enumerate() {
+    for (day, [part1, part2]) in solves.into_iter().enumerate() {
         let filename = format!("{}/day{}.txt", input_dir, day + 1);
         let mut input_string = fs::read_to_string(filename).expect("No data found!");
 
