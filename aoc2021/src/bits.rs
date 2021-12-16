@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct BITSPacketVersioned {
-    version: u8,
-    packet: BITSPacket,
+    pub version: u8,
+    pub packet: BITSPacket,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -51,6 +51,15 @@ pub fn bits_to_num(raw: &[bool]) -> usize {
         .sum()
 }
 
+pub fn format_bits(bits: &[bool]) -> String {
+    let bits_str: Vec<String> = bits
+        .iter()
+        .map(|b| if *b { "1" } else { "0" }.into())
+        .collect();
+
+    bits_str.join("")
+}
+
 impl BITSPacketVersioned {
     pub fn parse(bits: &[bool]) -> (Self, usize) {
         let version: u8 = bits_to_num(&bits[0..3]) as u8;
@@ -58,8 +67,8 @@ impl BITSPacketVersioned {
 
         #[cfg(test)]
         println!(
-            "Parsing packet {:?}, got version {} and type {}",
-            bits.iter().map(|b| *b as usize).collect::<Vec<_>>(),
+            "{}: version {}, type {}",
+            format_bits(bits),
             version,
             type_id
         );
@@ -89,31 +98,39 @@ impl BITSPacketVersioned {
                 if bits[6] {
                     // Next 11 bits is the number of subpackets
                     let num_subpackets = bits_to_num(&bits[7..18]);
-                    ctr = 18;
+                    ctr += 12;
 
                     #[cfg(test)]
                     println!(
-                        "Detected operator packet with {} subpackets",
-                        num_subpackets
+                        "Detected operator {} with {} subpackets",
+                        _op, num_subpackets
                     );
 
                     let mut subpackets = Vec::with_capacity(num_subpackets);
+
+                    while subpackets.len() < num_subpackets {
+                        let (subp, subplen) = Self::parse(&bits[ctr..]);
+
+                        ctr += subplen;
+                        subpackets.push(subp);
+                    }
 
                     subpackets
                 } else {
                     // Next 15 bits is length of subpackets
                     let len_subpackets = bits_to_num(&bits[7..22]);
-                    ctr = 22;
+                    ctr += 16;
+                    let sub_start = ctr;
 
                     #[cfg(test)]
                     println!(
-                        "Detected operator packet with {} BITS of subpackets",
-                        len_subpackets
+                        "Detected operator {} with {} BITS of subpackets",
+                        _op, len_subpackets
                     );
 
                     let mut subpackets = Vec::with_capacity(10);
-                    while ctr < len_subpackets {
-                        let (subp, subplen) = BITSPacketVersioned::parse(&bits[ctr..]);
+                    while ctr - sub_start < len_subpackets {
+                        let (subp, subplen) = Self::parse(&bits[ctr..]);
 
                         ctr += subplen;
                         subpackets.push(subp);
@@ -130,7 +147,7 @@ impl BITSPacketVersioned {
                 packet: packet_type,
             },
             // Number of bits we've consumed
-            ctr - 1,
+            ctr,
         )
     }
 }
@@ -144,12 +161,12 @@ mod tests {
         let example_input = "D2FE28";
         let bits = get_bits(example_input);
 
-        let expected = BITSPacket {
+        let expected = BITSPacketVersioned {
             version: 6,
-            packet: BITSPacketType::Literal(2021),
+            packet: BITSPacket::Literal(2021),
         };
 
-        assert_eq!(BITSPacket::parse(&bits).0, expected);
+        assert_eq!(BITSPacketVersioned::parse(&bits).0, expected);
     }
 
     #[test]
@@ -157,21 +174,23 @@ mod tests {
         let example_input = "38006F45291200";
         let bits = get_bits(example_input);
 
-        let expected = BITSPacket {
+        let expected = BITSPacketVersioned {
             version: 1,
             packet: BITSPacket::Operator(
                 BITSOperator::Unknown,
                 vec![
-                    BITSPacket {
-                        version: 1,
-                        packet: BITSPacketType::Literal(10),
+                    BITSPacketVersioned {
+                        version: 6,
+                        packet: BITSPacket::Literal(10),
                     },
-                    BITSPacket {
-                        version: 1,
-                        packet: BITSPacketType::Literal(20),
+                    BITSPacketVersioned {
+                        version: 2,
+                        packet: BITSPacket::Literal(20),
                     },
                 ],
             ),
         };
+
+        assert_eq!(BITSPacketVersioned::parse(&bits).0, expected);
     }
 }

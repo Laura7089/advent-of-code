@@ -1,17 +1,26 @@
-use crate::bits::{get_bits, BITSPacketVersioned as BITSPacket};
+use crate::bits::{get_bits, BITSPacket, BITSPacketVersioned};
 
 #[aoc_generator(day16)]
-pub fn parse_input(input: &str) -> BITSPacket {
-    BITSPacket::parse(&get_bits(input)).0
+pub fn parse_input(input: &str) -> BITSPacketVersioned {
+    BITSPacketVersioned::parse(&get_bits(input)).0
+}
+
+fn sum_version(pack: &BITSPacketVersioned) -> usize {
+    match &pack.packet {
+        BITSPacket::Literal(_) => pack.version as usize,
+        BITSPacket::Operator(_, subs) => {
+            subs.iter().map(sum_version).sum::<usize>() + pack.version as usize
+        }
+    }
 }
 
 #[aoc(day16, part1)]
-pub fn solve_part1(_input: &BITSPacket) -> usize {
-    unimplemented!()
+pub fn solve_part1(input: &BITSPacketVersioned) -> usize {
+    sum_version(input)
 }
 
 #[aoc(day16, part2)]
-pub fn solve_part2(_input: &BITSPacket) -> usize {
+pub fn solve_part2(_input: &BITSPacketVersioned) -> usize {
     unimplemented!()
 }
 
