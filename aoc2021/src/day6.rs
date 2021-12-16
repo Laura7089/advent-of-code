@@ -3,7 +3,7 @@ const CYCLE_TIME: usize = 7;
 
 #[aoc_generator(day6)]
 fn parse_input(input: &str) -> Vec<usize> {
-    input.split(",").map(|n| n.parse().unwrap()).collect()
+    input.split(',').map(|n| n.parse().unwrap()).collect()
 }
 #[aoc(day6, part1)]
 fn solve_part1(input: &[usize]) -> usize {

@@ -7,7 +7,7 @@
     "template": [
       "#[aoc_generator(day{})]",
       "pub fn parse_input(input: &str) -> Vec<usize> {",
-      "    input.split(\",\").map(|n| n.parse().unwrap()).collect()",
+      "    input.split(',').map(|n| n.parse().unwrap()).collect()",
       "}",
       "",
       "#[aoc(day{}, part1)]",

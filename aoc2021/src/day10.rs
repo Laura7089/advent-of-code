@@ -59,7 +59,7 @@ pub fn solve_part2(input: &str) -> usize {
         });
     }
 
-    scores.sort();
+    scores.sort_unstable();
     // Length guaranteed to be odd so this will always get the middle
     scores[scores.len() / 2]
 }

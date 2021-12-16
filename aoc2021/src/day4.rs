@@ -56,7 +56,7 @@ pub fn parse_input(input: &str) -> Generated {
     let called_numbers = split
         .next()
         .unwrap()
-        .split(",")
+        .split(',')
         .map(str::parse)
         .collect::<Result<Vec<usize>, _>>()
         .unwrap();
@@ -85,11 +85,11 @@ pub fn solve_part1(input: &Generated) -> usize {
     let mut boards = input.1.clone();
 
     for call in input.0.iter() {
-        for i in 0..boards.len() {
+        for board in &mut boards {
             // Note: mutates board
-            let marked = boards[i].search_mark(*call);
-            if marked && boards[i].has_won() {
-                return boards[i].total_unmarked() * call;
+            let marked = board.search_mark(*call);
+            if marked && board.has_won() {
+                return board.total_unmarked() * call;
             }
         }
     }

@@ -15,6 +15,7 @@ fn try_flash(idx: Idx, field: &mut Field) -> usize {
         flashes += 1;
 
         // Increment and check adjacents
+        // NOTE: flatten instead of filter_map is a perf regression
         for adj in field.adjacents(idx).into_iter().filter_map(|i| i) {
             // Don't inc things that have already flashed
             if field[adj] != 0 {

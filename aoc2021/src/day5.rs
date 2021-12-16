@@ -10,10 +10,10 @@ pub fn parse_input(input: &str) -> Vec<Line> {
         .map(|line| {
             let mut split = line.split(" -> ");
             let mut line = [[0_usize; 2]; 2];
-            for i in 0..2 {
-                let mut raw = split.next().unwrap().split(",");
+            for side in &mut line {
+                let mut raw = split.next().unwrap().split(',');
                 for o in 0..2 {
-                    line[i][o] = raw.next().unwrap().parse().unwrap();
+                    side[o] = raw.next().unwrap().parse().unwrap();
                 }
             }
             line

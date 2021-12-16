@@ -17,7 +17,7 @@ pub fn parse_input(input: &str) -> Input {
         .unwrap()
         .lines()
         .map(|line| {
-            let mut split_line = line.split(",");
+            let mut split_line = line.split(',');
             [
                 split_line.next().unwrap().parse().unwrap(),
                 split_line.next().unwrap().parse().unwrap(),
@@ -30,7 +30,7 @@ pub fn parse_input(input: &str) -> Input {
         .unwrap()
         .lines()
         .map(|line| {
-            let mut split_line = line.split_whitespace().nth(2).unwrap().split("=");
+            let mut split_line = line.split_whitespace().nth(2).unwrap().split('=');
             let instr = split_line.next().unwrap();
             let val = split_line.next().unwrap().parse().unwrap();
             match instr {

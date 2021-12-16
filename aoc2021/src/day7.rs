@@ -3,7 +3,7 @@ const SEARCH_AREA: [i32; 3] = [-1, 0, 1];
 #[aoc_generator(day7)]
 pub fn parse_input(input: &str) -> Vec<usize> {
     input
-        .split(",")
+        .split(',')
         .map(|n| n.trim().parse().unwrap())
         .collect()
 }
@@ -12,7 +12,7 @@ pub fn parse_input(input: &str) -> Vec<usize> {
 pub fn solve_part1(input: &[usize]) -> usize {
     let mut input: Vec<usize> = input.to_vec();
     // Best position is in the median when sorted
-    input.sort();
+    input.sort_unstable();
     let best_pos = input[input.len() / 2];
 
     input

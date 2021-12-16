@@ -23,7 +23,7 @@ fn parse_input(input: &str) -> Vec<(Cave, Cave)> {
     input
         .lines()
         .map(|line| {
-            let mut split = line.split("-");
+            let mut split = line.split('-');
             (
                 Cave::from_str(split.next().unwrap()),
                 Cave::from_str(split.next().unwrap()),

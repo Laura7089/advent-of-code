@@ -9,7 +9,7 @@ pub fn parse_input(input: &str) -> Vec<Command> {
     input
         .lines()
         .map(|l| {
-            let mut split = l.split(" ");
+            let mut split = l.split(' ');
             let command = split.next().unwrap();
             let num = split.next().unwrap().parse().unwrap();
             // Match against first letter only to avoid unneeded comparisons

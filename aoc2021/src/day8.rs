@@ -42,7 +42,7 @@ pub fn parse_input(input: &str) -> Vec<InputLine> {
                 split
                     .next()
                     .expect("Bad formatting")
-                    .split(" ")
+                    .split(' ')
                     .map(DigitCode::from_str)
                     .collect::<Vec<_>>()
                     .try_into()
@@ -77,7 +77,7 @@ pub fn solve_part1(input: &[InputLine]) -> usize {
 pub fn solve_part2(input: &[InputLine]) -> usize {
     let mut total = 0;
 
-    for &line in input.into_iter() {
+    for &line in input.iter() {
         let mut digits = [DigitCode::default(); 10];
         // Unpack input struct and copy into a shrinkable Vec
         let (digit_codes, output) = line;

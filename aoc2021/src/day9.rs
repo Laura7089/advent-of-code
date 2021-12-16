@@ -13,6 +13,7 @@ pub fn low_points(field: &CompressedField<usize>) -> Vec<(usize, usize)> {
                 .adjacents((x, y))
                 .iter()
                 .step_by(2)
+                // Replacing this with flatten() is a perf regression
                 .filter_map(|p| *p)
                 .all(|point| field[point] > current);
 
@@ -63,12 +64,7 @@ pub fn solve_part2(input: &CompressedField<usize>) -> usize {
             let current_val = input[(x, y)];
 
             // Iterate through the squares adjacent to it
-            for adj in input
-                .adjacents((x, y))
-                .into_iter()
-                .step_by(2)
-                .filter_map(|p| p)
-            {
+            for adj in input.adjacents((x, y)).into_iter().step_by(2).flatten() {
                 let adj_val = input[adj];
                 // If:
                 // - it's not 9
@@ -82,7 +78,7 @@ pub fn solve_part2(input: &CompressedField<usize>) -> usize {
         }
 
         // Add it to the array of largest sizes if it's larger than any of them
-        largest_sizes.sort();
+        largest_sizes.sort_unstable();
         for n in largest_sizes.iter_mut() {
             if &basin.len() > n {
                 *n = basin.len();
