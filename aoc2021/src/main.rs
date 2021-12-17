@@ -29,7 +29,10 @@ fn main() {
             Box::new(|s| day5::solve_part1(&day5::parse_input(s))),
             Box::new(|s| day5::solve_part2(&day5::parse_input(s))),
         ],
-        [Box::new(|_| 0), Box::new(|_| 0)],
+        [
+            Box::new(|s| day6::solve_part1(&day6::parse_input(s))),
+            Box::new(|s| day6::solve_part2(&day6::parse_input(s))),
+        ],
         [
             Box::new(|s| day7::solve_part1(&day7::parse_input(s))),
             Box::new(|s| day7::solve_part2(&day7::parse_input(s))),
