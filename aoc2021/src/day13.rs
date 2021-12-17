@@ -1,12 +1,22 @@
-use crate::field2d::compressed_field::CompressedField;
+use std::collections::HashSet;
 
-#[derive(Copy, Clone, Debug)]
+const FINAL_SIZE: (usize, usize) = (40, 6);
+
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Fold {
-    X(usize),
-    Y(usize),
+    X,
+    Y,
 }
 
-type Input = (Vec<[usize; 2]>, Vec<Fold>);
+type Input = (Vec<[usize; 2]>, Vec<(Fold, usize)>);
+
+pub fn fold(points: &mut [[usize; 2]], (fold, line): &(Fold, usize)) {
+    let idx = (fold == &Fold::Y) as usize;
+    points
+        .iter_mut()
+        .filter(|p| p[idx] > *line)
+        .for_each(|p| p[idx] = (2 * *line) - p[idx]);
+}
 
 #[aoc_generator(day13)]
 pub fn parse_input(input: &str) -> Input {
@@ -25,7 +35,7 @@ pub fn parse_input(input: &str) -> Input {
         })
         .collect();
 
-    let folds: Vec<Fold> = split
+    let folds = split
         .next()
         .unwrap()
         .lines()
@@ -33,11 +43,14 @@ pub fn parse_input(input: &str) -> Input {
             let mut split_line = line.split_whitespace().nth(2).unwrap().split('=');
             let instr = split_line.next().unwrap();
             let val = split_line.next().unwrap().parse().unwrap();
-            match instr {
-                "x" => Fold::X(val),
-                "y" => Fold::Y(val),
-                _ => panic!("Bad line formatting: '{}'", line),
-            }
+            (
+                match instr {
+                    "x" => Fold::X,
+                    "y" => Fold::Y,
+                    _ => panic!("Bad line formatting: '{}'", line),
+                },
+                val,
+            )
         })
         .collect();
 
@@ -46,28 +59,37 @@ pub fn parse_input(input: &str) -> Input {
 
 #[aoc(day13, part1)]
 pub fn solve_part1((points, instrs): &Input) -> usize {
-    let max = points.iter().flat_map(|p| p.iter()).max().unwrap() + 1;
-    let mut grid = CompressedField::new(vec![false; max.pow(2)], max);
+    let mut points = points.clone();
 
-    points.iter().for_each(|[x, y]| grid[(*x, *y)] = true);
+    fold(&mut points, &instrs[0]);
 
-    for ins in instrs.iter() {
-        match ins {
-            Fold::X(divide) => {
-                for _x in 0..=(max - divide) {
-                    for _y in 0..=max {}
-                }
-            }
-            Fold::Y(_divide) => {}
-        }
-    }
-
-    grid.field.iter().filter(|v| **v).count()
+    // There's probably better ways of getting uniques
+    points.into_iter().collect::<HashSet<_>>().len()
 }
 
 #[aoc(day13, part2)]
-pub fn solve_part2(_input: &Input) -> usize {
-    unimplemented!()
+pub fn solve_part2((points, instrs): &Input) -> String {
+    let mut points = points.clone();
+
+    for ins in instrs.iter() {
+        fold(&mut points, ins);
+    }
+
+    let mut field = [['.'; FINAL_SIZE.0]; FINAL_SIZE.1];
+    for [x, y] in points.into_iter() {
+        field[y][x] = '#';
+    }
+
+    let mut visual = String::with_capacity(FINAL_SIZE.0 * FINAL_SIZE.1);
+    visual.push('\n');
+    for line in field.into_iter() {
+        for ch in line.into_iter() {
+            visual.push(ch);
+        }
+        visual.push('\n');
+    }
+
+    visual
 }
 
 #[cfg(test)]
@@ -102,19 +124,10 @@ fold along x=5";
     }
 
     #[test]
-    fn part2_example() {
-        assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), unimplemented!());
-    }
-
-    #[test]
     fn part1_myinput() {
         let _input = crate::get_input_for_day(13);
-        assert_eq!(solve_part1(&parse_input(&_input)), unimplemented!());
+        assert_eq!(solve_part1(&parse_input(&_input)), 753);
     }
 
-    #[test]
-    fn part2_myinput() {
-        let _input = crate::get_input_for_day(13);
-        assert_eq!(solve_part2(&parse_input(&_input)), unimplemented!());
-    }
+    // NOTE: no part 2 tests for this because I can't be bothered
 }
