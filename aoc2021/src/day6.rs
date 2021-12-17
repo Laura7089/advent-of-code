@@ -1,60 +1,47 @@
-const DAY_COUNT: usize = 18;
 const CYCLE_TIME: usize = 7;
 
-#[aoc_generator(day6)]
-fn parse_input(input: &str) -> Vec<usize> {
-    input.split(',').map(|n| n.parse().unwrap()).collect()
-}
-#[aoc(day6, part1)]
-fn solve_part1(input: &[usize]) -> usize {
-    // let mut fish: Vec<usize> = Vec::from(input);
-    // let mut days_remaining = DAY_COUNT;
-    // let mut step = 0;
+type Shoal = [usize; CYCLE_TIME + 2];
 
-    // println!("Start: {:?}", fish);
+fn fish_sim(shoal: &mut Shoal, days: usize) {
+    for _day in 0..days {
+        // Fish about to reproduce
+        let reproductions = shoal[0];
+        // "Decrement" all fish <= CYCLE_TIME - 1, reset 0s to CYCLE_TIME - 1
+        shoal[0..=(CYCLE_TIME - 1)].rotate_left(1);
 
-    // while step <= days_remaining {
-    //     for i in 0..fish.len() {
-    //         if fish[i] == 0 {
-    //             fish.push(CYCLE_TIME + 1);
-    //             fish[i] = CYCLE_TIME - 1;
-    //         }
-    //     }
+        // "Decrement" all fish >= CYCLE time left, merging them into the main-cycle fish
+        shoal[CYCLE_TIME - 1] += shoal[CYCLE_TIME];
+        shoal[CYCLE_TIME] = shoal[CYCLE_TIME + 1];
 
-    //     step = *fish.iter().min().unwrap();
-    //     for i in 0..fish.len() {
-    //         fish[i] -= step;
-    //     }
-    //     days_remaining -= step;
-    //     println!(
-    //         "Day {} (step {}): {:?}",
-    //         DAY_COUNT - days_remaining,
-    //         step,
-    //         fish
-    //     );
-    // }
-
-    // fish.len()
-
-    let shoal = Vec::from(input);
-    let mut total = 0;
-
-    for fish in shoal.iter() {
-        let num_spawns = (DAY_COUNT - fish + 1) / CYCLE_TIME;
-        println!(
-            "Fish {} will spawn {} times in the coming {} days",
-            fish, num_spawns, DAY_COUNT
-        );
-        let children = 2_usize.pow(num_spawns as u32 - 1);
-
-        total += children;
+        // Add baby fish :)
+        shoal[CYCLE_TIME + 1] = reproductions;
     }
-    total
+}
+
+#[aoc_generator(day6)]
+fn parse_input(input: &str) -> Shoal {
+    let mut shoal = [0; CYCLE_TIME + 2];
+    input
+        .split(',')
+        .map(|n| n.parse::<usize>().unwrap())
+        .for_each(|n| shoal[n] += 1);
+    shoal
+}
+
+#[aoc(day6, part1)]
+fn solve_part1(input: &Shoal) -> usize {
+    let mut shoal = input.clone();
+
+    fish_sim(&mut shoal, 80);
+    shoal.into_iter().sum()
 }
 
 #[aoc(day6, part2)]
-fn solve_part2(_input: &[usize]) -> usize {
-    unimplemented!()
+fn solve_part2(input: &Shoal) -> usize {
+    let mut shoal = input.clone();
+
+    fish_sim(&mut shoal, 256);
+    shoal.into_iter().sum()
 }
 
 #[cfg(test)]
@@ -70,18 +57,18 @@ mod tests {
 
     #[test]
     fn part2_example() {
-        assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), unimplemented!());
+        assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), 26984457539);
     }
 
     #[test]
     fn part1_myinput() {
-        let _input = crate::get_input_for_day(6);
-        assert_eq!(solve_part1(&parse_input(&EXAMPLE_INPUT)), unimplemented!());
+        let input = crate::get_input_for_day(6);
+        assert_eq!(solve_part1(&parse_input(&input)), 389726);
     }
 
     #[test]
     fn part2_myinput() {
-        let _input = crate::get_input_for_day(6);
-        assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), unimplemented!());
+        let input = crate::get_input_for_day(6);
+        assert_eq!(solve_part2(&parse_input(&input)), 1743335992042);
     }
 }
