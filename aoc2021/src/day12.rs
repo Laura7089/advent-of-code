@@ -20,13 +20,13 @@ fn parse_input(input: &str) -> Links {
 
     for line in input.lines() {
         let mut pair = [Cave::Start; 2];
-        let mut contains_start = false;
+        // let mut contains_start = false;
 
         let mut split = line.split('-');
         for cave in &mut pair {
             *cave = match split.next().unwrap() {
                 "start" => {
-                    contains_start = true;
+                    // contains_start = true;
                     Cave::Start
                 }
                 "end" => Cave::End,
