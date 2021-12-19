@@ -50,7 +50,7 @@ pub fn get_bits(hex_raw: &str) -> Vec<bool> {
 }
 
 pub fn bits_to_num(raw: &[bool]) -> usize {
-    raw.into_iter()
+    raw.iter()
         .rev()
         .enumerate()
         .map(|(i, b)| (*b as usize) << i)

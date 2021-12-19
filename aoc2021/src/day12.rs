@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
+use hashbrown::{HashMap, HashSet};
 
 type Links = HashMap<Cave, Vec<Cave>>;
 
@@ -51,97 +50,71 @@ fn parse_input(input: &str) -> Links {
 
         // for i in 0..=(contains_start as usize) {
         for i in 0..2 {
-            if let Some(this_links) = links.get_mut(&pair[i]) {
-                this_links.push(pair[(i + 1) % 2]);
-            } else {
-                let mut this_links = Vec::with_capacity(lines / 5);
-                this_links.push(pair[(i + 1) % 2]);
-                links.insert(pair[i], this_links);
-            }
+            links
+                .entry(pair[i])
+                .or_insert_with(|| Vec::with_capacity(lines / 5))
+                .push(pair[(i + 1) % 2]);
         }
     }
 
     links
 }
 
-fn find_routes_part1(links: &Links, current: &Cave, visited: &HashSet<Cave>) -> usize {
-    let adjacents = links
+fn find_routes_part1(links: &Links, current: &Cave, visited: &mut HashSet<Cave>) -> usize {
+    links
         .get(current)
         .unwrap()
         .iter()
-        .filter(|c| !visited.contains(c))
-        .collect::<Vec<_>>();
-    let mut routes = 0;
-
-    for cave in adjacents.into_iter() {
-        if cave == &Cave::End {
-            routes += 1;
-        } else {
-            if let Cave::Small(_) = cave {
-                let mut visited = visited.clone();
+        .map(|cave| match cave {
+            Cave::End => 1,
+            Cave::Small(_) if !visited.contains(cave) => {
                 visited.insert(*cave);
-                routes += find_routes_part1(links, cave, &visited);
-            } else {
-                routes += find_routes_part1(links, cave, visited);
+                let num = find_routes_part1(links, cave, visited);
+                visited.remove(cave);
+                num
             }
-        }
-    }
-    routes
+            Cave::Large(_) => find_routes_part1(links, cave, visited),
+            _ => 0,
+        })
+        .sum()
 }
 
 #[aoc(day12, part1)]
 fn solve_part1(input: &Links) -> usize {
     let mut visited = HashSet::with_capacity(input.len() / 2);
     visited.insert(Cave::Start);
-    find_routes_part1(input, &Cave::Start, &visited)
+    find_routes_part1(input, &Cave::Start, &mut visited)
 }
 
 fn find_routes_part2(
     links: &Links,
     current: &Cave,
-    visited: &HashSet<Cave>,
+    visited: &mut HashSet<Cave>,
     double: bool,
 ) -> usize {
-    let mut routes = 0;
-    let valid_adjacents =
-        links
-            .get(current)
-            .unwrap()
-            .iter()
-            .filter(|c| match (c, visited.contains(c), double) {
-                (Cave::End, _, _) => true,
-                // Large caves
-                (Cave::Large(_), _, _) => true,
-                // Small caves we haven't visited
-                (Cave::Small(_), false, _) => true,
-                // Small caves we've visited but can still double up
-                (Cave::Small(_), true, false) => true,
-                _ => false,
-            });
-
-    for cave in valid_adjacents {
-        routes += if let Cave::Small(_) = cave {
-            if visited.contains(cave) {
-                find_routes_part2(links, cave, visited, true)
-            } else {
-                let mut visited = visited.clone();
+    links
+        .get(current)
+        .unwrap()
+        .iter()
+        .filter_map(|cave| match cave {
+            Cave::End => Some(1),
+            Cave::Large(_) => Some(find_routes_part2(links, cave, visited, double)),
+            Cave::Small(_) if !visited.contains(cave) => {
                 visited.insert(*cave);
-                find_routes_part2(links, cave, &visited, double)
+                let num = Some(find_routes_part2(links, cave, visited, double));
+                visited.remove(cave);
+                num
             }
-        } else if cave == &Cave::End {
-            1
-        } else {
-            find_routes_part2(links, cave, visited, double)
-        };
-    }
-
-    routes
+            Cave::Small(_) if !double => Some(find_routes_part2(links, cave, visited, true)),
+            _ => None,
+        })
+        .sum()
 }
 
 #[aoc(day12, part2)]
 fn solve_part2(input: &Links) -> usize {
-    let visited = HashSet::with_capacity(input.len() / 2);
-    find_routes_part2(input, &Cave::Start, &visited, false)
+    let mut visited = HashSet::with_capacity(input.len() / 2);
+    find_routes_part2(input, &Cave::Start, &mut visited, false)
 }
 
 #[cfg(test)]
