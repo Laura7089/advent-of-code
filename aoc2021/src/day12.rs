@@ -1,33 +1,30 @@
 use hashbrown::{HashMap, HashSet};
 
 type Links = HashMap<Cave, Vec<Cave>>;
+type CaveID = u8;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Cave {
     Start,
     End,
-    Large(usize),
-    Small(usize),
+    Large(CaveID),
+    Small(CaveID),
 }
 
 #[aoc_generator(day12)]
 fn parse_input(input: &str) -> Links {
     let lines = input.lines().count();
-    let mut ids: HashMap<String, usize> = HashMap::with_capacity(lines / 2);
+    let mut ids: HashMap<String, CaveID> = HashMap::with_capacity(lines / 2);
     let mut id_counter = 0;
     let mut links: Links = HashMap::with_capacity(lines);
 
     for line in input.lines() {
         let mut pair = [Cave::Start; 2];
-        // let mut contains_start = false;
 
         let mut split = line.split('-');
         for cave in &mut pair {
             *cave = match split.next().unwrap() {
-                "start" => {
-                    // contains_start = true;
-                    Cave::Start
-                }
+                "start" => Cave::Start,
                 "end" => Cave::End,
                 cave_raw => {
                     // Generate a unique cave ID
@@ -48,7 +45,6 @@ fn parse_input(input: &str) -> Links {
             };
         }
 
-        // for i in 0..=(contains_start as usize) {
         for i in 0..2 {
             links
                 .entry(pair[i])
@@ -96,17 +92,17 @@ fn find_routes_part2(
         .get(current)
         .unwrap()
         .iter()
-        .filter_map(|cave| match cave {
-            Cave::End => Some(1),
-            Cave::Large(_) => Some(find_routes_part2(links, cave, visited, double)),
+        .map(|cave| match cave {
+            Cave::End => 1,
+            Cave::Large(_) => find_routes_part2(links, cave, visited, double),
             Cave::Small(_) if !visited.contains(cave) => {
                 visited.insert(*cave);
-                let num = Some(find_routes_part2(links, cave, visited, double));
+                let num = find_routes_part2(links, cave, visited, double);
                 visited.remove(cave);
                 num
             }
-            Cave::Small(_) if !double => Some(find_routes_part2(links, cave, visited, true)),
-            _ => None,
+            Cave::Small(_) if !double => find_routes_part2(links, cave, visited, true),
+            _ => 0,
         })
         .sum()
 }
