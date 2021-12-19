@@ -1,5 +1,5 @@
 use crate::field2d::{compressed_field::CompressedField, Field2D};
-use std::collections::HashSet;
+use hashbrown::HashSet;
 
 const NUM_LARGEST: usize = 3;
 

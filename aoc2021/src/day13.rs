@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use hashbrown::HashSet;
 
 const FINAL_SIZE: (usize, usize) = (40, 6);
 
