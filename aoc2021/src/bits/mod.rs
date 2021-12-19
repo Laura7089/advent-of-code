@@ -171,27 +171,18 @@ pub fn parse(bits: &[bool]) -> (BITSPacketVersioned, usize) {
 
 impl BITSPacketVersioned {
     pub fn eval(&self) -> usize {
+        use BITSOperator::*;
+        use BITSPacket::*;
+
         match &self.packet {
-            BITSPacket::Literal(l) => *l,
-            BITSPacket::Operator(BITSOperator::Sum, subs) => subs.iter().map(Self::eval).sum(),
-            BITSPacket::Operator(BITSOperator::Product, subs) => {
-                subs.iter().map(Self::eval).fold(1, |mul, val| mul * val)
-            }
-            BITSPacket::Operator(BITSOperator::Minimum, subs) => {
-                subs.iter().map(Self::eval).min().unwrap()
-            }
-            BITSPacket::Operator(BITSOperator::Maximum, subs) => {
-                subs.iter().map(Self::eval).max().unwrap()
-            }
-            BITSPacket::Operator(BITSOperator::Greater, subs) => {
-                (subs[0].eval() > subs[1].eval()) as usize
-            }
-            BITSPacket::Operator(BITSOperator::Less, subs) => {
-                (subs[0].eval() < subs[1].eval()) as usize
-            }
-            BITSPacket::Operator(BITSOperator::Equal, subs) => {
-                (subs[0].eval() == subs[1].eval()) as usize
-            }
+            Literal(l) => *l,
+            Operator(Sum, subs) => subs.iter().map(Self::eval).sum(),
+            Operator(Product, subs) => subs.iter().map(Self::eval).product(),
+            Operator(Minimum, subs) => subs.iter().map(Self::eval).min().unwrap(),
+            Operator(Maximum, subs) => subs.iter().map(Self::eval).max().unwrap(),
+            Operator(Greater, subs) => (subs[0].eval() > subs[1].eval()) as usize,
+            Operator(Less, subs) => (subs[0].eval() < subs[1].eval()) as usize,
+            Operator(Equal, subs) => (subs[0].eval() == subs[1].eval()) as usize,
         }
     }
 }
