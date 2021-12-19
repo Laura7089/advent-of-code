@@ -49,7 +49,6 @@ fn parse_input(input: &str) -> Links {
             };
         }
 
-        // println!("Contains start: {}", contains_start);
         // for i in 0..=(contains_start as usize) {
         for i in 0..2 {
             if let Some(this_links) = links.get_mut(&pair[i]) {
@@ -66,14 +65,12 @@ fn parse_input(input: &str) -> Links {
 }
 
 fn find_routes_part1(links: &Links, current: &Cave, visited: &HashSet<Cave>) -> usize {
-    println!("Examining cave {:?}", current);
     let adjacents = links
         .get(current)
         .unwrap()
         .iter()
         .filter(|c| !visited.contains(c))
         .collect::<Vec<_>>();
-    println!("Found {} adjacents", adjacents.len());
     let mut routes = 0;
 
     for cave in adjacents.into_iter() {
@@ -96,7 +93,6 @@ fn find_routes_part1(links: &Links, current: &Cave, visited: &HashSet<Cave>) -> 
 fn solve_part1(input: &Links) -> usize {
     let mut visited = HashSet::with_capacity(input.len() / 2);
     visited.insert(Cave::Start);
-    println!("{:?}", input);
     find_routes_part1(input, &Cave::Start, &visited)
 }
 
@@ -124,8 +120,6 @@ fn find_routes_part2(
             });
 
     for cave in valid_adjacents {
-        #[cfg(test)]
-        println!("Examining cave: {:?}", cave);
         routes += if let Cave::Small(_) = cave {
             if visited.contains(cave) {
                 find_routes_part2(links, cave, visited, true)
