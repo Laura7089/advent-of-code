@@ -28,13 +28,10 @@ fn parse_input(input: &str) -> Links {
                 "end" => Cave::End,
                 cave_raw => {
                     // Generate a unique cave ID
-                    let this_id = if let Some(i) = ids.get(cave_raw) {
-                        *i
-                    } else {
-                        ids.insert(cave_raw.to_string(), id_counter);
+                    let this_id = *ids.entry(cave_raw.to_string()).or_insert_with(|| {
                         id_counter += 1;
                         id_counter - 1
-                    };
+                    });
 
                     if cave_raw == cave_raw.to_lowercase() {
                         Cave::Small(this_id)
@@ -45,11 +42,11 @@ fn parse_input(input: &str) -> Links {
             };
         }
 
-        for i in 0..2 {
+        for (i, o) in [(0, 1), (1, 0)] {
             links
                 .entry(pair[i])
                 .or_insert_with(|| Vec::with_capacity(lines / 5))
-                .push(pair[(i + 1) % 2]);
+                .push(pair[o]);
         }
     }
 
@@ -78,7 +75,6 @@ fn find_routes_part1(links: &Links, current: &Cave, visited: &mut HashSet<Cave>)
 #[aoc(day12, part1)]
 fn solve_part1(input: &Links) -> usize {
     let mut visited = HashSet::with_capacity(input.len() / 2);
-    visited.insert(Cave::Start);
     find_routes_part1(input, &Cave::Start, &mut visited)
 }
 
