@@ -50,7 +50,7 @@ pub fn solve_part1(input: &CompressedField<usize>) -> usize {
 pub fn solve_part2(input: &CompressedField<usize>) -> usize {
     let mut largest_sizes = [0_usize; NUM_LARGEST];
 
-    for (lx, ly) in low_points(input).into_iter() {
+    for (lx, ly) in low_points(input) {
         // Note: Use the field width as a capacity so it scales correctly
         // Stores the final basin
         let mut basin = HashSet::with_capacity(input.width());

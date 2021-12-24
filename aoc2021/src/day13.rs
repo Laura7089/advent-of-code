@@ -71,19 +71,19 @@ pub fn solve_part1((points, instrs): &Input) -> usize {
 pub fn solve_part2((points, instrs): &Input) -> String {
     let mut points = points.clone();
 
-    for ins in instrs.iter() {
+    for ins in instrs {
         fold(&mut points, ins);
     }
 
     let mut field = [['.'; FINAL_SIZE.0]; FINAL_SIZE.1];
-    for [x, y] in points.into_iter() {
+    for [x, y] in points {
         field[y][x] = '#';
     }
 
     let mut visual = String::with_capacity(FINAL_SIZE.0 * FINAL_SIZE.1);
     visual.push('\n');
-    for line in field.into_iter() {
-        for ch in line.into_iter() {
+    for line in field {
+        for ch in line {
             visual.push(ch);
         }
         visual.push('\n');

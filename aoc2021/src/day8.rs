@@ -77,7 +77,7 @@ pub fn solve_part1(input: &[InputLine]) -> usize {
 pub fn solve_part2(input: &[InputLine]) -> usize {
     let mut total = 0;
 
-    for &line in input.iter() {
+    for &line in input {
         let mut digits = [DigitCode::default(); 10];
         // Unpack input struct and copy into a shrinkable Vec
         let (digit_codes, output) = line;

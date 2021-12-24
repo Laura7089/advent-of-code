@@ -26,7 +26,7 @@ pub fn solve_part1(input: &[Line]) -> usize {
     let size_limit = input.iter().flatten().flatten().max().unwrap() + 1;
     let mut field = CompressedField::new(vec![0_usize; size_limit.pow(2)], size_limit);
 
-    for line in input.iter() {
+    for line in input{
         let (x0, x1) = (line[0][0], line[1][0]);
         let (y0, y1) = (line[0][1], line[1][1]);
 
@@ -49,7 +49,7 @@ pub fn solve_part2(input: &[Line]) -> usize {
     let size_limit = input.iter().flatten().flatten().max().unwrap() + 1;
     let mut field = CompressedField::new(vec![0_usize; size_limit * size_limit], size_limit);
 
-    for line in input.iter() {
+    for line in input{
         let (x0, x1) = (line[0][0], line[1][0]);
         let (y0, y1) = (line[0][1], line[1][1]);
 

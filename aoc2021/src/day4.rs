@@ -84,7 +84,7 @@ pub fn parse_input(input: &str) -> Generated {
 pub fn solve_part1(input: &Generated) -> usize {
     let mut boards = input.1.clone();
 
-    for call in input.0.iter() {
+    for call in &input.0 {
         for board in &mut boards {
             // Note: mutates board
             let marked = board.search_mark(*call);
