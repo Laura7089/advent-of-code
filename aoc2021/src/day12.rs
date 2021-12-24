@@ -12,7 +12,7 @@ pub enum Cave {
 }
 
 #[aoc_generator(day12)]
-fn parse_input(input: &str) -> Links {
+pub fn parse_input(input: &str) -> Links {
     let lines = input.lines().count();
     let mut ids: HashMap<String, CaveID> = HashMap::with_capacity(lines / 2);
     let mut id_counter = 0;
@@ -73,7 +73,7 @@ fn find_routes_part1(links: &Links, current: &Cave, visited: &mut HashSet<Cave>)
 }
 
 #[aoc(day12, part1)]
-fn solve_part1(input: &Links) -> usize {
+pub fn solve_part1(input: &Links) -> usize {
     let mut visited = HashSet::with_capacity(input.len() / 2);
     find_routes_part1(input, &Cave::Start, &mut visited)
 }
@@ -104,7 +104,7 @@ fn find_routes_part2(
 }
 
 #[aoc(day12, part2)]
-fn solve_part2(input: &Links) -> usize {
+pub fn solve_part2(input: &Links) -> usize {
     let mut visited = HashSet::with_capacity(input.len() / 2);
     find_routes_part2(input, &Cave::Start, &mut visited, false)
 }

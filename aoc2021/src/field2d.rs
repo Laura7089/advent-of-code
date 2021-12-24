@@ -43,6 +43,10 @@ pub mod compressed_field {
             assert!(row_len <= field.len().pow(2));
             Self { field, row_len }
         }
+
+        pub fn iter(&self) -> std::slice::Iter<'_, T> {
+            self.field.iter()
+        }
     }
 
     impl<T> Field2D for CompressedField<T> {
