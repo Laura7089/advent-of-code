@@ -53,6 +53,27 @@ fn main() {
             Box::new(|s| day11::solve_part1(&day11::parse_input(s))),
             Box::new(|s| day11::solve_part2(&day11::parse_input(s))),
         ],
+        [
+            Box::new(|s| day12::solve_part1(&day12::parse_input(s))),
+            Box::new(|s| day12::solve_part2(&day12::parse_input(s))),
+        ],
+        [
+            // TODO: alter typing to get these to work and print their output
+            Box::new(|s| {
+                day13::solve_part1(&day13::parse_input(s));
+                0
+            }),
+            Box::new(|s| {
+                day13::solve_part2(&day13::parse_input(s));
+                0
+            }),
+        ],
+        [Box::new(|s| 0), Box::new(|s| 0)],
+        [Box::new(|s| 0), Box::new(|s| 0)],
+        [
+            Box::new(|s| day16::solve_part1(&day16::parse_input(s))),
+            Box::new(|s| day16::solve_part2(&day16::parse_input(s))),
+        ],
     ];
 
     for (day, [part1, part2]) in solves.into_iter().enumerate() {
