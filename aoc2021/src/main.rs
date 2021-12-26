@@ -17,10 +17,7 @@ fn main() {
             Box::new(|s| day2::solve_part1(&day2::parse_input(s))),
             Box::new(|s| day2::solve_part2(&day2::parse_input(s))),
         ],
-        [
-            Box::new(|s| day3::solve_part1(s)),
-            Box::new(|s| day3::solve_part2(s)),
-        ],
+        [Box::new(day3::solve_part1), Box::new(day3::solve_part2)],
         [
             Box::new(|s| day4::solve_part1(&day4::parse_input(s))),
             Box::new(|s| day4::solve_part2(&day4::parse_input(s))),
@@ -45,10 +42,7 @@ fn main() {
             Box::new(|s| day9::solve_part1(&day9::parse_input(s))),
             Box::new(|s| day9::solve_part2(&day9::parse_input(s))),
         ],
-        [
-            Box::new(|s| day10::solve_part1(s)),
-            Box::new(|s| day10::solve_part2(s)),
-        ],
+        [Box::new(day10::solve_part1), Box::new(day10::solve_part2)],
         [
             Box::new(|s| day11::solve_part1(&day11::parse_input(s))),
             Box::new(|s| day11::solve_part2(&day11::parse_input(s))),
