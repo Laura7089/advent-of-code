@@ -48,12 +48,12 @@ fn _sim_step(probe: Probe) -> Probe {
 
 #[aoc(day17, part1)]
 pub fn solve_part1(_input: &Bounds) -> usize {
-    unimplemented!()
+    todo!()
 }
 
 #[aoc(day17, part2)]
 pub fn solve_part2(_input: &Bounds) -> usize {
-    unimplemented!()
+    todo!()
 }
 
 #[cfg(test)]
@@ -69,18 +69,18 @@ mod tests {
 
     #[test]
     fn part2_example() {
-        assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), unimplemented!());
+        assert_eq!(solve_part2(&parse_input(&EXAMPLE_INPUT)), todo!());
     }
 
     #[test]
     fn part1_myinput() {
         let _input = crate::get_input_for_day(17);
-        assert_eq!(solve_part1(&parse_input(&_input)), unimplemented!());
+        assert_eq!(solve_part1(&parse_input(&_input)), todo!());
     }
 
     #[test]
     fn part2_myinput() {
         let _input = crate::get_input_for_day(17);
-        assert_eq!(solve_part2(&parse_input(&_input)), unimplemented!());
+        assert_eq!(solve_part2(&parse_input(&_input)), todo!());
     }
 }
