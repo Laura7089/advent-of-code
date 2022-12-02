@@ -35,26 +35,19 @@ impl Play {
         }
     }
 
-    fn resolve(left: &Self, right: &Self) -> Outcome {
-        match (left, right) {
+    fn resolve(&self, other: &Self) -> Outcome {
+        match (self, other) {
             (Rock, Scissors) | (Paper, Rock) | (Scissors, Paper) => Win,
             (x, y) if x == y => Draw,
             _ => Loss,
         }
     }
 
-    fn find_desired(&self, desired: Outcome) -> Self {
-        match (*self, desired) {
-            // Wins
-            (Rock, Win) => Paper,
-            (Paper, Win) => Scissors,
-            (Scissors, Win) => Rock,
-            // Losses
-            (Rock, Loss) => Scissors,
-            (Paper, Loss) => Rock,
-            (Scissors, Loss) => Paper,
-            // Draw
-            (x, Draw) => x,
+    fn find_desired(&self, desired: Outcome) -> u32 {
+        match desired {
+            Win => (*self as u32 % 3) + 1,
+            Loss => ((*self as u32 + 1) % 3) + 1,
+            Draw => *self as u32,
         }
     }
 }
@@ -70,7 +63,7 @@ fn solve_part1(input: &str) -> u32 {
             (left, Play::new(l.next().unwrap()))
         })
         // Note the swapped order
-        .map(|(theirs, ours)| Play::resolve(&ours, &theirs) as u32 + ours as u32)
+        .map(|(theirs, ours)| ours.resolve(&theirs) as u32 + ours as u32)
         .sum()
 }
 
@@ -84,7 +77,7 @@ fn solve_part2(input: &str) -> u32 {
             l.next();
             (left, Outcome::new(l.next().unwrap()))
         })
-        .map(|(left, out)| out as u32 + left.find_desired(out) as u32)
+        .map(|(theirs, want)| want as u32 + theirs.find_desired(want))
         .sum()
 }
 
