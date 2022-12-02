@@ -74,13 +74,6 @@ mod tests {
 
 10000";
 
-    fn get_input() -> String {
-        std::fs::read_to_string("./input/2022/day1.txt")
-            .unwrap()
-            .trim()
-            .to_owned()
-    }
-
     #[test]
     fn part1_example() {
         assert_eq!(solve_part1(SAMPLE_INPUT), 24_000);
@@ -88,7 +81,7 @@ mod tests {
 
     #[test]
     fn part1_mine() {
-        assert_eq!(solve_part1(&get_input()), 73_211);
+        assert_eq!(solve_part1(&crate::get_input(1)), 73_211);
     }
 
     #[test]
@@ -98,6 +91,6 @@ mod tests {
 
     #[test]
     fn part2_mine() {
-        assert_eq!(solve_part2(&get_input()), 213_958);
+        assert_eq!(solve_part2(&crate::get_input(1)), 213_958);
     }
 }
