@@ -1,4 +1,6 @@
-#[derive(Copy, Clone, PartialEq, Debug)]
+use enum_iterator::{next_cycle, previous_cycle, Sequence};
+
+#[derive(Copy, Clone, PartialEq, Debug, Sequence)]
 enum Play {
     Rock = 1,
     Paper = 2,
@@ -37,17 +39,17 @@ impl Play {
 
     fn resolve(&self, other: &Self) -> Outcome {
         match (self, other) {
-            (Rock, Scissors) | (Paper, Rock) | (Scissors, Paper) => Win,
             (x, y) if x == y => Draw,
+            (x, y) if y == &previous_cycle(x).unwrap() => Win,
             _ => Loss,
         }
     }
 
-    fn find_desired(&self, desired: Outcome) -> u32 {
+    fn find_desired(&self, desired: Outcome) -> Self {
         match desired {
-            Win => (*self as u32 % 3) + 1,
-            Loss => ((*self as u32 + 1) % 3) + 1,
-            Draw => *self as u32,
+            Win => next_cycle(self).unwrap(),
+            Loss => previous_cycle(self).unwrap(),
+            Draw => *self,
         }
     }
 }
@@ -58,12 +60,11 @@ fn solve_part1(input: &str) -> u32 {
         .lines()
         .map(|l| {
             let mut l = l.chars();
-            let left = Play::new(l.next().unwrap());
+            let theirs = Play::new(l.next().unwrap());
             l.next();
-            (left, Play::new(l.next().unwrap()))
+            let ours = Play::new(l.next().unwrap());
+            ours.resolve(&theirs) as u32 + ours as u32
         })
-        // Note the swapped order
-        .map(|(theirs, ours)| ours.resolve(&theirs) as u32 + ours as u32)
         .sum()
 }
 
@@ -73,11 +74,11 @@ fn solve_part2(input: &str) -> u32 {
         .lines()
         .map(|l| {
             let mut l = l.chars();
-            let left = Play::new(l.next().unwrap());
+            let theirs = Play::new(l.next().unwrap());
             l.next();
-            (left, Outcome::new(l.next().unwrap()))
+            let want = Outcome::new(l.next().unwrap());
+            want as u32 + theirs.find_desired(want) as u32
         })
-        .map(|(theirs, want)| want as u32 + theirs.find_desired(want))
         .sum()
 }
 
