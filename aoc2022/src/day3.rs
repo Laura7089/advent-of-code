@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 const ITEM_CARDINALITY: usize = 52;
 
 struct Rucksack(([bool; ITEM_CARDINALITY], [bool; ITEM_CARDINALITY]));
