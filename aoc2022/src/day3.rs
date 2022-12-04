@@ -52,7 +52,7 @@ fn solve_part1(input: &[Rucksack]) -> usize {
                 .zip(sack.0 .1)
                 .enumerate()
                 .find_map(|(i, (l, r))| if l && r { Some(i + 1) } else { None })
-                .unwrap()
+                .expect("No common item found")
         })
         .sum()
 }
@@ -66,13 +66,15 @@ fn solve_part2(input: &[Rucksack]) -> usize {
                 .all_items()
                 .zip(group[1].all_items())
                 .zip(group[2].all_items())
-                .find_map(|(((i, item1), (_, item2)), (_, item3))| {
-                    if item1 && item2 && item3 {
-                        Some(i + 1)
-                    } else {
-                        None
-                    }
-                })
+                .find_map(
+                    |(((i, o1), (_, o2)), (_, o3))| {
+                        if o1 && o2 && o3 {
+                            Some(i + 1)
+                        } else {
+                            None
+                        }
+                    },
+                )
                 .expect("No common item found")
         })
         .sum()
