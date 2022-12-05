@@ -1,7 +1,7 @@
 type Elf = (u32, u32);
 
 fn elf_range(input: &str) -> Elf {
-    let mut pair = input.split("-");
+    let mut pair = input.split('-');
     (
         pair.next().unwrap().parse().unwrap(),
         pair.next().unwrap().parse().unwrap(),
@@ -24,7 +24,7 @@ fn generate(input: &str) -> Vec<(Elf, Elf)> {
 #[aoc(day4, part1)]
 fn solve_part1(input: &[(Elf, Elf)]) -> usize {
     input
-        .into_iter()
+        .iter()
         .filter(|(l, r)| {
             let l_in_r = l.0 >= r.0 && l.1 <= r.1;
             let r_in_l = r.0 >= l.0 && r.1 <= l.1;
@@ -36,7 +36,7 @@ fn solve_part1(input: &[(Elf, Elf)]) -> usize {
 #[aoc(day4, part2)]
 fn solve_part2(input: &[(Elf, Elf)]) -> usize {
     input
-        .into_iter()
+        .iter()
         .filter(|(l, r)| {
             let left = (l.0)..=(l.1);
             let right = (r.0)..=(r.1);
