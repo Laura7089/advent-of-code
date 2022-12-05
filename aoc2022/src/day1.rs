@@ -12,20 +12,13 @@ fn solve_part2(input: &str) -> u32 {
     input
         .split("\n\n")
         .map(|elf| elf.split('\n').map(|c| c.parse::<u32>().unwrap()).sum())
-        .fold([0, 0, 0], |mut cm, item| {
+        .fold([0, 0, 0], |cm, item| {
             match (item > cm[0], item > cm[1], item > cm[2]) {
-                (false, _, _) => (),
-                (true, false, _) => cm[0] = item,
-                (true, true, false) => {
-                    cm[0] = cm[1];
-                    cm[1] = item;
-                }
-                (true, true, true) => {
-                    cm.rotate_left(1);
-                    cm[2] = item;
-                }
-            };
-            return cm;
+                (false, _, _) => cm,
+                (true, false, _) => [item, cm[1], cm[2]],
+                (true, true, false) => [cm[1], item, cm[2]],
+                (true, true, true) => [cm[1], cm[2], item],
+            }
         })
         .iter()
         .sum()
