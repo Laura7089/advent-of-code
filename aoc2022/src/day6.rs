@@ -1,20 +1,9 @@
 use itertools::Itertools;
 
-fn find_unique<const PACKET_LEN: usize>(input: &str) -> usize {
-    let mut window = [' '; PACKET_LEN];
-    input
-        .chars()
-        .take(PACKET_LEN)
-        .enumerate()
-        .for_each(|(i, c)| window[i] = c);
-
-    let mut ptr = 0;
-    for (i, c) in input.chars().enumerate().skip(PACKET_LEN) {
-        window[ptr] = c;
-        ptr = (ptr + 1) % PACKET_LEN;
-
-        if window.iter().unique().count() == PACKET_LEN {
-            return i + 1;
+fn find_unique<const SIZE: usize>(input: &str) -> usize {
+    for i in 0..(input.len() - SIZE) {
+        if input.as_bytes()[i..][..SIZE].iter().unique().count() == SIZE {
+            return i + SIZE;
         }
     }
     panic!("No valid sequence found!");
