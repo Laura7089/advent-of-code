@@ -12,3 +12,6 @@ enum-iterator = "1.2.0"
 itertools = "0.10.5"
 nom = "7.1.1"
 tinyvec = { version = "1.6.0", features = ["alloc", "std"] }
+
+[dev-dependencies]
+test-case = "2.2.2"

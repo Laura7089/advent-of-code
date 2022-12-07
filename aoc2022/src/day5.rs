@@ -1,85 +1,140 @@
+use nom::Finish;
+type Move = (u8, u8, u8);
+type Stacks = Vec<Vec<char>>;
+
 mod parse {
+    use super::{Move, Stacks};
     use nom::{
         branch::alt,
-        bytes::complete::{tag, take},
-        character::complete::line_ending,
-        combinator::map,
-        multi::separated_list1,
-        sequence::delimited,
+        bytes::complete::tag,
+        character::complete::{anychar, char, digit1, newline as line_ending},
+        combinator::{map, opt},
+        multi::{many0, many_m_n, separated_list1},
+        sequence::{delimited, preceded, separated_pair, terminated, tuple},
         IResult,
     };
 
-    pub fn stacks(input: &str) -> IResult<&str, Vec<Vec<u8>>> {
-        let stack_row = separated_list1(tag(" "), stack_item);
-        let (i, rows) = separated_list1(line_ending, stack_row)(input)?;
+    fn stack_item(input: &str) -> IResult<&str, Option<char>> {
+        let correct_num = map(delimited(char('['), anychar, char(']')), |c| Some(c));
+        let blank = map(tag("   "), |_| None);
+        alt((correct_num, blank))(input)
+    }
 
-        let max = rows.last().expect("Parser didn't return any rows").len();
-        let mut stacks = vec![Vec::with_capacity(rows.len()); max];
+    fn stack_row(input: &str) -> IResult<&str, Vec<Option<char>>> {
+        terminated(separated_list1(char(' '), stack_item), many0(char(' ')))(input)
+    }
+
+    fn label_row(input: &str) -> IResult<&str, Vec<&str>> {
+        separated_list1(char(' '), delimited(char(' '), digit1, opt(char(' '))))(input)
+    }
+
+    fn stacks(input: &str) -> IResult<&str, Stacks> {
+        let (input, rows) =
+            terminated(separated_list1(line_ending, stack_row), line_ending)(input)?;
+
+        let mut stacks = vec![Vec::with_capacity(rows.len()); rows.last().unwrap().len()];
 
         for row in rows.into_iter().rev() {
-            for (stack, item) in row.into_iter().enumerate().filter(|(_, r)| r.is_some()) {
+            for (stack, item) in row.into_iter().enumerate().filter(|x| x.1.is_some()) {
                 stacks[stack].push(item.unwrap());
             }
         }
 
-        Ok((i, stacks))
+        Ok((label_row(input)?.0, stacks))
     }
 
-    fn stack_item(input: &str) -> IResult<&str, Option<u8>> {
-        let correct_num = map(delimited(tag("["), take(1usize), tag("]")), |d: &str| {
-            Some(d.as_bytes()[0])
-        });
-        let blank = map(tag("   "), |_| None);
-        alt((correct_num, blank))(input)
+    fn move_single(input: &str) -> IResult<&str, Move> {
+        use nom::character::complete::u8;
+        tuple((
+            preceded(tag("move "), u8),
+            map(preceded(tag(" from "), u8), |x| x - 1),
+            map(preceded(tag(" to "), u8), |x| x - 1),
+        ))(input)
+    }
+
+    pub fn parse_all(input: &str) -> IResult<&str, (Stacks, Vec<Move>)> {
+        separated_pair(
+            stacks,
+            many_m_n(2, 2, line_ending),
+            separated_list1(line_ending, move_single),
+        )(input)
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use test_case::test_case;
+
+        #[test_case("   " => ("", None))]
+        #[test_case("[a]" => ("", Some('a')))]
+        #[test_case("r  " => panics)]
+        fn stack_item(input: &str) -> (&str, Option<char>) {
+            super::stack_item(input).unwrap()
+        }
+
+        #[test_case("    [a] [b]" => ("", vec![None, Some('a'), Some('b')]))]
+        #[test_case("     " => ("", vec![None]))]
+        #[test_case("    [a] [b]\n" => ("\n", vec![None, Some('a'), Some('b')]))]
+        fn stack_row(input: &str) -> (&str, Vec<Option<char>>) {
+            super::stack_row(input).unwrap()
+        }
+
+        #[test_case(" 1   2   3   4" => ("", vec!["1", "2", "3", "4"]))]
+        #[test_case("  1   2   3   4" => panics)]
+        fn label_row(input: &str) -> (&str, Vec<&str>) {
+            super::label_row(input).unwrap()
+        }
+
+        #[test_case(
+            "    [D]\n[N] [C]\n[Z] [M] [P]\n 1   2   3"
+            => ("", vec![vec!['Z', 'N'], vec!['M', 'C', 'D'], vec!['P']])
+            ; "example input"
+        )]
+        #[test_case("[D]\n[C]\n 1" => ("", vec![vec!['C', 'D']]); "small")]
+        fn stacks(input: &str) -> (&str, Vec<Vec<char>>) {
+            super::stacks(input).unwrap()
+        }
+
+        #[test_case("move 10 from 2 to 3" => ("", (10, 1, 2)))]
+        #[test_case("move 21 from 8 to 1" => ("", (21, 7, 0)))]
+        #[test_case("move 10a from 2 to 3" => panics; "erroneous char")]
+        fn move_single(input: &str) -> (&str, super::Move) {
+            super::move_single(input).unwrap()
+        }
     }
 }
 
 #[aoc_generator(day5)]
-fn generate(input: &str) -> (Vec<Vec<u8>>, Vec<(usize, (usize, usize))>) {
-    let mut input = input.split("\n\n");
-    let stacks = input.next().unwrap();
-    let seq = input.next().unwrap();
-
-    (
-        parse::stacks(stacks).unwrap().1,
-        seq.lines()
-            .map(|line| {
-                let mut line = line.split(" ").skip(1);
-                let target = line.next().unwrap().parse().unwrap();
-                let src: usize = line.nth(1).unwrap().parse().unwrap();
-                let dest: usize = line.nth(1).unwrap().parse().unwrap();
-                (target, (src - 1, dest - 1))
-            })
-            .collect(),
-    )
+fn generate(input: &str) -> (Stacks, Vec<Move>) {
+    parse::parse_all(input).finish().unwrap().1
 }
 
 #[aoc(day5, part1)]
-fn solve_part1((stacks, sequence): &(Vec<Vec<u8>>, Vec<(usize, (usize, usize))>)) -> String {
+fn solve_part1((stacks, sequence): &(Stacks, Vec<Move>)) -> String {
     let mut stacks = stacks.clone();
 
-    for &(num, (src, dest)) in sequence.into_iter() {
+    for &(num, src, dest) in sequence.into_iter() {
         for _ in 0..num {
-            let to_move = stacks[src].pop().unwrap();
-            stacks[dest].push(to_move);
+            let to_move = stacks[src as usize].pop().unwrap();
+            stacks[dest as usize].push(to_move);
         }
     }
 
-    String::from_utf8(stacks.into_iter().map(|s| *s.last().unwrap()).collect()).unwrap()
+    stacks.into_iter().map(|s| *s.last().unwrap()).collect()
 }
 
 #[aoc(day5, part2)]
-fn solve_part2((stacks, sequence): &(Vec<Vec<u8>>, Vec<(usize, (usize, usize))>)) -> String {
+fn solve_part2((stacks, sequence): &(Stacks, Vec<Move>)) -> String {
     let mut stacks = stacks.clone();
 
-    for &(num, (src, dest)) in sequence.into_iter() {
-        let src_len = stacks[src].len();
-        let to_move = stacks[src].split_at(src_len - num).1.to_owned();
-        stacks[dest].extend_from_slice(&to_move);
-        stacks[src].truncate(src_len - num)
+    for &(num, src, dest) in sequence.into_iter() {
+        let num = num as usize;
+        let src_len = stacks[src as usize].len();
+        let to_move = stacks[src as usize].split_at(src_len - num).1.to_owned();
+        stacks[dest as usize].extend_from_slice(&to_move);
+        stacks[src as usize].truncate(src_len - num)
     }
 
-    String::from_utf8(stacks.into_iter().map(|s| *s.last().unwrap()).collect()).unwrap()
+    stacks.into_iter().map(|s| *s.last().unwrap()).collect()
 }
 
 #[cfg(test)]
