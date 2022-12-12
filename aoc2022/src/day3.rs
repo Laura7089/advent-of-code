@@ -84,7 +84,7 @@ fn solve_part2(input: &[Rucksack]) -> usize {
 mod tests {
     use super::*;
 
-    const SAMPLE_INPUT: &'static str = "vJrwpWtwJgWrhcsFMMfFFhFp
+    const SAMPLE_INPUT: &str = "vJrwpWtwJgWrhcsFMMfFFhFp
 jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
 PmmdzqPrVvPwwTWBwg
 wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn

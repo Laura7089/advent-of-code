@@ -52,7 +52,7 @@ fn solve_part2(input: &str) -> u32 {
 mod tests {
     use super::*;
 
-    const SAMPLE_INPUT: &'static str = "1000
+    const SAMPLE_INPUT: &str = "1000
 2000
 3000
 

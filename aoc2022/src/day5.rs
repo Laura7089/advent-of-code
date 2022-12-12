@@ -15,7 +15,7 @@ mod parse {
     };
 
     fn stack_item(input: &str) -> IResult<&str, Option<char>> {
-        let correct_num = map(delimited(char('['), anychar, char(']')), |c| Some(c));
+        let correct_num = map(delimited(char('['), anychar, char(']')), Some);
         let blank = map(tag("   "), |_| None);
         alt((correct_num, blank))(input)
     }
@@ -112,7 +112,7 @@ fn generate(input: &str) -> (Stacks, Vec<Move>) {
 fn solve_part1((stacks, sequence): &(Stacks, Vec<Move>)) -> String {
     let mut stacks = stacks.clone();
 
-    for &(num, src, dest) in sequence.into_iter() {
+    for &(num, src, dest) in sequence.iter() {
         for _ in 0..num {
             let to_move = stacks[src as usize].pop().unwrap();
             stacks[dest as usize].push(to_move);
@@ -126,12 +126,12 @@ fn solve_part1((stacks, sequence): &(Stacks, Vec<Move>)) -> String {
 fn solve_part2((stacks, sequence): &(Stacks, Vec<Move>)) -> String {
     let mut stacks = stacks.clone();
 
-    for &(num, src, dest) in sequence.into_iter() {
+    for &(num, src, dest) in sequence.iter() {
         let num = num as usize;
         let src_len = stacks[src as usize].len();
         let to_move = stacks[src as usize].split_at(src_len - num).1.to_owned();
         stacks[dest as usize].extend_from_slice(&to_move);
-        stacks[src as usize].truncate(src_len - num)
+        stacks[src as usize].truncate(src_len - num);
     }
 
     stacks.into_iter().map(|s| *s.last().unwrap()).collect()
@@ -141,7 +141,7 @@ fn solve_part2((stacks, sequence): &(Stacks, Vec<Move>)) -> String {
 mod tests {
     use super::*;
 
-    const SAMPLE_INPUT: &'static str = "    [D]
+    const SAMPLE_INPUT: &str = "    [D]
 [N] [C]
 [Z] [M] [P]
  1   2   3

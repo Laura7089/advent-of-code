@@ -1,11 +1,8 @@
 type Elf = (u32, u32);
 
 fn elf_range(input: &str) -> Elf {
-    let mut pair = input.split('-');
-    (
-        pair.next().unwrap().parse().unwrap(),
-        pair.next().unwrap().parse().unwrap(),
-    )
+    let mut pair = input.split('-').map(|x| x.parse().unwrap());
+    (pair.next().unwrap(), pair.next().unwrap())
 }
 
 #[aoc_generator(day4)]
@@ -13,10 +10,8 @@ fn generate(input: &str) -> Vec<(Elf, Elf)> {
     input
         .lines()
         .map(|l| {
-            let mut elves = l.split(',');
-            let elf1 = elves.next().unwrap();
-            let elf2 = elves.next().unwrap();
-            (elf_range(elf1), elf_range(elf2))
+            let mut elves = l.split(',').map(elf_range);
+            (elves.next().unwrap(), elves.next().unwrap())
         })
         .collect()
 }
@@ -53,7 +48,7 @@ fn solve_part2(input: &[(Elf, Elf)]) -> usize {
 mod tests {
     use super::*;
 
-    const SAMPLE_INPUT: &'static str = "2-4,6-8
+    const SAMPLE_INPUT: &str = "2-4,6-8
 2-3,4-5
 5-7,7-9
 2-8,3-7

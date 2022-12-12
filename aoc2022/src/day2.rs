@@ -37,19 +37,19 @@ impl Play {
         }
     }
 
-    fn resolve(&self, other: &Self) -> Outcome {
+    fn resolve(self, other: Self) -> Outcome {
         match (self, other) {
             (x, y) if x == y => Draw,
-            (x, y) if y == &previous_cycle(x).unwrap() => Win,
+            (x, y) if y == previous_cycle(&x).unwrap() => Win,
             _ => Loss,
         }
     }
 
-    fn find_desired(&self, desired: Outcome) -> Self {
+    fn find_desired(self, desired: Outcome) -> Self {
         match desired {
-            Win => next_cycle(self).unwrap(),
-            Loss => previous_cycle(self).unwrap(),
-            Draw => *self,
+            Win => next_cycle(&self).unwrap(),
+            Loss => previous_cycle(&self).unwrap(),
+            Draw => self,
         }
     }
 }
@@ -63,7 +63,7 @@ fn solve_part1(input: &str) -> u32 {
             let theirs = Play::new(l.next().unwrap());
             l.next();
             let ours = Play::new(l.next().unwrap());
-            ours.resolve(&theirs) as u32 + ours as u32
+            ours.resolve(theirs) as u32 + ours as u32
         })
         .sum()
 }
@@ -86,7 +86,7 @@ fn solve_part2(input: &str) -> u32 {
 mod tests {
     use super::*;
 
-    const SAMPLE_INPUT: &'static str = "A Y
+    const SAMPLE_INPUT: &str = "A Y
 B X
 C Z";
 
