@@ -23,7 +23,7 @@ fn solve_part2(input: &str) -> usize {
 mod tests {
     use super::*;
     use crate::get_input;
-    const SAMPLE_INPUT: &'static [(&'static str, usize, usize)] = &[
+    const SAMPLE_INPUT: &[(&str, usize, usize)] = &[
         ("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 7, 19),
         ("bvwbjplbgvbhsrlpgdmjqwftvncz", 5, 23),
         ("nppdvjthqldpwncqszvftbrmjlhg", 6, 23),
