@@ -5,25 +5,11 @@ enum Instr {
     addx(isize),
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 #[allow(non_snake_case)]
 struct CPUState {
     X: isize,
     cycle: usize,
-}
-
-const OUTPUT_START: usize = 20;
-const OUTPUT_PERIOD: usize = 40;
-
-fn is_output_cycle(cycle: usize) -> bool {
-    if cycle < OUTPUT_START {
-        return false;
-    }
-    (cycle - OUTPUT_START) % OUTPUT_PERIOD == 0
-}
-
-fn get_output(state: CPUState) -> isize {
-    state.cycle as isize * state.X
 }
 
 #[aoc_generator(day10)]
@@ -41,19 +27,30 @@ fn generate(input: &str) -> Vec<Instr> {
         .collect()
 }
 
+const OUTPUT_START: usize = 20;
+const OUTPUT_PERIOD: usize = 40;
+
+fn is_output_cycle(cycle: usize) -> bool {
+    if cycle < OUTPUT_START {
+        return false;
+    }
+    (cycle - OUTPUT_START) % OUTPUT_PERIOD == 0
+}
+
 #[aoc(day10, part1)]
 fn solve_part1(input: &[Instr]) -> isize {
     input
         .iter()
-        .scan(CPUState { X: 1, cycle: 1 }, |state, &i| {
-            let prev = *state;
-            match i {
+        .scan(CPUState { X: 1, cycle: 1 }, |state, &ins| {
+            let prev = state.clone();
+            match ins {
                 Instr::noop => state.cycle += 1,
                 Instr::addx(x) => {
                     state.cycle += 2;
                     state.X += x;
-                    if is_output_cycle(prev.cycle + 1) {
-                        return Some((prev.cycle + 1) as isize * prev.X);
+                    let half_cycle = prev.cycle + 1;
+                    if is_output_cycle(half_cycle) {
+                        return Some(half_cycle as isize * prev.X);
                     }
                 }
             }
@@ -61,15 +58,53 @@ fn solve_part1(input: &[Instr]) -> isize {
             if is_output_cycle(prev.cycle) {
                 Some(prev.cycle as isize * prev.X)
             } else {
-                Some(0)
+                Some(0) // slightly inelegant
             }
         })
         .sum()
 }
 
+const SCREEN_SIZE: (usize, usize) = (40, 6);
+
+fn perform_output(state: &CPUState, buf: &mut String) {
+    buf.push(
+        if isize::abs_diff(state.X, ((state.cycle - 1) % SCREEN_SIZE.0) as isize) <= 1 {
+            '#'
+        } else {
+            '.'
+        },
+    );
+    if state.cycle % 40 == 0 && state.cycle != SCREEN_SIZE.0 * SCREEN_SIZE.1 {
+        buf.push('\n');
+    }
+}
+
 #[aoc(day10, part2)]
-fn solve_part2(input: &[Instr]) -> usize {
-    todo!()
+fn solve_part2(input: &[Instr]) -> String {
+    let capacity = ((SCREEN_SIZE.0 + 1) * SCREEN_SIZE.1) + 1;
+    let mut out = String::with_capacity(capacity);
+    // Extra newline at the beginning so the AOC output is readable
+    out.push('\n');
+
+    let mut state = CPUState { X: 1, cycle: 1 };
+
+    for &ins in input {
+        // Output is performed *during* the cycle
+        perform_output(&state, &mut out);
+        match ins {
+            Instr::noop => (),
+            Instr::addx(x) => {
+                // Simulate the interim cycle
+                state.cycle += 1;
+                perform_output(&state, &mut out);
+
+                state.X += x;
+            }
+        }
+        state.cycle += 1;
+    }
+
+    out
 }
 
 #[cfg(test)]
@@ -235,11 +270,29 @@ noop";
 
     #[test]
     fn part2_example() {
-        assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+        assert_eq!(
+            solve_part2(&generate(SAMPLE_INPUT)),
+            "\n##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######....."
+                .to_owned()
+        );
     }
 
     #[test]
     fn part2_mine() {
-        assert_eq!(solve_part2(&generate(&crate::get_input(10))), todo!());
+        assert_eq!(
+            solve_part2(&generate(&crate::get_input(10))),
+            "\n####.####.####.###..###...##..#..#.#....
+#.......#.#....#..#.#..#.#..#.#.#..#....
+###....#..###..#..#.#..#.#..#.##...#....
+#.....#...#....###..###..####.#.#..#....
+#....#....#....#....#.#..#..#.#.#..#....
+####.####.#....#....#..#.#..#.#..#.####."
+                .to_owned()
+        );
     }
 }
