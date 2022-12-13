@@ -1,19 +1,20 @@
 use itertools::Itertools;
+use std::cmp::Ordering;
+
 mod parse {
     use super::Packet;
     use nom::{
-        branch::alt, character::complete::char, combinator::map, multi::separated_list0,
+        branch::alt, character::complete::char, combinator::map, multi::separated_list0 as seplist,
         sequence::delimited, IResult,
     };
 
     fn int(input: &str) -> IResult<&str, Packet> {
-        use nom::character::complete::u32;
-        map(u32, Packet::Int)(input)
+        map(nom::character::complete::u32, Packet::Int)(input)
     }
 
     fn list(input: &str) -> IResult<&str, Packet> {
         map(
-            delimited(char('['), separated_list0(char(','), packet), char(']')),
+            delimited(char('['), seplist(char(','), packet), char(']')),
             Packet::List,
         )(input)
     }
@@ -30,24 +31,20 @@ enum Packet {
 }
 
 impl PartialOrd for Packet {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         use Packet::*;
 
         match (self, other) {
-            (&Int(ref l), &Int(ref r)) => PartialOrd::partial_cmp(l, r),
+            (&Int(l), &Int(r)) => PartialOrd::partial_cmp(&l, &r),
             (&List(ref l), &List(ref r)) => PartialOrd::partial_cmp(l, r),
-            (i @ &Int(_), l @ &List(_)) => {
-                PartialOrd::partial_cmp(&Packet::List(vec![i.clone()]), l)
-            }
-            (l @ &List(_), i @ &Int(_)) => {
-                PartialOrd::partial_cmp(l, &Packet::List(vec![i.clone()]))
-            }
+            (i @ &Int(_), l @ &List(_)) => PartialOrd::partial_cmp(&List(vec![i.clone()]), l),
+            (l @ &List(_), i @ &Int(_)) => PartialOrd::partial_cmp(l, &List(vec![i.clone()])),
         }
     }
 }
 
 impl Ord for Packet {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()
     }
 }
