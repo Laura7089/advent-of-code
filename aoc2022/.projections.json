@@ -3,8 +3,8 @@
     "type": "day",
     "template": [
       "#[aoc_generator(day{})]",
-      "fn generate(input: &str) -> &str {",
-      "    input",
+      "fn generate(input: &str) -> String {",
+      "    input.to_owned()",
       "}",
       "",
       "#[aoc(day{}, part1)]",
