@@ -6,34 +6,23 @@ enum Move {
     Hor(isize),
 }
 
-#[derive(Copy, Clone, PartialEq, Debug, Hash, Eq)]
-struct Knot(isize, isize);
+#[derive(Copy, Clone, PartialEq, Debug, Hash, Eq, Default)]
+struct Knot {
+    x: isize,
+    y: isize,
+}
 
 impl Knot {
     fn follow(&mut self, other: &Self) {
-        match (other.0 - self.0, other.1 - self.1) {
+        match (other.x - self.x, other.y - self.y) {
             // Single-dimension movements
-            (2, 0) => self.0 += 1,
-            (-2, 0) => self.0 -= 1,
-            (0, 2) => self.1 += 1,
-            (0, -2) => self.1 -= 1,
+            (x, 0) if x.abs() >= 2 => self.x += x.signum(),
+            (0, y) if y.abs() >= 2 => self.y += y.signum(),
 
             // Multi-dimension movements
-            (1, 2) | (2, 1) | (2, 2) => {
-                self.0 += 1;
-                self.1 += 1;
-            }
-            (-1, 2) | (-2, 1) | (-2, 2) => {
-                self.0 -= 1;
-                self.1 += 1;
-            }
-            (1, -2) | (2, -1) | (2, -2) => {
-                self.0 += 1;
-                self.1 -= 1;
-            }
-            (-1, -2) | (-2, -1) | (-2, -2) => {
-                self.0 -= 1;
-                self.1 -= 1;
+            (x, y) if (x.abs() + y.abs()) >= 3 => {
+                self.x += x.signum();
+                self.y += y.signum();
             }
 
             _ => (),
@@ -45,76 +34,79 @@ impl Move {
     fn apply(&mut self, knot: &mut Knot) -> bool {
         match self {
             Self::Ver(dy) => {
-                knot.1 += dy.signum();
-                *dy += dy.signum() * -1;
+                knot.y += dy.signum();
+                *dy += -dy.signum();
                 dy == &0
             }
             Self::Hor(dx) => {
-                knot.0 += dx.signum();
-                *dx += dx.signum() * -1;
+                knot.x += dx.signum();
+                *dx += -dx.signum();
                 dx == &0
             }
         }
     }
+
+    fn magnitude(&self) -> usize {
+        match self {
+            Move::Hor(x) => x.unsigned_abs(),
+            Move::Ver(y) => y.unsigned_abs(),
+        }
+    }
 }
 
-#[aoc_generator(day09)]
+#[aoc_generator(day9)]
 fn generate(input: &str) -> Vec<Move> {
     input
         .lines()
         .map(|line| {
-            let mut split = line.split(' ');
-            let dir = split.next().unwrap();
-            let value = split.next().unwrap().parse().unwrap();
-            match dir {
+            let value = line.split(' ').nth(1).unwrap().parse().unwrap();
+            match line.split(' ').next().unwrap() {
                 "R" => Move::Hor(value),
                 "U" => Move::Ver(value),
-                "L" => Move::Hor(-1 * value),
-                "D" => Move::Ver(-1 * value),
-                _ => panic!("Direction {dir} not recognised"),
+                "L" => Move::Hor(-value),
+                "D" => Move::Ver(-value),
+                d => panic!("Direction {d} not recognised"),
             }
         })
         .collect()
 }
 
 fn run_knot_snake<const LENGTH: usize>(input: &[Move]) -> usize {
-    // TODO: hashing is SLOOOOOOW
-    // Allocate enough for 50% of total move units to produce a unique coord
-    let mut tail_positions: HashSet<Knot> = HashSet::with_capacity(
-        input
-            .iter()
-            .map(|m| match m {
-                Move::Hor(x) => x.abs() as usize,
-                Move::Ver(y) => y.abs() as usize,
-            })
-            .sum::<usize>()
-            / 2,
-    );
+    let input = input.to_owned();
+    let max_moves = input.iter().map(Move::magnitude).sum();
 
-    let mut knots = [Knot(0, 0); LENGTH];
+    // Hashing is SLOOOOOOW >:(
+    // - Vectors + uniqueness comparisons are quadratic complexity, but
+    //   integer equality checks are definitely a lower constant time
+    // - A matrix of bools is another option but it would be enormous and we'd
+    //   spend most of our time reading `false`s
+    // - Perhaps some kind of nested vector with internal index offsets would
+    //   be better (I'm sure there's a crate) but god I cannot be fucked
+    let mut passed: HashSet<Knot> = HashSet::with_capacity(max_moves);
 
-    for mov in input {
-        let mut m = mov.clone();
+    let mut knots = [Knot::default(); LENGTH];
+
+    for mut mov in input {
         let mut cont = true;
         while cont {
-            cont = !m.apply(&mut knots[0]);
+            cont = !mov.apply(&mut knots[0]);
             for i in 1..LENGTH {
                 let this_head = knots[i - 1];
                 knots[i].follow(&this_head);
             }
-            tail_positions.insert(knots[LENGTH - 1].clone());
+            passed.insert(knots[LENGTH - 1]);
         }
     }
 
-    tail_positions.len()
+    passed.len()
 }
 
-#[aoc(day09, part1)]
+#[aoc(day9, part1)]
 fn solve_part1(input: &[Move]) -> usize {
     run_knot_snake::<2>(input)
 }
 
-#[aoc(day09, part2)]
+#[aoc(day9, part2)]
 fn solve_part2(input: &[Move]) -> usize {
     run_knot_snake::<10>(input)
 }
