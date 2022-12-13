@@ -200,11 +200,13 @@ Monkey 3:
     }
 
     #[test]
+    #[ignore]
     fn part2_example() {
         assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 2713310158);
     }
 
     #[test]
+    #[ignore]
     fn part2_mine() {
         assert_eq!(solve_part2(&generate(&crate::get_input(11))), todo!());
     }
