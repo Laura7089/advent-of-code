@@ -1,12 +1,9 @@
+use itertools::Itertools;
 mod parse {
     use super::Packet;
     use nom::{
-        branch::alt,
-        character::{complete::char, streaming::line_ending},
-        combinator::map,
-        multi::separated_list0,
-        sequence::{delimited, separated_pair},
-        IResult,
+        branch::alt, character::complete::char, combinator::map, multi::separated_list0,
+        sequence::delimited, IResult,
     };
 
     fn int(input: &str) -> IResult<&str, Packet> {
@@ -21,16 +18,12 @@ mod parse {
         )(input)
     }
 
-    fn packet(input: &str) -> IResult<&str, Packet> {
+    pub(super) fn packet(input: &str) -> IResult<&str, Packet> {
         alt((int, list))(input)
-    }
-
-    pub(super) fn packet_pair(input: &str) -> IResult<&str, (Packet, Packet)> {
-        separated_pair(packet, line_ending, packet)(input)
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Ord)]
 enum Packet {
     Int(u32),
     List(Vec<Packet>),
@@ -64,26 +57,55 @@ impl PartialOrd for Packet {
 }
 
 #[aoc_generator(day13)]
-fn generate(input: &str) -> Vec<(Packet, Packet)> {
+fn generate(input: &str) -> Vec<Packet> {
     use nom::Finish;
     input
         .split("\n\n")
-        .map(|pair| parse::packet_pair(pair).finish().unwrap().1)
+        .map(|pair| pair.lines().map(|l| parse::packet(l).finish().unwrap().1))
+        .flatten()
         .collect()
 }
 
 #[aoc(day13, part1)]
-fn solve_part1(input: &[(Packet, Packet)]) -> usize {
+fn solve_part1(input: &[Packet]) -> usize {
     input
         .iter()
+        .chunks(2)
+        .into_iter()
         .enumerate()
-        .filter_map(|(i, (l, r))| if l < r { Some(i + 1) } else { None })
+        .filter_map(|(i, mut c)| {
+            let l = c.next().unwrap();
+            let r = c.next().unwrap();
+            if l < r {
+                Some(i + 1)
+            } else {
+                None
+            }
+        })
         .sum()
 }
 
 #[aoc(day13, part2)]
-fn solve_part2(input: &[(Packet, Packet)]) -> usize {
-    todo!()
+fn solve_part2(input: &[Packet]) -> usize {
+    let dividers = [
+        parse::packet("[[2]]").unwrap().1,
+        parse::packet("[[6]]").unwrap().1,
+    ];
+    let mut input = input.to_owned();
+    input.push(dividers[0].clone());
+    input.push(dividers[1].clone());
+    input.sort_unstable();
+
+    input
+        .iter()
+        .enumerate()
+        .find_map(|(i, p)| if p == &dividers[0] { Some(i + 1) } else { None })
+        .unwrap()
+        * input
+            .iter()
+            .enumerate()
+            .find_map(|(i, p)| if p == &dividers[1] { Some(i + 1) } else { None })
+            .unwrap()
 }
 
 #[cfg(test)]
@@ -121,16 +143,16 @@ mod tests {
 
     #[test]
     fn part1_mine() {
-        assert_eq!(solve_part1(&generate(&crate::get_input(13))), todo!());
+        assert_eq!(solve_part1(&generate(&crate::get_input(13))), 5760);
     }
 
     #[test]
     fn part2_example() {
-        assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+        assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 140);
     }
 
     #[test]
     fn part2_mine() {
-        assert_eq!(solve_part2(&generate(&crate::get_input(13))), todo!());
+        assert_eq!(solve_part2(&generate(&crate::get_input(13))), 26670);
     }
 }
