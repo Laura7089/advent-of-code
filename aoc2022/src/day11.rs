@@ -1,7 +1,18 @@
+type Worry = u128;
+
 #[derive(Debug, Copy, Clone)]
 enum Operand {
     Old,
-    Literal(isize),
+    Literal(Worry),
+}
+
+impl Operand {
+    fn get_value(self, value: Worry) -> Worry {
+        match self {
+            Self::Old => value,
+            Self::Literal(x) => x,
+        }
+    }
 }
 
 impl From<&str> for Operand {
@@ -34,13 +45,36 @@ impl From<&str> for Operation {
     }
 }
 
+impl Operation {
+    fn apply(&self, worry: &mut Worry) {
+        match self {
+            Self::Mul(o) => *worry *= o.get_value(*worry),
+            Self::Div(o) => *worry /= o.get_value(*worry),
+            Self::Add(o) => *worry += o.get_value(*worry),
+            Self::Sub(o) => *worry -= o.get_value(*worry),
+        }
+    }
+
+    fn try_simplify(lhs: Self, rhs: Self) -> Option<Self> {
+        use Operand::Literal;
+        use Operation::*;
+
+        match (lhs, rhs) {
+            (Mul(Literal(x)), Div(Literal(y))) if x % y == 0 => Some(Mul(Literal(x / y))),
+
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct Monkey {
-    start: Vec<usize>,
+    holding: Vec<(Worry, Vec<Operation>)>,
     op: Operation,
-    test_mod: usize,
+    test_mod: Worry,
     on_success: usize,
     on_fail: usize,
+    inspections: usize,
 }
 
 impl From<&str> for Monkey {
@@ -48,14 +82,15 @@ impl From<&str> for Monkey {
         let mut lines = input.lines().skip(1);
 
         Monkey {
-            start: lines.next().unwrap()[18..]
+            holding: lines.next().unwrap()[18..]
                 .split(", ")
-                .map(|i| i.parse().unwrap())
+                .map(|i| (i.parse().unwrap(), vec![]))
                 .collect(),
             op: lines.next().unwrap()[23..].into(),
             test_mod: lines.next().unwrap()[21..].parse().unwrap(),
             on_success: lines.next().unwrap()[29..].parse().unwrap(),
             on_fail: lines.next().unwrap()[30..].parse().unwrap(),
+            inspections: 0,
         }
     }
 }
@@ -65,14 +100,61 @@ fn generate(input: &str) -> Vec<Monkey> {
     input.split("\n\n").map(From::from).collect()
 }
 
+const PART1_ROUNDS: usize = 20;
+
 #[aoc(day11, part1)]
 fn solve_part1(input: &[Monkey]) -> usize {
-    todo!()
+    let mut monkeys = input.to_owned();
+
+    for _round in 0..PART1_ROUNDS {
+        for m in 0..monkeys.len() {
+            for (mut item, _) in monkeys[m].holding.drain(..).collect::<Vec<_>>() {
+                monkeys[m].op.apply(&mut item);
+                item /= 3;
+                if item % monkeys[m].test_mod == 0 {
+                    let on_success = monkeys[m].on_success;
+                    monkeys[on_success].holding.push((item, vec![]));
+                } else {
+                    let on_fail = monkeys[m].on_fail;
+                    monkeys[on_fail].holding.push((item, vec![]));
+                }
+                monkeys[m].inspections += 1;
+            }
+        }
+    }
+
+    let mut interactions: Vec<usize> = monkeys.into_iter().map(|m| m.inspections).collect();
+    interactions.sort_unstable();
+    interactions.pop().unwrap() * interactions.pop().unwrap()
 }
 
+const PART2_ROUNDS: usize = 10_000;
+
 #[aoc(day11, part2)]
-fn solve_part2(input: &[Monkey]) -> usize {
-    todo!()
+fn solve_part2(input: &[Monkey]) -> u128 {
+    // TODO: chinese remainder theorem
+    let mut monkeys = input.to_owned();
+
+    for _round in 0..PART2_ROUNDS {
+        for m in 0..monkeys.len() {
+            for (item, mut ops) in monkeys[m].holding.clone() {
+                ops.push(monkeys[m].op);
+                if item % monkeys[m].test_mod == 0 {
+                    let on_success = monkeys[m].on_success;
+                    monkeys[on_success].holding.push((item, ops));
+                } else {
+                    let on_fail = monkeys[m].on_fail;
+                    monkeys[on_fail].holding.push((item, ops));
+                }
+                monkeys[m].inspections += 1;
+            }
+            monkeys[m].holding.clear();
+        }
+    }
+
+    let mut interactions: Vec<usize> = monkeys.into_iter().map(|m| m.inspections).collect();
+    interactions.sort_unstable();
+    interactions.pop().unwrap() as u128 * interactions.pop().unwrap() as u128
 }
 
 #[cfg(test)]
@@ -114,12 +196,12 @@ Monkey 3:
 
     #[test]
     fn part1_mine() {
-        assert_eq!(solve_part1(&generate(&crate::get_input(11))), todo!());
+        assert_eq!(solve_part1(&generate(&crate::get_input(11))), 67830);
     }
 
     #[test]
     fn part2_example() {
-        assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+        assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 2713310158);
     }
 
     #[test]
