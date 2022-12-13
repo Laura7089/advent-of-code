@@ -1,46 +1,23 @@
 #[derive(Clone, Debug, PartialEq)]
-enum Filesystem {
-    File {
-        name: String,
-        size: u32,
-    },
-    Dir {
-        name: String,
-        contents: Vec<Filesystem>,
-    },
-}
-
-impl Filesystem {
-    fn get_contents_mut(&mut self) -> &mut Vec<Self> {
-        if let Self::Dir { contents, .. } = self {
-            return contents;
-        } else {
-            panic!("Filesystem::get_contents called on a non-dir object");
-        }
-    }
-
-    fn get_contents(&self) -> &[Self] {
-        if let Self::Dir { contents, .. } = self {
-            return contents;
-        } else {
-            panic!("Filesystem::get_contents called on a non-dir object");
-        }
-    }
+struct Dir {
+    name: String,
+    subdirs: Vec<Self>,
+    size: u32,
 }
 
 mod parse {
-    use super::Filesystem;
+    use super::Dir;
     use nom::{
         branch::alt,
         bytes::complete::{is_a, tag},
-        character::complete::{alpha1, char, line_ending},
+        character::complete::{alpha1, line_ending as le},
         combinator::{map, value},
         multi::separated_list1 as seplist,
-        sequence::{preceded, separated_pair as seppair},
+        sequence::{preceded, terminated},
         IResult,
     };
 
-    const FILE_ALLOWED_CHARS: &str = "abcdefghijklmnopqrstuvwxyz.";
+    const FILE_CHARS: &str = "abcdefghijklmnopqrstuvwxyz. ";
     const VEC_PREALLOCATE: usize = 10;
 
     #[allow(non_camel_case_types)]
@@ -53,101 +30,96 @@ mod parse {
 
     #[derive(Clone, PartialEq, Debug)]
     enum Line<'a> {
-        Item(Filesystem),
+        Dir(Dir),
+        File(u32),
         Cmd(Command<'a>),
     }
 
-    fn file(input: &str) -> IResult<&str, Filesystem> {
+    fn file(input: &str) -> IResult<&str, Line> {
         use nom::character::complete::u32;
-        let (input, (size, n)) = seppair(u32, char(' '), is_a(FILE_ALLOWED_CHARS))(input)?;
-        Ok((
-            input,
-            Filesystem::File {
-                name: n.to_owned(),
-                size,
-            },
-        ))
+        map(terminated(u32, is_a(FILE_CHARS)), Line::File)(input)
     }
 
-    fn dir(input: &str) -> IResult<&str, Filesystem> {
+    fn dir(input: &str) -> IResult<&str, Line> {
         let (input, n) = preceded(tag("dir "), alpha1)(input)?;
         Ok((
             input,
-            Filesystem::Dir {
+            Line::Dir(Dir {
                 name: n.to_owned(),
-                contents: vec![],
-            },
+                subdirs: vec![],
+                size: 0,
+            }),
         ))
     }
 
-    fn cmd(input: &str) -> IResult<&str, Command> {
+    fn cmd(input: &str) -> IResult<&str, Line> {
         let ls = value(Command::ls, tag("ls"));
         let cd = preceded(
             tag("cd "),
             alt((value(Command::cdup, tag("..")), map(alpha1, Command::cd))),
         );
-        preceded(tag("$ "), alt((ls, cd)))(input)
+        map(preceded(tag("$ "), alt((ls, cd))), Line::Cmd)(input)
     }
 
     fn line(input: &str) -> IResult<&str, Line> {
-        let item = map(alt((file, dir)), Line::Item);
-        let command = map(cmd, Line::Cmd);
-        alt((item, command))(input)
+        alt((file, dir, cmd))(input)
     }
 
-    fn populate_dir<'a>(parent: &mut Filesystem, lines: &mut impl Iterator<Item = Line<'a>>) {
-        // We're using a while loop here so that we can pull out of the iterator within too
+    fn populate_dir<'a>(parent: &mut Dir, lines: &mut impl Iterator<Item = Line<'a>>) {
+        // We're using a while loop here so that we can pull out of the
+        // iterator inside (a for loop wouldn't let us)
         while let Some(line) = lines.next() {
             match line {
                 Line::Cmd(Command::cd(dest)) => {
-                    // Find the dir to `cd` to
-                    let target = parent
-                        .get_contents_mut()
-                        .iter_mut()
-                        .find(|c| matches!(c, Filesystem::Dir { name, .. } if name == dest))
-                        .expect("Couldn't find folder {dest} to `cd` to");
-                    // Recurse
-                    populate_dir(target, lines);
+                    populate_dir(
+                        parent
+                            .subdirs
+                            .iter_mut()
+                            .find(|d| d.name == dest)
+                            .expect("Couldn't find folder {dest} to `cd` to"),
+                        lines,
+                    );
                 }
-                Line::Item(d) => parent.get_contents_mut().push(d),
+                Line::Dir(d) => parent.subdirs.push(d),
+                Line::File(s) => parent.size += s,
                 Line::Cmd(Command::cdup) => return,
                 Line::Cmd(Command::ls) => (),
             }
         }
     }
 
-    pub(super) fn parse_all(input: &str) -> IResult<&str, Filesystem> {
-        let mut root = Filesystem::Dir {
+    pub(super) fn parse_all(input: &str) -> IResult<&str, Dir> {
+        let mut root = Dir {
             name: "/".to_owned(),
-            contents: Vec::with_capacity(VEC_PREALLOCATE),
+            subdirs: Vec::with_capacity(VEC_PREALLOCATE),
+            size: 0,
         };
-        let (input, lines) = preceded(tag("$ cd /\n"), seplist(line_ending, line))(input)?;
+        let first = tag("$ cd /\n");
+        let (input, lines) = preceded(first, seplist(le, line))(input)?;
         populate_dir(&mut root, &mut lines.into_iter());
         Ok((input, root))
     }
 }
 
 #[aoc_generator(day7)]
-fn generate(input: &str) -> Filesystem {
+fn generate(input: &str) -> Dir {
     parse::parse_all(input).unwrap().1
 }
 
-fn dir_size(current: &mut Vec<u32>, dir: &Filesystem) -> u32 {
+fn dir_size(current: &mut Vec<u32>, dir: &Dir) -> u32 {
     let total = dir
-        .get_contents()
+        .subdirs
         .iter()
-        .map(|entry| match entry {
-            Filesystem::File { size, .. } => *size,
-            Filesystem::Dir { .. } => dir_size(current, entry),
-        })
-        .sum();
+        .map(|entry| dir_size(current, entry))
+        .sum::<u32>()
+        + dir.size;
 
     current.push(total);
     total
 }
 
 #[aoc(day7, part1)]
-fn solve_part1(input: &Filesystem) -> u32 {
+fn solve_part1(input: &Dir) -> u32 {
     let mut sizes = Vec::with_capacity(500);
     dir_size(&mut sizes, input);
     sizes.into_iter().filter(|x| x <= &100_000).sum()
@@ -157,7 +129,7 @@ const TOTAL_SPACE: u32 = 70_000_000;
 const NEEDED_FREE: u32 = 30_000_000;
 
 #[aoc(day7, part2)]
-fn solve_part2(input: &Filesystem) -> u32 {
+fn solve_part2(input: &Dir) -> u32 {
     let mut sizes = Vec::with_capacity(500);
     dir_size(&mut sizes, input);
 
