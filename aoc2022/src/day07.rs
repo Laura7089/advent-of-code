@@ -149,14 +149,24 @@ fn dir_size(current: &mut Vec<u32>, dir: &Filesystem) -> u32 {
 #[aoc(day7, part1)]
 fn solve_part1(input: &Filesystem) -> u32 {
     let mut sizes = Vec::with_capacity(500);
-    let total_size = dir_size(&mut sizes, input);
-    sizes.push(total_size); // Push the overall total on
+    dir_size(&mut sizes, input);
     sizes.into_iter().filter(|x| x <= &100_000).sum()
 }
 
+const TOTAL_SPACE: u32 = 70_000_000;
+const NEEDED_FREE: u32 = 30_000_000;
+
 #[aoc(day7, part2)]
-fn solve_part2(_input: &Filesystem) -> usize {
-    todo!()
+fn solve_part2(input: &Filesystem) -> u32 {
+    let mut sizes = Vec::with_capacity(500);
+    dir_size(&mut sizes, input);
+
+    let need_to_delete = NEEDED_FREE - (TOTAL_SPACE - *sizes.last().unwrap());
+    sizes
+        .into_iter()
+        .filter(|s| s >= &need_to_delete)
+        .min()
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -195,5 +205,15 @@ $ ls
     #[test]
     fn part1_mine() {
         assert_eq!(solve_part1(&generate(&crate::get_input(7))), 1444896);
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 24933642);
+    }
+
+    #[test]
+    fn part2_mine() {
+        assert_eq!(solve_part2(&generate(&crate::get_input(7))), 404395);
     }
 }
