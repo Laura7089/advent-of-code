@@ -8,58 +8,55 @@ fn generate(input: &str) -> Array2<u8> {
 
     for (j, row) in input.lines().enumerate() {
         for (i, tree) in row.bytes().enumerate() {
-            array[[i, j]] = tree - b'0';
+            array[(i, j)] = tree - b'0';
         }
     }
 
     array
 }
 
+fn visible(input: impl Iterator<Item = (usize, u8)>) -> impl Iterator<Item = usize> {
+    input
+        .scan(0, |max_height, (n, tree)| {
+            Some((
+                n,
+                if *max_height >= tree {
+                    false
+                } else if tree == 0 {
+                    true
+                } else {
+                    let clipped_tree = tree - *max_height;
+                    *max_height += clipped_tree;
+                    clipped_tree != 0
+                },
+            ))
+        })
+        .filter_map(|(n, t)| if t { Some(n) } else { None })
+}
+
 #[aoc(day8, part1)]
 fn solve_part1(input: &Array2<u8>) -> usize {
-    let mut total = 0;
+    let mut vis = Array2::from_elem(input.dim(), false);
+    vis.column_mut(0).iter_mut().for_each(|v| *v = true);
+    vis.column_mut(vis.dim().0 - 1)
+        .iter_mut()
+        .for_each(|v| *v = true);
+    vis.row_mut(0).iter_mut().for_each(|v| *v = true);
+    vis.row_mut(vis.dim().1 - 1)
+        .iter_mut()
+        .for_each(|v| *v = true);
 
-    for column in input.axis_iter(Axis(0)) {
-        // Top to bottom
-        let mut last_height = 0;
-        for tree in column {
-            if last_height < *tree {
-                total += 1;
-            }
-            last_height = *tree;
-        }
-
-        // Bottom to top
-        let mut last_height = 0;
-        for tree in column.iter().rev() {
-            if last_height < *tree {
-                total += 1;
-            }
-            last_height = *tree;
-        }
+    for (x, col) in input.axis_iter(Axis(0)).enumerate() {
+        visible(col.iter().copied().enumerate()).for_each(|y| vis[(x, y)] = true);
+        visible(col.iter().copied().enumerate().rev()).for_each(|y| vis[(x, y)] = true);
     }
 
-    for row in input.axis_iter(Axis(1)) {
-        // Left to right
-        let mut last_height = 0;
-        for tree in row {
-            if last_height < *tree {
-                total += 1;
-            }
-            last_height = *tree;
-        }
-
-        // Right to left
-        let mut last_height = 0;
-        for tree in row.iter().rev() {
-            if last_height < *tree {
-                total += 1;
-            }
-            last_height = *tree;
-        }
+    for (y, row) in input.axis_iter(Axis(1)).enumerate() {
+        visible(row.iter().copied().enumerate()).for_each(|x| vis[(x, y)] = true);
+        visible(row.iter().copied().enumerate().rev()).for_each(|x| vis[(x, y)] = true);
     }
 
-    total
+    vis.into_iter().filter(|v| *v).count()
 }
 
 #[cfg(test)]
@@ -74,5 +71,10 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(solve_part1(&generate(SAMPLE_INPUT)), 21);
+    }
+
+    #[test]
+    fn part1_mine() {
+        assert_eq!(solve_part1(&generate(&crate::get_input(8))), 1546);
     }
 }
