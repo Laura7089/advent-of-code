@@ -17,6 +17,7 @@ mod day11;
 mod day12;
 mod day13;
 mod day14;
+mod day15;
 
 aoc_lib! { year = 2022 }
 
@@ -26,4 +27,76 @@ fn get_input(day: u32) -> String {
         .unwrap()
         .trim()
         .to_owned()
+}
+
+pub(crate) mod helpers {
+    use ndarray::prelude::*;
+    use std::ops::{Index, IndexMut};
+
+    pub type Point = (usize, usize);
+
+    /// A 2-d `ndarray` which has inbuilt indexing logic to work with non-0 indexing
+    #[derive(Clone, Debug)]
+    pub struct OffsetGrid<E> {
+        /// The underlying grid
+        pub grid: Array2<E>,
+        /// Top-left, bottom-right
+        pub limits: (Point, Point),
+    }
+
+    impl<E> OffsetGrid<E>
+    where
+        E: Copy,
+    {
+        pub fn new(min @ (x0, y0): Point, max @ (x1, y1): Point, elem: E) -> Self {
+            Self {
+                grid: Array2::from_elem((x1 - x0, y1 - y0), elem),
+                limits: (min, max),
+            }
+        }
+    }
+
+    impl<E> OffsetGrid<E> {
+        pub fn contains_vert(&self, y: usize) -> bool {
+            ((self.limits.0 .1)..(self.limits.1 .1)).contains(&y)
+        }
+    }
+
+    impl<E> Index<Point> for OffsetGrid<E> {
+        type Output = E;
+        fn index(&self, mut index: Point) -> &Self::Output {
+            index.0 -= self.limits.0 .0;
+            index.1 -= self.limits.0 .1;
+            &self.grid[index]
+        }
+    }
+
+    impl<E> IndexMut<Point> for OffsetGrid<E> {
+        fn index_mut(&mut self, mut index: Point) -> &mut Self::Output {
+            index.0 -= self.limits.0 .0;
+            index.1 -= self.limits.0 .1;
+            &mut self.grid[index]
+        }
+    }
+
+    // Former display implementation, could rewrite to fit
+    // impl Display for Cave {
+    //     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    //         let full: String = self
+    //             .grid
+    //             .columns()
+    //             .into_iter()
+    //             .map(|column| {
+    //                 column
+    //                     .iter()
+    //                     .copied()
+    //                     .map(Into::into)
+    //                     .chain(['\n'].into_iter())
+    //                     .collect::<Vec<_>>()
+    //             })
+    //             .flatten()
+    //             .collect();
+    //         write!(f, "{full}")
+    //     }
+    // }
 }

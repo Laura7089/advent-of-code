@@ -1,12 +1,9 @@
+use crate::helpers::OffsetGrid;
 use itertools::Itertools;
-use std::{
-    fmt::Display,
-    ops::{Index, IndexMut},
-};
-
-use ndarray::Array2;
+use ndarray::s;
 
 type Point = (usize, usize);
+type Cave = OffsetGrid<Tile>;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum Tile {
@@ -15,8 +12,8 @@ enum Tile {
     Sand,
 }
 
-impl Tile {
-    fn into_char(&self) -> char {
+impl Into<char> for Tile {
+    fn into(self) -> char {
         match self {
             Tile::Air => '.',
             Tile::Rock => '#',
@@ -25,128 +22,79 @@ impl Tile {
     }
 }
 
-#[derive(Clone, Debug)]
-struct Cave {
-    grid: Array2<Tile>,
-    /// Top-left, bottom-right
-    limits: (Point, Point),
-}
-
-impl Cave {
-    fn fall_from(&self, (sx, y): Point) -> Result<Option<Point>, ()> {
-        for x in [sx, sx - 1, sx + 1] {
-            let next = (x, y + 1);
-            if !self.contains(next) {
-                return Err(());
-            }
-            if self[next] == Tile::Air {
-                return Ok(Some(next));
-            }
+fn fall_from(cave: &Cave, (sx, y): Point) -> Result<Option<Point>, ()> {
+    for x in [sx, sx - 1, sx + 1] {
+        let next = (x, y + 1);
+        if !cave.contains_vert(next.1) {
+            return Err(());
         }
-        Ok(None)
+        if cave[next] == Tile::Air {
+            return Ok(Some(next));
+        }
+    }
+    Ok(None)
+}
+
+mod parse {
+    use nom::{
+        bytes::complete::tag,
+        character::complete::{char, u64},
+        multi::separated_list1,
+        sequence::separated_pair,
+    };
+
+    fn point(input: &str) -> nom::IResult<&str, super::Point> {
+        let (i, (x, y)) = separated_pair(u64, char(','), u64)(input)?;
+        Ok((i, (x as usize, y as usize)))
     }
 
-    fn contains(&self, (_, y): Point) -> bool {
-        ((self.limits.0 .1)..(self.limits.1 .1)).contains(&y)
+    pub fn stratum(input: &str) -> nom::IResult<&str, Vec<super::Point>> {
+        separated_list1(tag(" -> "), point)(input)
     }
 }
 
-impl Display for Cave {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let full: String = self
-            .grid
-            .columns()
-            .into_iter()
-            .map(|column| {
-                column
-                    .iter()
-                    .map(Tile::into_char)
-                    .chain(['\n'].into_iter())
-                    .collect::<Vec<_>>()
-            })
-            .flatten()
-            .collect();
-        write!(f, "{full}")
-    }
-}
-
-impl Index<Point> for Cave {
-    type Output = Tile;
-    fn index(&self, mut index: Point) -> &Self::Output {
-        index.0 -= self.limits.0 .0;
-        index.1 -= self.limits.0 .1;
-        &self.grid[index]
-    }
-}
-
-impl IndexMut<Point> for Cave {
-    fn index_mut(&mut self, mut index: Point) -> &mut Self::Output {
-        index.0 -= self.limits.0 .0;
-        index.1 -= self.limits.0 .1;
-        &mut self.grid[index]
-    }
-}
-
-const SAND_SOURCE: Point = (500, 0);
+const SAND_SRC: Point = (500, 0);
+// TODO: tweak maths so this can be removed
+const HALO: usize = 2;
 
 #[aoc_generator(day14)]
 fn generate(input: &str) -> Cave {
     let strata: Vec<Vec<Point>> = input
         .lines()
-        .map(|line| {
-            line.split(" -> ")
-                .map(|pair| {
-                    let mut pair = pair.split(",");
-                    (
-                        pair.next().unwrap().parse().unwrap(),
-                        pair.next().unwrap().parse().unwrap(),
-                    )
-                })
-                .collect()
-        })
+        .map(|line| parse::stratum(line).unwrap().1)
         .collect();
 
-    // TODO: this is fucking awful
-    let (minx, maxx) = strata
+    let (x0, x1) = strata
         .iter()
         .flatten()
+        .chain([&SAND_SRC].into_iter())
         .map(|p| p.0)
         .minmax()
         .into_option()
         .unwrap();
-    let (miny, maxy) = strata
-        .iter()
-        .flatten()
-        .map(|p| p.1)
-        .minmax()
-        .into_option()
-        .unwrap();
-    let minx = minx.min(SAND_SOURCE.0);
-    let maxx = maxx.max(SAND_SOURCE.0) + 2;
-    let miny = miny.min(SAND_SOURCE.1);
-    let maxy = maxy.max(SAND_SOURCE.1) + 2;
+    let y1 = strata.iter().flatten().map(|p| p.1).max().unwrap();
 
-    let mut cave = Cave {
-        grid: Array2::from_elem((maxx - minx, maxy - miny), Tile::Air),
-        limits: ((minx, miny), (maxx, maxy)),
-    };
+    let mut cave = Cave::new(
+        (x0 - HALO, SAND_SRC.1.saturating_sub(HALO)),
+        (x1 + HALO, y1 + HALO),
+        Tile::Air,
+    );
 
     for stratum in strata {
-        let mut stratum = stratum.into_iter();
-        let mut last_point = stratum.next().unwrap();
-        for (px, py) in stratum {
-            if px != last_point.0 {
+        let mut last = stratum[0];
+        for corner @ (sx, sy) in stratum.into_iter().skip(1) {
+            if sx != last.0 {
                 // horizontal
-                for x in px.min(last_point.0)..=px.max(last_point.0) {
-                    cave[(x, py)] = Tile::Rock;
+                for x in sx.min(last.0)..=sx.max(last.0) {
+                    cave[(x, sy)] = Tile::Rock;
                 }
             } else {
                 // vertical
-                for y in py.min(last_point.1)..=py.max(last_point.1) {
-                    cave[(px, y)] = Tile::Rock;
+                for y in sy.min(last.1)..=sy.max(last.1) {
+                    cave[(sx, y)] = Tile::Rock;
                 }
             }
-            last_point = (px, py);
+            last = corner;
         }
     }
 
@@ -158,34 +106,106 @@ fn solve_part1(cave: &Cave) -> usize {
     let mut cave = cave.clone();
     let mut particles = 0;
 
-    let sand_spawn = (SAND_SOURCE.0, SAND_SOURCE.1 + 1);
+    let sand_spawn = (SAND_SRC.0, SAND_SRC.1 + 1);
     loop {
         let mut current = sand_spawn.clone();
-        while let Ok(Some(next)) = cave.fall_from(current) {
+        while let Ok(Some(next)) = fall_from(&cave, current) {
             current = next;
         }
-        match cave.fall_from(current) {
-            Ok(None) => {
-                cave[current] = Tile::Sand;
-                particles += 1;
-            }
+        if fall_from(&cave, current) == Ok(None) {
+            // Sand has come to rest
+            cave[current] = Tile::Sand;
+            particles += 1;
+        } else {
             // It has fallen into the Å̸̉͊̂̇̈́̃ͣ҉̘̮̳̫̤͠B̶̢͓̤̠̜̯͚̘̮̟͖͎̄̓̆̽̀͑ͭ̇̕͜͝ͅY͒ͤ͆͐͌͆ͨͦ̌̚͏̹̮̞̲̼̼͉̭̮̪͜͡S̸̛̘̯̲̭̊̃̀̓ͥ̔͝S̡̭̥̖̭͙̼͓͔͎̭̬̭͕̹͉̯̗ͫͨͭ͑͛̐ͮ̊̔̊ͮ͂̓͡
-            Err(_) => break,
-            _ => unreachable!(),
+            break;
         }
     }
 
-    println!("{cave}");
     particles
 }
 
+const FLOOR_OFFSET: usize = 2;
+
 #[aoc(day14, part2)]
-fn solve_part2(input: &Cave) -> usize {
-    todo!()
+fn solve_part2(cave: &Cave) -> usize {
+    let cave_old = cave.clone();
+
+    fn is_rock(tile: &&Tile) -> bool {
+        tile == &&Tile::Rock
+    }
+
+    let extend_l = cave_old
+        .grid
+        .rows()
+        .into_iter()
+        .enumerate()
+        // TODO: think we actually need to iterate from the top
+        .find(|(_, r)| r.iter().find(is_rock).is_some())
+        .unwrap()
+        .0
+        - HALO;
+    let extend_r = cave_old.grid.nrows()
+        - cave_old
+            .grid
+            .rows()
+            .into_iter()
+            .enumerate()
+            .skip(HALO)
+            .find(|(_, r)| r.iter().find(is_rock).is_none())
+            .unwrap()
+            .0;
+    let (mut topleft, mut bottomright) = cave.limits;
+    topleft.0 -= extend_l;
+    bottomright.0 += extend_r;
+    bottomright.1 += FLOOR_OFFSET;
+
+    let mut cave = Cave::new(topleft, bottomright, Tile::Air);
+    cave.grid
+        .slice_mut(s![
+            (extend_l as isize)..-(extend_r as isize),
+            ..-(FLOOR_OFFSET as isize)
+        ])
+        .assign(&cave_old.grid);
+
+    let floor = cave_old
+        .grid
+        .columns()
+        .into_iter()
+        .enumerate()
+        // Skip air at the start
+        .skip_while(|(_, c)| c.iter().find(is_rock).is_none())
+        // Find the next line which is just air again
+        .find(|(_, c)| c.iter().find(is_rock).is_none())
+        .unwrap()
+        .0
+        + FLOOR_OFFSET;
+    (topleft.0..bottomright.0).for_each(|x| cave[(x, floor)] = Tile::Rock);
+
+    let mut particles = 0;
+
+    let sand_spawn = (SAND_SRC.0, SAND_SRC.1 + 1);
+    loop {
+        let mut current = sand_spawn.clone();
+        while let Ok(Some(next)) = fall_from(&cave, current) {
+            current = next;
+        }
+        if fall_from(&cave, current) == Ok(None) {
+            // Sand has come to rest
+            cave[current] = Tile::Sand;
+            particles += 1;
+        }
+        if cave[sand_spawn] == Tile::Sand {
+            break;
+        }
+    }
+
+    particles
 }
 
 #[cfg(test)]
 mod tests {
+    #![allow(unreachable_code)]
     use super::*;
 
     const SAMPLE_INPUT: &str = "498,4 -> 498,6 -> 496,6
@@ -198,12 +218,12 @@ mod tests {
 
     #[test]
     fn part1_mine() {
-        assert_eq!(solve_part1(&generate(&crate::get_input(14))), todo!());
+        assert_eq!(solve_part1(&generate(&crate::get_input(14))), 994);
     }
 
     #[test]
     fn part2_example() {
-        assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+        assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 93);
     }
 
     #[test]
