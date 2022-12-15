@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
 use ndarray::Array2;
 
 type Coord = (usize, usize);

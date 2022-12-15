@@ -159,6 +159,7 @@ fn solve_part2(input: &[Monkey]) -> u128 {
 
 #[cfg(test)]
 mod tests {
+    #![allow(unreachable_code)]
     use super::*;
 
     const SAMPLE_INPUT: &str = "Monkey 0:

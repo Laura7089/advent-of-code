@@ -19,6 +19,7 @@
       "",
       "#[cfg(test)]",
       "mod tests {",
+      "    #![allow(unreachable_code)]",
       "    use super::*;",
       "",
       "    const SAMPLE_INPUT: &str = todo!();",
