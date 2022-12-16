@@ -7,30 +7,29 @@ mod parse {
     use nom::{
         branch::alt,
         bytes::complete::tag,
-        character::complete::{anychar, char, digit1, newline as line_ending},
-        combinator::{map, opt},
-        multi::{many0, many_m_n, separated_list1},
+        character::complete::{anychar, char, digit1, newline as le, space0},
+        combinator::{map, opt, value},
+        multi::separated_list1 as seplist,
         sequence::{delimited, preceded, separated_pair, terminated, tuple},
         IResult,
     };
 
     fn stack_item(input: &str) -> IResult<&str, Option<char>> {
         let correct_num = map(delimited(char('['), anychar, char(']')), Some);
-        let blank = map(tag("   "), |_| None);
+        let blank = value(None, tag("   "));
         alt((correct_num, blank))(input)
     }
 
     fn stack_row(input: &str) -> IResult<&str, Vec<Option<char>>> {
-        terminated(separated_list1(char(' '), stack_item), many0(char(' ')))(input)
+        terminated(seplist(char(' '), stack_item), space0)(input)
     }
 
     fn label_row(input: &str) -> IResult<&str, Vec<&str>> {
-        separated_list1(char(' '), delimited(char(' '), digit1, opt(char(' '))))(input)
+        seplist(char(' '), delimited(char(' '), digit1, opt(char(' '))))(input)
     }
 
     fn stacks(input: &str) -> IResult<&str, Stacks> {
-        let (input, rows) =
-            terminated(separated_list1(line_ending, stack_row), line_ending)(input)?;
+        let (input, rows) = terminated(seplist(le, stack_row), le)(input)?;
 
         let mut stacks = vec![Vec::with_capacity(rows.len()); rows.last().unwrap().len()];
 
@@ -53,11 +52,7 @@ mod parse {
     }
 
     pub fn parse_all(input: &str) -> IResult<&str, (Stacks, Vec<Move>)> {
-        separated_pair(
-            stacks,
-            many_m_n(2, 2, line_ending),
-            separated_list1(line_ending, move_single),
-        )(input)
+        separated_pair(stacks, tag("\n\n"), seplist(le, move_single))(input)
     }
 
     #[cfg(test)]
