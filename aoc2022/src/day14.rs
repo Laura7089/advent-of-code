@@ -12,9 +12,9 @@ enum Tile {
     Sand,
 }
 
-impl Into<char> for Tile {
-    fn into(self) -> char {
-        match self {
+impl From<Tile> for char {
+    fn from(value: Tile) -> Self {
+        match value {
             Tile::Air => '.',
             Tile::Rock => '#',
             Tile::Sand => 'o',
@@ -38,13 +38,13 @@ fn fall_from(cave: &Cave, (sx, y): Point) -> Result<Option<Point>, ()> {
 mod parse {
     use nom::{
         bytes::complete::tag,
-        character::complete::{char, u64},
+        character::complete::{char, u32},
         multi::separated_list1,
         sequence::separated_pair,
     };
 
     fn point(input: &str) -> nom::IResult<&str, super::Point> {
-        let (i, (x, y)) = separated_pair(u64, char(','), u64)(input)?;
+        let (i, (x, y)) = separated_pair(u32, char(','), u32)(input)?;
         Ok((i, (x as usize, y as usize)))
     }
 
@@ -83,15 +83,15 @@ fn generate(input: &str) -> Cave {
     for stratum in strata {
         let mut last = stratum[0];
         for corner @ (sx, sy) in stratum.into_iter().skip(1) {
-            if sx != last.0 {
-                // horizontal
-                for x in sx.min(last.0)..=sx.max(last.0) {
-                    cave[(x, sy)] = Tile::Rock;
-                }
-            } else {
+            if sx == last.0 {
                 // vertical
                 for y in sy.min(last.1)..=sy.max(last.1) {
                     cave[(sx, y)] = Tile::Rock;
+                }
+            } else {
+                // horizontal
+                for x in sx.min(last.0)..=sx.max(last.0) {
+                    cave[(x, sy)] = Tile::Rock;
                 }
             }
             last = corner;
@@ -129,11 +129,11 @@ const FLOOR_OFFSET: usize = 2;
 
 #[aoc(day14, part2)]
 fn solve_part2(cave: &Cave) -> usize {
-    let cave_old = cave.clone();
-
-    fn is_rock(tile: &&Tile) -> bool {
-        tile == &&Tile::Rock
+    fn is_rock(tile: &Tile) -> bool {
+        tile == &Tile::Rock
     }
+
+    let cave_old = cave.clone();
 
     let extend_l = cave_old
         .grid
@@ -141,7 +141,7 @@ fn solve_part2(cave: &Cave) -> usize {
         .into_iter()
         .enumerate()
         // TODO: think we actually need to iterate from the top
-        .find(|(_, r)| r.iter().find(is_rock).is_some())
+        .find(|(_, r)| !r.iter().any(is_rock))
         .unwrap()
         .0
         - HALO;
@@ -152,7 +152,7 @@ fn solve_part2(cave: &Cave) -> usize {
             .into_iter()
             .enumerate()
             .skip(HALO)
-            .find(|(_, r)| r.iter().find(is_rock).is_none())
+            .find(|(_, r)| !r.iter().any(is_rock))
             .unwrap()
             .0;
     let (mut topleft, mut bottomright) = cave.limits;
@@ -174,9 +174,9 @@ fn solve_part2(cave: &Cave) -> usize {
         .into_iter()
         .enumerate()
         // Skip air at the start
-        .skip_while(|(_, c)| c.iter().find(is_rock).is_none())
+        .skip_while(|(_, c)| !c.iter().any(is_rock))
         // Find the next line which is just air again
-        .find(|(_, c)| c.iter().find(is_rock).is_none())
+        .find(|(_, c)| !c.iter().any(is_rock))
         .unwrap()
         .0
         + FLOOR_OFFSET;
