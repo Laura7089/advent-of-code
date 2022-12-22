@@ -18,6 +18,7 @@ mod day12;
 mod day13;
 mod day14;
 mod day15;
+mod day20;
 
 aoc_lib! { year = 2022 }
 
@@ -99,4 +100,26 @@ pub(crate) mod helpers {
     //         write!(f, "{full}")
     //     }
     // }
+
+    pub fn wrapping_index<T>(slice: &mut [T], orig: usize, modifier: isize) -> &mut T {
+        wrapping_index_len(slice, orig, modifier, slice.len())
+    }
+
+    pub fn wrapping_index_len<T>(
+        collection: &mut (impl IndexMut<usize, Output = T> + ?Sized),
+        orig: usize,
+        modifier: isize,
+        len: usize,
+    ) -> &mut T {
+        &mut collection[index_mod(orig, modifier, len)]
+    }
+
+    pub fn index_mod(orig: usize, modifier: isize, len: usize) -> usize {
+        let index = modifier.saturating_add_unsigned(orig);
+        if index < 0 {
+            let mult = (-index) as usize / len;
+            index += ((mult + 1) * len) as isize;
+        }
+        (index % len as isize) as usize
+    }
 }
