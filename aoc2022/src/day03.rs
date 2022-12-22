@@ -1,18 +1,20 @@
-const ITEM_CARDINALITY: usize = 52;
+/// Item cardinality
+const ITEM_CARD: usize = 52;
 
-struct Rucksack(([bool; ITEM_CARDINALITY], [bool; ITEM_CARDINALITY]));
+struct Rucksack(([bool; ITEM_CARD], [bool; ITEM_CARD]));
 
 impl Rucksack {
     fn new(input: &str) -> Self {
         let len = input.trim().bytes().len();
         assert!(len % 2 == 0, "Odd number of items in rucksack");
 
-        let mut sack = Self(([false; ITEM_CARDINALITY], [false; ITEM_CARDINALITY]));
-        for item in input.bytes().take(len / 2) {
-            sack.0 .0[Self::offset(item.into())] = true;
+        let mut sack = Self(([false; ITEM_CARD], [false; ITEM_CARD]));
+        let (left, right) = input.as_bytes().split_at(len / 2);
+        for item in left {
+            sack.0 .0[Self::offset(*item)] = true;
         }
-        for item in input.bytes().skip(len / 2) {
-            sack.0 .1[Self::offset(item.into())] = true;
+        for item in right {
+            sack.0 .1[Self::offset(*item)] = true;
         }
 
         sack
@@ -27,10 +29,12 @@ impl Rucksack {
             .map(|(i, (&left, &right))| (i, left || right))
     }
 
-    fn offset(item: usize) -> usize {
+    fn offset(item: u8) -> usize {
         match item {
-            65..=90 => item - 39,
-            97..=122 => item - 97,
+            // Map lowercase to 0-25...
+            b'a'..=b'z' => (item - b'a') as usize,
+            // ...and uppercase to 26-52
+            b'A'..=b'Z' => (item - (b'A' - 26)) as usize,
             _ => panic!("Bad item type: {item}"),
         }
     }

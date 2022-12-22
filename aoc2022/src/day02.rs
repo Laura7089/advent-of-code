@@ -75,8 +75,7 @@ fn solve_part2(input: &str) -> u32 {
         .map(|l| {
             let mut l = l.chars();
             let theirs = Play::new(l.next().unwrap());
-            l.next();
-            let want = Outcome::new(l.next().unwrap());
+            let want = Outcome::new(l.nth(1).unwrap());
             want as u32 + theirs.find_desired(want) as u32
         })
         .sum()
