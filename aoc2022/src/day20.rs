@@ -1,4 +1,4 @@
-use crate::helpers::{index_mod, wrapping_index};
+use crate::{index_mod, wrapping_index};
 
 #[aoc_generator(day20)]
 fn generate(input: &str) -> Vec<(usize, isize)> {

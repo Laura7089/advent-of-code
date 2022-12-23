@@ -38,11 +38,11 @@ mod parse {
 #[aoc_generator(day16)]
 fn generate(input: &str) -> ValveNetwork {
     let valves = parse::valves(input).unwrap().1;
-    let nvalves = valves.len();
+    let num_valves = valves.len();
 
     // Mapping of labels to final indices
     let indices: HashMap<parse::Label, usize> = {
-        let mut map = HashMap::with_capacity(nvalves);
+        let mut map = HashMap::with_capacity(num_valves);
         for (i, &(name, _, _)) in valves.iter().enumerate() {
             map.insert(name, i);
         }
@@ -50,7 +50,7 @@ fn generate(input: &str) -> ValveNetwork {
     };
 
     let mut network = ValveNetwork {
-        adjacency: Array2::from_elem((nvalves, nvalves), false),
+        adjacency: Array2::from_elem((num_valves, num_valves), false),
         rates: valves.iter().map(|&(_, r, _)| r).collect(),
         start: indices["AA"],
     };

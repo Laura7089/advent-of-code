@@ -1,4 +1,4 @@
-use crate::helpers::OffsetGrid;
+use crate::OffsetGrid;
 use itertools::Itertools;
 use ndarray::s;
 
@@ -129,6 +129,7 @@ const FLOOR_OFFSET: usize = 2;
 
 #[aoc(day14, part2)]
 fn solve_part2(cave: &Cave) -> usize {
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     fn is_rock(tile: &Tile) -> bool {
         tile == &Tile::Rock
     }
