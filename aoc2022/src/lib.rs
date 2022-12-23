@@ -18,6 +18,7 @@ mod day12;
 mod day13;
 mod day14;
 mod day15;
+mod day16;
 mod day20;
 
 aoc_lib! { year = 2022 }
@@ -115,7 +116,7 @@ pub(crate) mod helpers {
     }
 
     pub fn index_mod(orig: usize, modifier: isize, len: usize) -> usize {
-        let index = modifier.saturating_add_unsigned(orig);
+        let mut index = modifier.saturating_add_unsigned(orig);
         if index < 0 {
             let mult = (-index) as usize / len;
             index += ((mult + 1) * len) as isize;
