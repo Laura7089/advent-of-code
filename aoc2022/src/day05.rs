@@ -51,7 +51,7 @@ mod parse {
         ))(input)
     }
 
-    pub fn parse_all(input: &str) -> IResult<&str, (Stacks, Vec<Move>)> {
+    pub fn both(input: &str) -> IResult<&str, (Stacks, Vec<Move>)> {
         separated_pair(stacks, tag("\n\n"), seplist(le, move_single))(input)
     }
 
@@ -100,7 +100,7 @@ mod parse {
 
 #[aoc_generator(day5)]
 fn generate(input: &str) -> (Stacks, Vec<Move>) {
-    parse::parse_all(input).finish().unwrap().1
+    parse::both(input).unwrap().1
 }
 
 #[aoc(day5, part1)]
