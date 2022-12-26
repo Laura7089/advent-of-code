@@ -130,17 +130,6 @@ pub fn index_mod(orig: usize, modifier: isize, len: usize) -> usize {
     (index % len as isize) as usize
 }
 
-const ADJ_MODIFIERS: [(isize, isize); 8] = [
-    (1, 0),
-    (0, -1),
-    (-1, 0),
-    (0, 1),
-    (1, -1),
-    (-1, -1),
-    (-1, 1),
-    (1, 1),
-];
-
 #[derive(Clone, Debug)]
 pub struct Adjacents<const N: usize> {
     base: Point,
@@ -148,8 +137,20 @@ pub struct Adjacents<const N: usize> {
 }
 
 impl<const N: usize> Adjacents<N> {
+    // TODO: generate this somehow?
+    const MODIFIERS: [(isize, isize); 8] = [
+        (1, 0),
+        (0, -1),
+        (-1, 0),
+        (0, 1),
+        (1, -1),
+        (-1, -1),
+        (-1, 1),
+        (1, 1),
+    ];
+
     #[must_use]
-    pub fn new(base: Point) -> Self {
+    pub const fn new(base: Point) -> Self {
         Self { base, i: 0 }
     }
 }
@@ -161,7 +162,7 @@ impl<const N: usize> Iterator for Adjacents<N> {
         if self.i == N {
             None
         } else {
-            let (dx, dy) = ADJ_MODIFIERS[self.i];
+            let (dx, dy) = Self::MODIFIERS[self.i];
             self.i += 1;
             let x = dx.saturating_add_unsigned(self.base.0);
             let y = dy.saturating_add_unsigned(self.base.1);
@@ -174,11 +175,12 @@ pub fn adjacents_filtered<'a, const N: usize>(
     point: Point,
     (mx, my): Point,
 ) -> impl Iterator<Item = Point> + 'a {
+    let (mx, my) = (mx as isize, my as isize);
     Adjacents::<N>::new(point).filter_map(move |(x, y)| {
-        if x.is_negative() || x as usize >= mx || y.is_negative() || y as usize >= my {
-            None
-        } else {
+        if (0..mx).contains(&x) && (0..my).contains(&y) {
             Some((x as usize, y as usize))
+        } else {
+            None
         }
     })
 }

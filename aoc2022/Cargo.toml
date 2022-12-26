@@ -12,6 +12,7 @@ enum-iterator = "1.2.0"
 itertools = "0.10.5"
 ndarray = "0.15.6"
 nom = "7.1.1"
+pathfinding = "4.2.0"
 tinyvec = { version = "1.6.0", features = ["alloc", "std"] }
 
 [dev-dependencies]
