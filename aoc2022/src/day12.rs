@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use crate::{adjacents_filtered, Point};
 use ndarray::Array2;
 use pathfinding::prelude::dijkstra;
@@ -39,7 +36,7 @@ impl Field {
         Self { map, start, end }
     }
 
-    fn valid_moves<'a>(&'a self, pos: Point) -> impl Iterator<Item = Point> + 'a {
+    fn valid_moves(&self, pos: Point) -> impl Iterator<Item = Point> + '_ {
         adjacents_filtered::<4>(pos, self.map.dim())
             .filter(move |i| self.map[*i].saturating_sub(self.map[pos]) <= 1)
     }
@@ -96,7 +93,7 @@ fn solve_part2(field: &Field) -> usize {
         // Find all the a's
         .filter_map(|(i, &e)| if e == 0 { Some(i) } else { None })
         // Ignore anything that doesn't find a path
-        .filter_map(|i| field.path_from(i).map(|(p, n)| n))
+        .filter_map(|i| field.path_from(i).map(|(_, n)| n))
         .min()
         .unwrap()
 }
