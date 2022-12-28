@@ -1,7 +1,10 @@
-type SNAFU = i32;
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_precision_loss)]
+
+type Snafu = i64;
 
 mod parse {
-    use super::SNAFU;
+    use super::Snafu;
     use nom::{
         character::complete::{line_ending, one_of},
         combinator::map,
@@ -10,7 +13,7 @@ mod parse {
 
     type IResult<'a, T> = nom::IResult<&'a str, T>;
 
-    fn digit(input: &str) -> IResult<SNAFU> {
+    fn digit(input: &str) -> IResult<Snafu> {
         map(one_of("012-="), |c| match c as u8 {
             c @ b'0'..=b'2' => (c - b'0').into(),
             b'-' => -1,
@@ -19,18 +22,18 @@ mod parse {
         })(input)
     }
 
-    fn number(input: &str) -> IResult<SNAFU> {
+    fn number(input: &str) -> IResult<Snafu> {
         let (input, digits) = many1(digit)(input)?;
         let val = digits
             .into_iter()
             .rev()
             .enumerate()
-            .map(|(i, d)| d * 5i32.pow(i as u32))
+            .map(|(i, d)| d * 5i64.pow(i as u32))
             .sum();
         Ok((input, val))
     }
 
-    pub(super) fn num_list(input: &str) -> IResult<Vec<SNAFU>> {
+    pub(super) fn num_list(input: &str) -> IResult<Vec<Snafu>> {
         separated_list1(line_ending, number)(input)
     }
 
@@ -47,68 +50,60 @@ mod parse {
     }
 }
 
-fn canonicalise_snafu(decimal: SNAFU) -> String {
+fn canonicalise_snafu(decimal: Snafu) -> String {
     // Find x where 5^x gives the lowest possible value above `decimal`
     let max_exp = (decimal as f32).log(5.0).ceil() as u32;
 
-    // // If we can't subtract enough from this particular exponent, skip it
-    // if 5i32.pow(max_exp) - (2 * (5i32.pow(max_exp - 1))) > decimal {
-    //     max_exp = max_exp.saturating_sub(1);
-    // }
-    // println!("decimal={decimal} max_exp={max_exp}");
+    let to_return: String = (0..=max_exp)
+        .rev()
+        .scan(decimal, |rem, exp| {
+            let place_value = 5i64.pow(exp);
 
-    let mut to_return = String::with_capacity(max_exp as usize + 1);
-    let mut remaining = decimal;
+            let (_, &mut digit_value, _) = [-2, -1, 0, 1, 2]
+                // Find the minimum absolute value of:
+                // |remaining - (digit * place_value)|
+                .select_nth_unstable_by(0, |lhs: &i64, rhs: &i64| {
+                    // Guard against overflows where we can
+                    if lhs.checked_mul(place_value).is_none() {
+                        return std::cmp::Ordering::Greater;
+                    } else if rhs.checked_mul(place_value).is_none() {
+                        return std::cmp::Ordering::Less;
+                    }
 
-    for exp in (0..=max_exp).rev() {
-        let place_value = 5i32.pow(exp);
-
-        let digit_value = *[-2, -1, 0, 1, 2]
-            // Find the minimum absolute value of:
-            // |remaining - (digit * place_value)|
-            .select_nth_unstable_by(0, |lhs: &i32, rhs: &i32| {
-                if lhs.checked_mul(place_value).is_none() {
-                    std::cmp::Ordering::Greater
-                } else if rhs.checked_mul(place_value).is_none() {
-                    std::cmp::Ordering::Less
-                } else {
-                    let lhs_key = (remaining - (lhs * place_value)).abs();
-                    let rhs_key = (remaining - (rhs * place_value)).abs();
+                    let lhs_key = rem.abs_diff(lhs * place_value);
+                    let rhs_key = rem.abs_diff(rhs * place_value);
                     lhs_key.partial_cmp(&rhs_key).unwrap()
-                }
+                });
+
+            *rem -= digit_value * place_value;
+            Some(match digit_value {
+                -2 => '=',
+                -1 => '-',
+                0 => '0',
+                1 => '1',
+                2 => '2',
+                _ => unreachable!(),
             })
-            .1;
+        })
+        .collect();
 
-        remaining -= digit_value * place_value;
-        to_return.push(match digit_value {
-            -2 => '=',
-            -1 => '-',
-            0 => '0',
-            1 => '1',
-            2 => '2',
-            _ => unreachable!(),
-        });
-    }
-
-    if to_return.chars().next() == Some('0') {
-        to_return.remove(0);
-    }
-    to_return
+    // Knock off any leading 0s
+    to_return.trim_start_matches('0').to_owned()
 }
 
 #[aoc_generator(day25)]
-fn generate(input: &str) -> Vec<SNAFU> {
+fn generate(input: &str) -> Vec<Snafu> {
     parse::num_list(input).unwrap().1
 }
 
 #[aoc(day25, part1)]
-fn solve_part1(input: &[SNAFU]) -> String {
-    let total: SNAFU = input.iter().sum();
+fn solve_part1(input: &[Snafu]) -> String {
+    let total: Snafu = input.iter().sum();
     canonicalise_snafu(total)
 }
 
 #[aoc(day25, part2)]
-fn solve_part2(_input: &[SNAFU]) -> usize {
+fn solve_part2(_input: &[Snafu]) -> usize {
     todo!()
 }
 
@@ -132,7 +127,7 @@ mod tests {
 122";
 
     #[cfg(test)]
-    pub(super) const EXAMPLE_CONVERSIONS: &[(&str, i32)] = &[
+    pub(super) const EXAMPLE_CONVERSIONS: &[(&str, i64)] = &[
         ("1", 1),
         ("2", 2),
         ("1=", 3),
@@ -183,8 +178,8 @@ mod tests {
         }
     }
 
-    fn parsed_sum(input: &str) -> SNAFU {
-        generate(input).into_iter().sum::<SNAFU>()
+    fn parsed_sum(input: &str) -> Snafu {
+        generate(input).into_iter().sum::<Snafu>()
     }
 
     mod part1 {
@@ -198,7 +193,10 @@ mod tests {
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part1(&generate(&crate::get_input(25))), "".to_owned());
+            assert_eq!(
+                solve_part1(&generate(&crate::get_input(25))),
+                "2=222-2---22=1=--1-2".to_owned()
+            );
         }
     }
 
