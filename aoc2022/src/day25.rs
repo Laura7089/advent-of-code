@@ -36,23 +36,13 @@ mod parse {
 
     #[cfg(test)]
     mod tests {
-        use test_case::test_case;
+        use super::*;
 
-        #[test_case("1=-0-2" => 1747)]
-        #[test_case("12111" => 906)]
-        #[test_case("2=0=" => 198)]
-        #[test_case("21" => 11)]
-        #[test_case("2=01" => 201)]
-        #[test_case("111" => 31)]
-        #[test_case("20012" => 1257)]
-        #[test_case("112" => 32)]
-        #[test_case("1=-1=" => 353)]
-        #[test_case("1-12" => 107)]
-        #[test_case("12" => 7)]
-        #[test_case("1=" => 3)]
-        #[test_case("122" => 37)]
-        fn example(input: &str) -> i32 {
-            super::number(input).unwrap().1
+        #[test]
+        fn example() {
+            for (canon, dec) in super::super::tests::EXAMPLE_CONVERSIONS {
+                assert_eq!(num_list(canon).unwrap().1[0], *dec);
+            }
         }
     }
 }
@@ -76,10 +66,16 @@ fn canonicalise_snafu(decimal: SNAFU) -> String {
         let digit_value = *[-2, -1, 0, 1, 2]
             // Find the minimum absolute value of:
             // |remaining - (digit * place_value)|
-            .select_nth_unstable_by(0, |lhs, rhs| {
-                let lhs_key = (remaining - (lhs * place_value)).abs();
-                let rhs_key = (remaining - (rhs * place_value)).abs();
-                lhs_key.partial_cmp(&rhs_key).unwrap()
+            .select_nth_unstable_by(0, |lhs: &i32, rhs: &i32| {
+                if lhs.checked_mul(place_value).is_none() {
+                    std::cmp::Ordering::Greater
+                } else if rhs.checked_mul(place_value).is_none() {
+                    std::cmp::Ordering::Less
+                } else {
+                    let lhs_key = (remaining - (lhs * place_value)).abs();
+                    let rhs_key = (remaining - (rhs * place_value)).abs();
+                    lhs_key.partial_cmp(&rhs_key).unwrap()
+                }
             })
             .1;
 
@@ -120,7 +116,6 @@ fn solve_part2(_input: &[SNAFU]) -> usize {
 mod tests {
     #![allow(unreachable_code)]
     use super::*;
-    use proptest::proptest;
 
     const SAMPLE_INPUT: &str = "1=-0-2
 12111
@@ -136,23 +131,60 @@ mod tests {
 1=
 122";
 
-    proptest! {
+    #[cfg(test)]
+    pub(super) const EXAMPLE_CONVERSIONS: &[(&str, i32)] = &[
+        ("1", 1),
+        ("2", 2),
+        ("1=", 3),
+        ("1-", 4),
+        ("10", 5),
+        ("11", 6),
+        ("12", 7),
+        ("2=", 8),
+        ("2-", 9),
+        ("20", 10),
+        ("21", 11),
+        ("1=0", 15),
+        ("1-0", 20),
+        ("111", 31),
+        ("112", 32),
+        ("122", 37),
+        ("1-12", 107),
+        ("2=0=", 198),
+        ("2=01", 201),
+        ("1=-1=", 353),
+        ("12111", 906),
+        ("20012", 1257),
+        ("1=-0-2", 1747),
+        ("1=11-2", 2022),
+        ("1-0---0", 12345),
+        ("1121-1110-1=0", 314159265),
+    ];
+
+    mod canonicalise {
+        use super::*;
+        use proptest::proptest;
+
+        proptest! {
+            #[test]
+            fn prop(s in r"[12][=\-012]{1, 12}") {
+                let dec = generate(&s)[0];
+                let canonicalised = canonicalise_snafu(dec);
+                let reparsed = generate(&canonicalised)[0];
+                assert_eq!(s, canonicalised, "{dec} got converted to {reparsed}");
+            }
+        }
+
         #[test]
-        fn canonicalise(s in r"[12][=\-012]{1, 6}") {
-            let dec = generate(&s)[0];
-            let canonicalised = canonicalise_snafu(dec);
-            let reparsed = generate(&canonicalised)[0];
-            assert_eq!(s, canonicalised, "{dec} got converted to {reparsed}");
+        fn examples() {
+            for (canon, dec) in EXAMPLE_CONVERSIONS {
+                assert_eq!(&canonicalise_snafu(*dec), canon);
+            }
         }
     }
 
-    #[test]
-    fn canonicalise_example() {
-        assert_eq!(canonicalise_snafu(4890), "2=-1=0");
-    }
-
-    fn parsed_sum(input: &str) -> i32 {
-        generate(input).into_iter().sum::<i32>()
+    fn parsed_sum(input: &str) -> SNAFU {
+        generate(input).into_iter().sum::<SNAFU>()
     }
 
     mod part1 {
