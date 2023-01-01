@@ -23,14 +23,13 @@ mod parse {
     }
 
     fn number(input: &str) -> IResult<Snafu> {
-        let (input, digits) = many1(digit)(input)?;
-        let val = digits
-            .into_iter()
-            .rev()
-            .enumerate()
-            .map(|(i, d)| d * 5i64.pow(i as u32))
-            .sum();
-        Ok((input, val))
+        map(many1(digit), |ds| {
+            ds.into_iter()
+                .rev()
+                .enumerate()
+                .map(|(i, d)| d * 5i64.pow(i as u32))
+                .sum()
+        })(input)
     }
 
     pub(super) fn num_list(input: &str) -> IResult<Vec<Snafu>> {

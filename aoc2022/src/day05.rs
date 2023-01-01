@@ -1,4 +1,3 @@
-use nom::Finish;
 type Move = (u8, u8, u8);
 type Stacks = Vec<Vec<char>>;
 

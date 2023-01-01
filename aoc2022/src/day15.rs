@@ -2,32 +2,26 @@ type Point = (u32, u32);
 
 mod parse {
     use super::Point;
-    use nom::bytes::complete::tag;
-    use nom::character::complete::none_of;
-    use nom::sequence::tuple;
-    use nom::sequence::{preceded, separated_pair};
-    use nom::IResult;
+    use nom::{
+        bytes::complete::tag,
+        character::complete::none_of,
+        sequence::{preceded as pre, separated_pair as seppair, tuple},
+    };
+    type IResult<'a, T> = nom::IResult<&'a str, T>;
 
-    fn pair(input: &str) -> IResult<&str, Point> {
+    fn pair(input: &str) -> IResult<Point> {
         use nom::character::complete::u32;
-        separated_pair(
-            preceded(tag("x="), u32),
-            tag(", "),
-            preceded(tag("y="), u32),
-        )(input)
+        seppair(pre(tag("x="), u32), tag(", "), pre(tag("y="), u32))(input)
     }
 
-    pub fn sensor_beacon(input: &str) -> IResult<&str, (Point, Point)> {
-        tuple((preceded(none_of("x"), pair), preceded(none_of("x"), pair)))(input)
+    pub fn beacon(input: &str) -> IResult<(Point, Point)> {
+        tuple((pre(none_of("x"), pair), pre(none_of("x"), pair)))(input)
     }
 }
 
 #[aoc_generator(day15)]
 fn generate(input: &str) -> Vec<(Point, Point)> {
-    input
-        .lines()
-        .map(|l| parse::sensor_beacon(l).unwrap().1)
-        .collect()
+    input.lines().map(|l| parse::beacon(l).unwrap().1).collect()
 }
 
 #[aoc(day15, part1)]

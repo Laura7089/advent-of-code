@@ -1,4 +1,4 @@
-use crate::{adjacents_filtered, Point};
+use crate::{Adjacents, Point};
 use ndarray::Array2;
 use pathfinding::prelude::dijkstra;
 
@@ -14,30 +14,33 @@ impl Field {
         let height = input.lines().count();
         let width = input.lines().next().unwrap().len();
 
-        let mut map = Array2::zeros((height, width));
-        let mut start = (0, 0);
-        let mut end = (0, 0);
+        let mut to_return = Self {
+            map: Array2::zeros((height, width)),
+            start: (0, 0),
+            end: (0, 0),
+        };
 
         for (i, line) in input.lines().enumerate() {
             for (j, c) in line.bytes().enumerate() {
-                map[(i, j)] = match c {
+                to_return.map[(i, j)] = match c {
                     b'S' => {
-                        start = (i, j);
+                        to_return.start = (i, j);
                         b'a'
                     }
                     b'E' => {
-                        end = (i, j);
+                        to_return.end = (i, j);
                         b'z'
                     }
                     _ => c,
                 } - b'a';
             }
         }
-        Self { map, start, end }
+        to_return
     }
 
     fn valid_moves(&self, pos: Point) -> impl Iterator<Item = Point> + '_ {
-        adjacents_filtered::<4>(pos, self.map.dim())
+        Adjacents::<4>::new(pos)
+            .constrain(self.map.dim())
             .filter(move |i| self.map[*i].saturating_sub(self.map[pos]) <= 1)
     }
 
@@ -64,26 +67,6 @@ fn generate(input: &str) -> Field {
 fn solve_part1(field: &Field) -> usize {
     field.path_start_end().unwrap().1
 }
-
-// // TODO: is a hashset faster?
-// fn next_step(field: &Field, cur: Point, dist: usize, visited: &[Point]) -> Option<usize> {
-//     adjacents_filtered::<4>(cur, field.map.dim())
-//         .filter_map(|i| {
-//             let height_diff = field.map[i].saturating_sub(field.map[cur]);
-//             if height_diff > 1 || visited.contains(&i) {
-//                 None
-//             } else if i == field.end {
-//                 // Yay, we made it!
-//                 Some(dist + 1)
-//             } else {
-//                 // Recurse, and record that we visited the current place
-//                 let mut visited = visited.to_owned();
-//                 visited.push(i);
-//                 next_step(field, i, dist + 1, &visited)
-//             }
-//         })
-//         .min()
-// }
 
 #[aoc(day12, part2)]
 fn solve_part2(field: &Field) -> usize {

@@ -41,7 +41,7 @@ use std::ops::{Index, IndexMut};
 
 pub type Point = (usize, usize);
 
-/// A 2-d `ndarray` which has inbuilt indexing logic to work with non-0 indexing
+/// A 2-d `ndarray` which has inbuilt indexing logic to work with non-0-based indexing
 #[derive(Clone, Debug)]
 pub struct OffsetGrid<E> {
     /// The underlying grid
@@ -172,18 +172,17 @@ impl<const N: usize> Iterator for Adjacents<N> {
     }
 }
 
-pub fn adjacents_filtered<'a, const N: usize>(
-    point: Point,
-    (mx, my): Point,
-) -> impl Iterator<Item = Point> + 'a {
-    let (mx, my) = (mx as isize, my as isize);
-    Adjacents::<N>::new(point).filter_map(move |(x, y)| {
-        if (0..mx).contains(&x) && (0..my).contains(&y) {
-            Some((x as usize, y as usize))
-        } else {
-            None
-        }
-    })
+impl<const N: usize> Adjacents<N> {
+    pub fn constrain<'a>(self, (mx, my): Point) -> impl Iterator<Item = Point> + 'a {
+        let (mx, my) = (mx as isize, my as isize);
+        self.filter_map(move |(x, y)| {
+            if (0..mx).contains(&x) && (0..my).contains(&y) {
+                Some((x as usize, y as usize))
+            } else {
+                None
+            }
+        })
+    }
 }
 
 #[cfg(test)]
@@ -201,12 +200,16 @@ mod tests {
     #[test]
     fn adjacents_filtered_sanity() {
         assert_eq!(
-            adjacents_filtered::<4>((10, 10), (20, 20)).collect::<Vec<_>>(),
+            Adjacents::<4>::new((10, 10))
+                .constrain((20, 20))
+                .collect::<Vec<_>>(),
             vec![(11, 10), (10, 9), (9, 10), (10, 11)]
         );
 
         assert_eq!(
-            adjacents_filtered::<4>((0, 0), (2, 2)).collect::<Vec<_>>(),
+            Adjacents::<4>::new((0, 0))
+                .constrain((2, 2))
+                .collect::<Vec<_>>(),
             vec![(1, 0), (0, 1)]
         );
     }

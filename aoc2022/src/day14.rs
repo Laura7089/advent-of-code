@@ -1,8 +1,7 @@
-use crate::OffsetGrid;
+use crate::{OffsetGrid, Point};
 use itertools::Itertools;
 use ndarray::s;
 
-type Point = (usize, usize);
 type Cave = OffsetGrid<Tile>;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -81,20 +80,20 @@ fn generate(input: &str) -> Cave {
     );
 
     for stratum in strata {
-        let mut last = stratum[0];
+        let mut prev = stratum[0];
         for corner @ (sx, sy) in stratum.into_iter().skip(1) {
-            if sx == last.0 {
+            if sx == prev.0 {
                 // vertical
-                for y in sy.min(last.1)..=sy.max(last.1) {
+                for y in sy.min(prev.1)..=sy.max(prev.1) {
                     cave[(sx, y)] = Tile::Rock;
                 }
             } else {
                 // horizontal
-                for x in sx.min(last.0)..=sx.max(last.0) {
+                for x in sx.min(prev.0)..=sx.max(prev.0) {
                     cave[(x, sy)] = Tile::Rock;
                 }
             }
-            last = corner;
+            prev = corner;
         }
     }
 
