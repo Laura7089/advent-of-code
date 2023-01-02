@@ -1,11 +1,12 @@
 use crate::{OffsetGrid, UPoint as Point};
 use itertools::Itertools;
-use ndarray::s;
+use ndarray::{s, Axis};
 
 type Cave = OffsetGrid<Tile>;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 enum Tile {
+    #[default]
     Air,
     Rock,
     Sand,
@@ -21,47 +22,23 @@ impl From<Tile> for char {
     }
 }
 
-fn fall_from(cave: &Cave, (sx, y): Point) -> Result<Option<Point>, ()> {
-    for x in [sx, sx - 1, sx + 1] {
-        let next = (x, y + 1);
-        if !cave.contains_vert(next.1) {
-            return Err(());
-        }
-        if cave[next] == Tile::Air {
-            return Ok(Some(next));
-        }
-    }
-    Ok(None)
-}
-
-mod parse {
-    use crate::IResult;
-    use nom::{
-        bytes::complete::tag,
-        character::complete::{char, u32},
-        multi::separated_list1,
-        sequence::separated_pair,
-    };
-
-    fn point(input: &str) -> IResult<super::Point> {
-        let (i, (x, y)) = separated_pair(u32, char(','), u32)(input)?;
-        Ok((i, (x as usize, y as usize)))
-    }
-
-    pub fn stratum(input: &str) -> IResult<Vec<super::Point>> {
-        separated_list1(tag(" -> "), point)(input)
-    }
-}
-
 const SAND_SRC: Point = (500, 0);
-// TODO: tweak maths so this can be removed
-const HALO: usize = 2;
 
 #[aoc_generator(day14)]
 fn generate(input: &str) -> Cave {
     let strata: Vec<Vec<Point>> = input
         .lines()
-        .map(|line| parse::stratum(line).unwrap().1)
+        .map(|line| {
+            line.split(" -> ")
+                .map(|seg| {
+                    let mut seg = seg.split(',');
+                    (
+                        seg.next().unwrap().parse().unwrap(),
+                        seg.next().unwrap().parse().unwrap(),
+                    )
+                })
+                .collect()
+        })
         .collect();
 
     let (x0, x1) = strata
@@ -74,11 +51,7 @@ fn generate(input: &str) -> Cave {
         .unwrap();
     let y1 = strata.iter().flatten().map(|p| p.1).max().unwrap();
 
-    let mut cave = Cave::new(
-        (x0 - HALO, SAND_SRC.1.saturating_sub(HALO)),
-        (x1 + HALO, y1 + HALO),
-        Tile::Air,
-    );
+    let mut cave = Cave::new((x0, SAND_SRC.1), (x1, y1), Tile::Air);
 
     for stratum in strata {
         let mut prev = stratum[0];
@@ -101,28 +74,51 @@ fn generate(input: &str) -> Cave {
     cave
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum SandFall {
+    Falls(Point),
+    /// Sand has come to rest
+    Rests,
+    /// It has fallen into the Å̸̉͊̂̇̈́̃ͣ҉̘̮̳̫̤͠B̶̢͓̤̠̜̯͚̘̮̟͖͎̄̓̆̽̀͑ͭ̇̕͜͝ͅY͒ͤ͆͐͌͆ͨͦ̌̚͏̹̮̞̲̼̼͉̭̮̪͜͡S̸̛̘̯̲̭̊̃̀̓ͥ̔͝S̡̭̥̖̭͙̼͓͔͎̭̬̭͕̹͉̯̗ͫͨͭ͑͛̐ͮ̊̔̊ͮ͂̓͡
+    LostToAbyss,
+}
+
+fn fall_from(cave: &Cave, (sx, y): Point) -> SandFall {
+    for x in [sx, sx - 1, sx + 1] {
+        let next = (x, y + 1);
+        if !cave.contains(next) {
+            return SandFall::LostToAbyss;
+        }
+        if cave[next] == Tile::Air {
+            return SandFall::Falls(next);
+        }
+    }
+    SandFall::Rests
+}
+
 #[aoc(day14, part1)]
 fn solve_part1(cave: &Cave) -> usize {
     let mut cave = cave.clone();
     let mut particles = 0;
 
-    let sand_spawn = (SAND_SRC.0, SAND_SRC.1 + 1);
     loop {
-        let mut current = sand_spawn.clone();
-        while let Ok(Some(next)) = fall_from(&cave, current) {
+        let mut current = SAND_SRC;
+        while let SandFall::Falls(next) = fall_from(&cave, current) {
             current = next;
         }
-        if fall_from(&cave, current) == Ok(None) {
-            // Sand has come to rest
-            cave[current] = Tile::Sand;
-            particles += 1;
-        } else {
-            // It has fallen into the Å̸̉͊̂̇̈́̃ͣ҉̘̮̳̫̤͠B̶̢͓̤̠̜̯͚̘̮̟͖͎̄̓̆̽̀͑ͭ̇̕͜͝ͅY͒ͤ͆͐͌͆ͨͦ̌̚͏̹̮̞̲̼̼͉̭̮̪͜͡S̸̛̘̯̲̭̊̃̀̓ͥ̔͝S̡̭̥̖̭͙̼͓͔͎̭̬̭͕̹͉̯̗ͫͨͭ͑͛̐ͮ̊̔̊ͮ͂̓͡
-            break;
+
+        // fall_from will eventually get stuck when called
+        // repeatedly, so we can call again here to check the value again
+        // without any fear
+        match fall_from(&cave, current) {
+            SandFall::Rests => {
+                cave[current] = Tile::Sand;
+                particles += 1;
+            }
+            SandFall::LostToAbyss => return particles,
+            SandFall::Falls(_) => unreachable!(),
         }
     }
-
-    particles
 }
 
 const FLOOR_OFFSET: usize = 2;
@@ -134,74 +130,44 @@ fn solve_part2(cave: &Cave) -> usize {
         tile == &Tile::Rock
     }
 
-    let cave_old = cave.clone();
+    let mut cave = cave.clone();
+    let side_expand = cave.true_dim().1;
+    cave.expand(0, FLOOR_OFFSET, side_expand, side_expand, Tile::Air);
 
-    let extend_l = cave_old
-        .grid
-        .rows()
-        .into_iter()
-        .enumerate()
-        // TODO: think we actually need to iterate from the top
-        .find(|(_, r)| !r.iter().any(is_rock))
-        .unwrap()
-        .0
-        - HALO;
-    let extend_r = cave_old.grid.nrows()
-        - cave_old
-            .grid
-            .rows()
-            .into_iter()
-            .enumerate()
-            .skip(HALO)
-            .find(|(_, r)| !r.iter().any(is_rock))
-            .unwrap()
-            .0;
-    let (mut topleft, mut bottomright) = cave.limits;
-    topleft.0 -= extend_l;
-    bottomright.0 += extend_r;
-    bottomright.1 += FLOOR_OFFSET;
-
-    let mut cave = Cave::new(topleft, bottomright, Tile::Air);
-    cave.grid
-        .slice_mut(s![
-            (extend_l as isize)..-(extend_r as isize),
-            ..-(FLOOR_OFFSET as isize)
-        ])
-        .assign(&cave_old.grid);
-
-    let floor = cave_old
-        .grid
-        .columns()
-        .into_iter()
-        .enumerate()
-        // Skip air at the start
-        .skip_while(|(_, c)| !c.iter().any(is_rock))
-        // Find the next line which is just air again
-        .find(|(_, c)| !c.iter().any(is_rock))
-        .unwrap()
-        .0
-        + FLOOR_OFFSET;
-    (topleft.0..bottomright.0).for_each(|x| cave[(x, floor)] = Tile::Rock);
+    let floor_height = cave.limits.1 .1;
+    cave.grid.slice_mut(s![.., floor_height]).fill(Tile::Rock);
 
     let mut particles = 0;
-
-    let sand_spawn = (SAND_SRC.0, SAND_SRC.1 + 1);
     loop {
-        let mut current = sand_spawn.clone();
-        while let Ok(Some(next)) = fall_from(&cave, current) {
+        let mut current = SAND_SRC;
+
+        // Let it keep falling
+        while let SandFall::Falls(next) = fall_from(&cave, current) {
             current = next;
         }
-        if fall_from(&cave, current) == Ok(None) {
-            // Sand has come to rest
-            cave[current] = Tile::Sand;
-            particles += 1;
+
+        match fall_from(&cave, current) {
+            SandFall::Rests => {
+                cave[current] = Tile::Sand;
+                particles += 1;
+            }
+            SandFall::LostToAbyss => {
+                panic!(
+                    "Particle #{} has fallen into the void from {:?}, limits {:?} {:?}",
+                    particles + 1,
+                    current,
+                    cave.limits.0,
+                    cave.limits.1,
+                );
+            }
+            SandFall::Falls(_) => unreachable!(),
         }
-        if cave[sand_spawn] == Tile::Sand {
-            break;
+
+        // There's sand blocking the spawn point
+        if cave[SAND_SRC] == Tile::Sand {
+            return particles;
         }
     }
-
-    particles
 }
 
 #[cfg(test)]
@@ -229,6 +195,6 @@ mod tests {
 
     #[test]
     fn part2_mine() {
-        assert_eq!(solve_part2(&generate(&crate::get_input(14))), todo!());
+        assert_eq!(solve_part2(&generate(&crate::get_input(14))), 26283);
     }
 }

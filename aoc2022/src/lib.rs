@@ -36,8 +36,12 @@ fn get_input(day: u32) -> String {
         .to_owned()
 }
 
+use delegate::delegate;
 use ndarray::prelude::*;
-use std::ops::{Index, IndexMut};
+use std::{
+    fmt::Display,
+    ops::{Index, IndexMut},
+};
 
 type IResult<'a, T> = nom::IResult<&'a str, T>;
 
@@ -49,16 +53,14 @@ fn make_usize(input: &str) -> IResult<usize> {
     nom::combinator::map(u32, |x| x as usize)(input)
 }
 
-fn array2_inner<'a, A>(array: &'a Array2<A>) -> ArrayView2<'a, A> {
-    array.slice(s![1..-1, 1..-1])
-}
-
 /// A 2-d `ndarray` which has inbuilt indexing logic to work with non-0-based indexing
+///
+/// The first (x) axis is indexed from the "top".
 #[derive(Clone, Debug)]
 struct OffsetGrid<E> {
     /// The underlying grid
     pub grid: Array2<E>,
-    /// Top-left, bottom-right
+    /// (Top-left, bottom-right), both inclusive
     pub limits: (UPoint, UPoint),
 }
 
@@ -68,16 +70,43 @@ where
 {
     fn new(min @ (x0, y0): UPoint, max @ (x1, y1): UPoint, elem: E) -> Self {
         Self {
-            grid: Array2::from_elem((x1 - x0, y1 - y0), elem),
+            grid: Array2::from_elem((x1 - x0 + 1, y1 - y0 + 1), elem),
             limits: (min, max),
         }
     }
+
+    fn expand(&mut self, top: usize, bottom: usize, left: usize, right: usize, elem: E) {
+        let (ox, oy) = self.grid.dim();
+        let (otl, obr) = self.limits;
+
+        let nx = ox + left + right;
+        let ny = oy + top + bottom;
+
+        let mut new_arr = Array2::from_elem((nx, ny), elem);
+        new_arr
+            .slice_mut(s![left..(left + ox), top..(top + oy)])
+            .assign(&self.grid);
+
+        self.grid = new_arr;
+        self.limits.0 = (otl.0 - left, otl.1 - top);
+        self.limits.1 = (obr.0 + right, obr.1 + bottom);
+    }
 }
 
+#[allow(clippy::inline_always)]
 impl<E> OffsetGrid<E> {
+    delegate! {
+        to self.grid {
+            #[call(dim)]
+            fn true_dim(&self) -> UPoint;
+            fn axis_iter(&self, axis: Axis) -> ndarray::iter::AxisIter<E, Ix1>;
+        }
+    }
+
     #[must_use]
-    fn contains_vert(&self, y: usize) -> bool {
-        ((self.limits.0 .1)..(self.limits.1 .1)).contains(&y)
+    fn contains(&self, (x, y): UPoint) -> bool {
+        ((self.limits.0 .1)..=(self.limits.1 .1)).contains(&y)
+            && ((self.limits.0 .0)..=(self.limits.1 .0)).contains(&x)
     }
 }
 
@@ -98,26 +127,25 @@ impl<E> IndexMut<UPoint> for OffsetGrid<E> {
     }
 }
 
-// Former display implementation, could rewrite to fit
-// impl Display for Cave {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         let full: String = self
-//             .grid
-//             .columns()
-//             .into_iter()
-//             .map(|column| {
-//                 column
-//                     .iter()
-//                     .copied()
-//                     .map(Into::into)
-//                     .chain(['\n'].into_iter())
-//                     .collect::<Vec<_>>()
-//             })
-//             .flatten()
-//             .collect();
-//         write!(f, "{full}")
-//     }
-// }
+impl<E: Copy + Into<char>> Display for OffsetGrid<E> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let full: String = self
+            .grid
+            .columns()
+            .into_iter()
+            .map(|column| {
+                column
+                    .iter()
+                    .copied()
+                    .map(Into::into)
+                    .chain(['\n'].into_iter())
+                    .collect::<Vec<_>>()
+            })
+            .flatten()
+            .collect();
+        write!(f, "{full}")
+    }
+}
 
 // TODO: toroidal grid struct?
 fn wrapping_index<T>(slice: &[T], orig: usize, modifier: isize) -> &T {
