@@ -1,17 +1,17 @@
-type Point = (u32, u32);
+use crate::UPoint as Point;
 
 mod parse {
-    use super::Point;
+    use crate::{make_usize, IResult, UPoint as Point};
     use nom::{
         bytes::complete::tag,
         character::complete::none_of,
         sequence::{preceded as pre, separated_pair as seppair, tuple},
     };
-    type IResult<'a, T> = nom::IResult<&'a str, T>;
 
     fn pair(input: &str) -> IResult<Point> {
-        use nom::character::complete::u32;
-        seppair(pre(tag("x="), u32), tag(", "), pre(tag("y="), u32))(input)
+        let x = pre(tag("x="), make_usize);
+        let y = pre(tag("y="), make_usize);
+        seppair(x, tag(", "), y)(input)
     }
 
     pub fn beacon(input: &str) -> IResult<(Point, Point)> {

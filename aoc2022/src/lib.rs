@@ -39,22 +39,34 @@ fn get_input(day: u32) -> String {
 use ndarray::prelude::*;
 use std::ops::{Index, IndexMut};
 
-pub type Point = (usize, usize);
+type IResult<'a, T> = nom::IResult<&'a str, T>;
+
+type UPoint = (usize, usize);
+type IPoint = (isize, isize);
+
+fn make_usize(input: &str) -> IResult<usize> {
+    use nom::character::complete::u32;
+    nom::combinator::map(u32, |x| x as usize)(input)
+}
+
+fn array2_inner<'a, A>(array: &'a Array2<A>) -> ArrayView2<'a, A> {
+    array.slice(s![1..-1, 1..-1])
+}
 
 /// A 2-d `ndarray` which has inbuilt indexing logic to work with non-0-based indexing
 #[derive(Clone, Debug)]
-pub struct OffsetGrid<E> {
+struct OffsetGrid<E> {
     /// The underlying grid
     pub grid: Array2<E>,
     /// Top-left, bottom-right
-    pub limits: (Point, Point),
+    pub limits: (UPoint, UPoint),
 }
 
 impl<E> OffsetGrid<E>
 where
     E: Copy,
 {
-    pub fn new(min @ (x0, y0): Point, max @ (x1, y1): Point, elem: E) -> Self {
+    fn new(min @ (x0, y0): UPoint, max @ (x1, y1): UPoint, elem: E) -> Self {
         Self {
             grid: Array2::from_elem((x1 - x0, y1 - y0), elem),
             limits: (min, max),
@@ -64,22 +76,22 @@ where
 
 impl<E> OffsetGrid<E> {
     #[must_use]
-    pub fn contains_vert(&self, y: usize) -> bool {
+    fn contains_vert(&self, y: usize) -> bool {
         ((self.limits.0 .1)..(self.limits.1 .1)).contains(&y)
     }
 }
 
-impl<E> Index<Point> for OffsetGrid<E> {
+impl<E> Index<UPoint> for OffsetGrid<E> {
     type Output = E;
-    fn index(&self, mut index: Point) -> &Self::Output {
+    fn index(&self, mut index: UPoint) -> &Self::Output {
         index.0 -= self.limits.0 .0;
         index.1 -= self.limits.0 .1;
         &self.grid[index]
     }
 }
 
-impl<E> IndexMut<Point> for OffsetGrid<E> {
-    fn index_mut(&mut self, mut index: Point) -> &mut Self::Output {
+impl<E> IndexMut<UPoint> for OffsetGrid<E> {
+    fn index_mut(&mut self, mut index: UPoint) -> &mut Self::Output {
         index.0 -= self.limits.0 .0;
         index.1 -= self.limits.0 .1;
         &mut self.grid[index]
@@ -107,22 +119,23 @@ impl<E> IndexMut<Point> for OffsetGrid<E> {
 //     }
 // }
 
-pub fn wrapping_index<T>(slice: &mut [T], orig: usize, modifier: isize) -> &mut T {
+// TODO: toroidal grid struct?
+fn wrapping_index<T>(slice: &[T], orig: usize, modifier: isize) -> &T {
     wrapping_index_len(slice, orig, modifier, slice.len())
 }
 
 #[must_use]
-pub fn wrapping_index_len<T>(
-    collection: &mut (impl IndexMut<usize, Output = T> + ?Sized),
+fn wrapping_index_len<T>(
+    collection: &(impl IndexMut<usize, Output = T> + ?Sized),
     orig: usize,
     modifier: isize,
     len: usize,
-) -> &mut T {
-    &mut collection[index_mod(orig, modifier, len)]
+) -> &T {
+    &collection[index_mod(orig, modifier, len)]
 }
 
 #[must_use]
-pub fn index_mod(orig: usize, modifier: isize, len: usize) -> usize {
+fn index_mod(orig: usize, modifier: isize, len: usize) -> usize {
     let mut index = modifier.saturating_add_unsigned(orig);
     if index < 0 {
         let mult = (-index) as usize / len;
@@ -132,14 +145,14 @@ pub fn index_mod(orig: usize, modifier: isize, len: usize) -> usize {
 }
 
 #[derive(Clone, Debug)]
-pub struct Adjacents<const N: usize> {
-    base: Point,
+struct Adjacents<const N: usize> {
+    base: UPoint,
     i: usize,
 }
 
 impl<const N: usize> Adjacents<N> {
     // TODO: generate this somehow?
-    const MODIFIERS: [(isize, isize); 8] = [
+    const MODIFIERS: [IPoint; 8] = [
         (1, 0),
         (0, -1),
         (-1, 0),
@@ -151,13 +164,13 @@ impl<const N: usize> Adjacents<N> {
     ];
 
     #[must_use]
-    pub const fn new(base: Point) -> Self {
+    const fn new(base: UPoint) -> Self {
         Self { base, i: 0 }
     }
 }
 
 impl<const N: usize> Iterator for Adjacents<N> {
-    type Item = (isize, isize);
+    type Item = IPoint;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.i == N {
@@ -173,7 +186,7 @@ impl<const N: usize> Iterator for Adjacents<N> {
 }
 
 impl<const N: usize> Adjacents<N> {
-    pub fn constrain<'a>(self, (mx, my): Point) -> impl Iterator<Item = Point> + 'a {
+    fn constrain(self, (mx, my): UPoint) -> impl Iterator<Item = UPoint> {
         let (mx, my) = (mx as isize, my as isize);
         self.filter_map(move |(x, y)| {
             if (0..mx).contains(&x) && (0..my).contains(&y) {

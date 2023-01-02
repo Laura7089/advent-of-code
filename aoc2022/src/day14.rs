@@ -1,4 +1,4 @@
-use crate::{OffsetGrid, Point};
+use crate::{OffsetGrid, UPoint as Point};
 use itertools::Itertools;
 use ndarray::s;
 
@@ -35,6 +35,7 @@ fn fall_from(cave: &Cave, (sx, y): Point) -> Result<Option<Point>, ()> {
 }
 
 mod parse {
+    use crate::IResult;
     use nom::{
         bytes::complete::tag,
         character::complete::{char, u32},
@@ -42,12 +43,12 @@ mod parse {
         sequence::separated_pair,
     };
 
-    fn point(input: &str) -> nom::IResult<&str, super::Point> {
+    fn point(input: &str) -> IResult<super::Point> {
         let (i, (x, y)) = separated_pair(u32, char(','), u32)(input)?;
         Ok((i, (x as usize, y as usize)))
     }
 
-    pub fn stratum(input: &str) -> nom::IResult<&str, Vec<super::Point>> {
+    pub fn stratum(input: &str) -> IResult<Vec<super::Point>> {
         separated_list1(tag(" -> "), point)(input)
     }
 }

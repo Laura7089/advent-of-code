@@ -94,7 +94,7 @@ fn run_knot_snake<const LENGTH: usize>(input: &[Move]) -> usize {
                 let this_head = knots[i - 1];
                 knots[i].follow(&this_head);
             }
-            passed.insert(knots[LENGTH - 1]);
+            passed.insert(*knots.last().unwrap());
         }
     }
 

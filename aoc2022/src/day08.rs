@@ -1,4 +1,7 @@
-use ndarray::{Array2, Axis};
+#![allow(clippy::reversed_empty_ranges)]
+
+use crate::{array2_inner, UPoint as Point};
+use ndarray::prelude::*;
 
 #[aoc_generator(day8)]
 fn generate(input: &str) -> Array2<u8> {
@@ -15,19 +18,16 @@ fn generate(input: &str) -> Array2<u8> {
     array
 }
 
-fn visible(input: impl Iterator<Item = (usize, u8)>) -> impl Iterator<Item = usize> {
+fn visible<T>(input: impl Iterator<Item = (T, u8)>) -> impl Iterator<Item = T> {
     input
-        .scan(0, |max_height, (n, tree)| {
+        .scan(0, |prev_highest, (n, tree)| {
             Some((
                 n,
-                if *max_height >= tree {
-                    false
-                } else if tree == 0 {
+                if *prev_highest < tree {
+                    *prev_highest = tree;
                     true
                 } else {
-                    let clipped_tree = tree - *max_height;
-                    *max_height += clipped_tree;
-                    clipped_tree != 0
+                    false
                 },
             ))
         })
@@ -37,26 +37,65 @@ fn visible(input: impl Iterator<Item = (usize, u8)>) -> impl Iterator<Item = usi
 #[aoc(day8, part1)]
 fn solve_part1(input: &Array2<u8>) -> usize {
     let mut vis = Array2::from_elem(input.dim(), false);
-    vis.column_mut(0).iter_mut().for_each(|v| *v = true);
-    vis.column_mut(vis.dim().0 - 1)
-        .iter_mut()
-        .for_each(|v| *v = true);
-    vis.row_mut(0).iter_mut().for_each(|v| *v = true);
-    vis.row_mut(vis.dim().1 - 1)
-        .iter_mut()
-        .for_each(|v| *v = true);
+
+    // Outside trees are always visible
+    for edge in [
+        s![.., 0],  // Top
+        s![.., -1], // Bottom
+        s![0, ..],  // Left
+        s![-1, ..], // Right
+    ] {
+        vis.slice_mut(edge).fill(true);
+    }
 
     for (x, col) in input.axis_iter(Axis(0)).enumerate() {
-        visible(col.iter().copied().enumerate()).for_each(|y| vis[(x, y)] = true);
-        visible(col.iter().copied().enumerate().rev()).for_each(|y| vis[(x, y)] = true);
+        let col = col.iter().copied().enumerate();
+        visible(col.clone()).for_each(|y| vis[(x, y)] = true);
+        visible(col.clone().rev()).for_each(|y| vis[(x, y)] = true);
     }
 
     for (y, row) in input.axis_iter(Axis(1)).enumerate() {
-        visible(row.iter().copied().enumerate()).for_each(|x| vis[(x, y)] = true);
-        visible(row.iter().copied().enumerate().rev()).for_each(|x| vis[(x, y)] = true);
+        let row = row.iter().copied().enumerate();
+        visible(row.clone()).for_each(|x| vis[(x, y)] = true);
+        visible(row.clone().rev()).for_each(|x| vis[(x, y)] = true);
     }
 
     vis.into_iter().filter(|v| *v).count()
+}
+
+fn sight_len(slice: ArrayView1<u8>, tree: u8) -> usize {
+    let visible = slice.into_iter().take_while(|&&t| t < tree).count();
+
+    if visible == slice.len() {
+        // We're looking out of the grove
+        visible
+    } else {
+        // Add on the tree that blocks us
+        visible + 1
+    }
+}
+
+fn scenic_score(grove: ArrayView2<u8>, tree @ (x, y): Point) -> usize {
+    let height = grove[tree];
+    let rays = [
+        s![(x + 1).., y], // Right
+        s![..x;-1,    y], // Left
+        s![x, (y + 1)..], // Up
+        s![x, ..y;-1   ], // Down
+    ];
+
+    rays.into_iter()
+        .map(|ray| sight_len(grove.slice(ray), height))
+        .product()
+}
+
+#[aoc(day8, part2)]
+fn solve_part2(input: &Array2<u8>) -> usize {
+    input
+        .indexed_iter()
+        .map(|(tree, _)| scenic_score(input.view(), tree))
+        .max()
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -68,13 +107,38 @@ mod tests {
 33549
 35390";
 
-    #[test]
-    fn part1_example() {
-        assert_eq!(solve_part1(&generate(SAMPLE_INPUT)), 21);
+    mod part1 {
+        use super::*;
+
+        #[test]
+        fn example() {
+            assert_eq!(solve_part1(&generate(SAMPLE_INPUT)), 21);
+        }
+
+        #[test]
+        fn mine() {
+            assert_eq!(solve_part1(&generate(&crate::get_input(8))), 1546);
+        }
     }
 
-    #[test]
-    fn part1_mine() {
-        assert_eq!(solve_part1(&generate(&crate::get_input(8))), 1546);
+    mod part2 {
+        use super::*;
+
+        #[test]
+        fn example_scenic() {
+            let grove = generate(SAMPLE_INPUT);
+            let example_tree = (2, 3);
+            assert_eq!(scenic_score(grove.view(), example_tree), 8);
+        }
+
+        #[test]
+        fn example() {
+            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 8);
+        }
+
+        #[test]
+        fn mine() {
+            assert_eq!(solve_part2(&generate(&crate::get_input(8))), 519064);
+        }
     }
 }

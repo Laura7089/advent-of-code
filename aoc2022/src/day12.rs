@@ -1,4 +1,4 @@
-use crate::{Adjacents, Point};
+use crate::{Adjacents, UPoint as Point};
 use ndarray::Array2;
 use pathfinding::prelude::dijkstra;
 

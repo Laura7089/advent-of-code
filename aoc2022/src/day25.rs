@@ -5,13 +5,12 @@ type Snafu = i64;
 
 mod parse {
     use super::Snafu;
+    use crate::IResult;
     use nom::{
         character::complete::{line_ending, one_of},
         combinator::map,
         multi::{many1, separated_list1},
     };
-
-    type IResult<'a, T> = nom::IResult<&'a str, T>;
 
     fn digit(input: &str) -> IResult<Snafu> {
         map(one_of("012-="), |c| match c as u8 {
