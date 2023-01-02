@@ -9,45 +9,47 @@ mod parse {
         character::complete::{anychar, char, digit1, newline as le, space0},
         combinator::{map, opt, value},
         multi::separated_list1 as seplist,
-        sequence::{delimited, preceded, separated_pair, terminated, tuple},
+        sequence::{delimited as del, preceded as pre, separated_pair, terminated as term, tuple},
         IResult,
     };
 
     fn stack_item(input: &str) -> IResult<&str, Option<char>> {
-        let correct_num = map(delimited(char('['), anychar, char(']')), Some);
+        let correct_num = map(del(char('['), anychar, char(']')), Some);
         let blank = value(None, tag("   "));
         alt((correct_num, blank))(input)
     }
 
     fn stack_row(input: &str) -> IResult<&str, Vec<Option<char>>> {
-        terminated(seplist(char(' '), stack_item), space0)(input)
+        term(seplist(char(' '), stack_item), space0)(input)
     }
 
     fn label_row(input: &str) -> IResult<&str, Vec<&str>> {
-        seplist(char(' '), delimited(char(' '), digit1, opt(char(' '))))(input)
-    }
-
-    fn stacks(input: &str) -> IResult<&str, Stacks> {
-        let (input, rows) = terminated(seplist(le, stack_row), le)(input)?;
-
-        let mut stacks = vec![Vec::with_capacity(rows.len()); rows.last().unwrap().len()];
-
-        for row in rows.into_iter().rev() {
-            for (stack, item) in row.into_iter().enumerate().filter(|x| x.1.is_some()) {
-                stacks[stack].push(item.unwrap());
-            }
-        }
-
-        Ok((label_row(input)?.0, stacks))
+        seplist(char(' '), del(char(' '), digit1, opt(char(' '))))(input)
     }
 
     fn move_single(input: &str) -> IResult<&str, Move> {
         use nom::character::complete::u8;
         tuple((
-            preceded(tag("move "), u8),
-            map(preceded(tag(" from "), u8), |x| x - 1),
-            map(preceded(tag(" to "), u8), |x| x - 1),
+            pre(tag("move "), u8),
+            map(pre(tag(" from "), u8), |x| x - 1),
+            map(pre(tag(" to "), u8), |x| x - 1),
         ))(input)
+    }
+
+    fn stacks(input: &str) -> IResult<&str, Stacks> {
+        let (input, rows) = term(seplist(le, stack_row), le)(input)?;
+
+        let nstacks = rows.last().unwrap().len();
+        let mut stacks = vec![Vec::with_capacity(rows.len()); nstacks];
+
+        for row in rows.into_iter().rev() {
+            let cs = row.into_iter().enumerate().filter(|(_, c)| c.is_some());
+            for (stack, item) in cs {
+                stacks[stack].push(item.unwrap());
+            }
+        }
+
+        Ok((label_row(input)?.0, stacks))
     }
 
     pub fn both(input: &str) -> IResult<&str, (Stacks, Vec<Move>)> {
