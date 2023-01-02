@@ -1,8 +1,9 @@
-type Move = (u8, u8, u8);
+type Move = (usize, usize, usize);
 type Stacks = Vec<Vec<char>>;
 
 mod parse {
     use super::{Move, Stacks};
+    use crate::{make_usize, IResult};
     use nom::{
         branch::alt,
         bytes::complete::tag,
@@ -10,33 +11,31 @@ mod parse {
         combinator::{map, opt, value},
         multi::separated_list1 as seplist,
         sequence::{delimited as del, preceded as pre, separated_pair, terminated as term, tuple},
-        IResult,
     };
 
-    fn stack_item(input: &str) -> IResult<&str, Option<char>> {
+    fn stack_item(input: &str) -> IResult<Option<char>> {
         let correct_num = map(del(char('['), anychar, char(']')), Some);
         let blank = value(None, tag("   "));
         alt((correct_num, blank))(input)
     }
 
-    fn stack_row(input: &str) -> IResult<&str, Vec<Option<char>>> {
+    fn stack_row(input: &str) -> IResult<Vec<Option<char>>> {
         term(seplist(char(' '), stack_item), space0)(input)
     }
 
-    fn label_row(input: &str) -> IResult<&str, Vec<&str>> {
+    fn label_row(input: &str) -> IResult<Vec<&str>> {
         seplist(char(' '), del(char(' '), digit1, opt(char(' '))))(input)
     }
 
-    fn move_single(input: &str) -> IResult<&str, Move> {
-        use nom::character::complete::u8;
+    fn move_single(input: &str) -> IResult<Move> {
         tuple((
-            pre(tag("move "), u8),
-            map(pre(tag(" from "), u8), |x| x - 1),
-            map(pre(tag(" to "), u8), |x| x - 1),
+            pre(tag("move "), make_usize),
+            map(pre(tag(" from "), make_usize), |x| x - 1),
+            map(pre(tag(" to "), make_usize), |x| x - 1),
         ))(input)
     }
 
-    fn stacks(input: &str) -> IResult<&str, Stacks> {
+    fn stacks(input: &str) -> IResult<Stacks> {
         let (input, rows) = term(seplist(le, stack_row), le)(input)?;
 
         let nstacks = rows.last().unwrap().len();
@@ -52,7 +51,7 @@ mod parse {
         Ok((label_row(input)?.0, stacks))
     }
 
-    pub fn both(input: &str) -> IResult<&str, (Stacks, Vec<Move>)> {
+    pub fn both(input: &str) -> IResult<(Stacks, Vec<Move>)> {
         separated_pair(stacks, tag("\n\n"), seplist(le, move_single))(input)
     }
 
@@ -108,10 +107,10 @@ fn generate(input: &str) -> (Stacks, Vec<Move>) {
 fn solve_part1((stacks, sequence): &(Stacks, Vec<Move>)) -> String {
     let mut stacks = stacks.clone();
 
-    for &(num, src, dest) in sequence.iter() {
+    for &(num, src, dest) in sequence {
         for _ in 0..num {
-            let to_move = stacks[src as usize].pop().unwrap();
-            stacks[dest as usize].push(to_move);
+            let to_move = stacks[src].pop().unwrap();
+            stacks[dest].push(to_move);
         }
     }
 
@@ -122,12 +121,12 @@ fn solve_part1((stacks, sequence): &(Stacks, Vec<Move>)) -> String {
 fn solve_part2((stacks, sequence): &(Stacks, Vec<Move>)) -> String {
     let mut stacks = stacks.clone();
 
-    for &(num, src, dest) in sequence.iter() {
-        let num = num as usize;
-        let src_len = stacks[src as usize].len();
-        let to_move = stacks[src as usize].split_at(src_len - num).1.to_owned();
-        stacks[dest as usize].extend_from_slice(&to_move);
-        stacks[src as usize].truncate(src_len - num);
+    for &(num_moved, src, dest) in sequence {
+        let remaining = stacks[src].len() - num_moved;
+        // TODO: avoid this allocation
+        let to_move = stacks[src].split_at(remaining).1.to_owned();
+        stacks[dest].extend_from_slice(&to_move);
+        stacks[src].truncate(remaining);
     }
 
     stacks.into_iter().map(|s| *s.last().unwrap()).collect()
