@@ -238,6 +238,89 @@ impl<const N: usize> Adjacents<N> {
     }
 }
 
+#[derive(Debug, Clone)]
+enum ManhattanDiamond {
+    NonZero {
+        centre: UPoint,
+        dist: usize,
+        quad_dist: usize,
+        quadrant: usize,
+    },
+    Zero {
+        centre: UPoint,
+        done: bool,
+    },
+}
+
+impl ManhattanDiamond {
+    fn new(centre: UPoint, dist: usize) -> Self {
+        if dist == 0 {
+            Self::Zero {
+                done: false,
+                centre,
+            }
+        } else {
+            Self::NonZero {
+                centre,
+                dist,
+                quad_dist: 0,
+                quadrant: 1,
+            }
+        }
+    }
+}
+
+impl Iterator for ManhattanDiamond {
+    type Item = UPoint;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            // Handle zero-dist case
+            Self::Zero { done: true, .. } => None,
+            Self::Zero { done, centre } => {
+                *done = true;
+                Some(*centre)
+            }
+
+            // If we're on the "fifth" quadrant, stop returning
+            Self::NonZero { quadrant: 5, .. } => None,
+            // If we're at the end of the quadrant, move to the next
+            Self::NonZero {
+                quad_dist,
+                dist,
+                quadrant,
+                ..
+            } if quad_dist == dist => {
+                *quad_dist = 0;
+                *quadrant += 1;
+                self.next()
+            }
+            // Base case, actually return :)
+            Self::NonZero {
+                centre: (sx, sy),
+                dist,
+                quad_dist,
+                quadrant,
+            } => {
+                // Pull current values out
+                let inc = *quad_dist;
+                let dec = *dist - *quad_dist;
+
+                // Increment for next loop
+                *quad_dist += 1;
+
+                Some(match quadrant {
+                    1 => (sx.saturating_add(inc), sy.saturating_add(dec)),
+                    2 => (sx.saturating_add(dec), sy.saturating_sub(inc)),
+                    3 => (sx.saturating_sub(inc), sy.saturating_sub(dec)),
+                    4 => (sx.saturating_sub(dec), sy.saturating_add(inc)),
+                    _ => unreachable!(),
+                })
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -264,6 +347,29 @@ mod tests {
                 .constrain((2, 2))
                 .collect::<Vec<_>>(),
             vec![(1, 0), (0, 1)]
+        );
+    }
+
+    #[test]
+    fn manhattan_diamond() {
+        use super::ManhattanDiamond;
+        assert_eq!(
+            ManhattanDiamond::new((5, 5), 2).collect::<Vec<_>>(),
+            vec![
+                (5, 7),
+                (6, 6),
+                (7, 5),
+                (6, 4),
+                (5, 3),
+                (4, 4),
+                (3, 5),
+                (4, 6),
+            ]
+        );
+
+        assert_eq!(
+            ManhattanDiamond::new((0, 0), 0).collect::<Vec<_>>(),
+            vec![(0, 0)]
         );
     }
 }

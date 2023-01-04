@@ -1,16 +1,6 @@
-use itertools::Itertools;
-use ndarray::s;
+use std::collections::HashSet;
 
 use crate::{manhattan_dist_signed, manhattan_dist_unsigned, UPoint as Point};
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-enum BeaconState {
-    Possible,
-    Impossible,
-    Confirmed,
-}
-
-type Cave = crate::OffsetGrid<BeaconState>;
 
 mod parse {
     use crate::{make_isize, IPoint, IResult};
@@ -103,133 +93,39 @@ fn generate(input: &str) -> (Vec<(Point, Point)>, Point, usize) {
     )
 }
 
-#[derive(Debug, Clone)]
-struct SensorDiamond {
-    sensor: Point,
-    max_dist: usize,
-    current_dist: usize,
-    arc_dist: usize,
-}
-
-impl SensorDiamond {
-    fn new(sensor: Point, beacon: Point) -> Self {
-        let dist = manhattan_dist_unsigned(sensor, beacon);
-        Self {
-            sensor,
-            max_dist: dist,
-            current_dist: 0,
-            arc_dist: 0,
-        }
-    }
-}
-
-impl Iterator for SensorDiamond {
-    type Item = [Point; 4];
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // First return the sensor itself
-        if self.current_dist == 0 {
-            self.current_dist += 1;
-            // TODO: this is stupid
-            return Some([self.sensor; 4]);
-        }
-
-        // If we're at the end of the arc, move to the next ring
-        if self.arc_dist == self.current_dist {
-            self.arc_dist = 0;
-            self.current_dist += 1;
-        }
-
-        // If we've exceeded the sensor's range, don't return anything
-        if self.current_dist == self.max_dist + 1 {
-            return None;
-        }
-
-        let inc = self.arc_dist;
-        let dec = self.current_dist - self.arc_dist;
-        let (sx, sy) = self.sensor;
-
-        self.arc_dist += 1;
-
-        Some([
-            (sx.saturating_add(inc), sy.saturating_add(dec)),
-            (sx.saturating_add(dec), sy.saturating_sub(inc)),
-            (sx.saturating_sub(inc), sy.saturating_sub(dec)),
-            (sx.saturating_sub(dec), sy.saturating_add(inc)),
-        ])
-    }
-}
-
-// // Function removed because it used allocation
-// fn sensor_diamond(sensor @ (sx, sy): Point, beacon: Point) -> Vec<Point> {
-//     let dist = manhattan_dist_unsigned(sensor, beacon);
-
-//     // 4 * sum of 1..dist
-//     // add one for the sensor itself
-//     let total_points = ((dist * (dist + 1)) * 2) + 1;
-//     let mut points = Vec::with_capacity(total_points);
-//     points.push(sensor);
-
-//     for d in 1..=dist {
-//         for i in 0..d {
-//             let inc = i;
-//             let dec = d - i;
-//             points.extend_from_slice(&[
-//                 (sx.saturating_add(inc), sy.saturating_add(dec)),
-//                 (sx.saturating_add(dec), sy.saturating_sub(inc)),
-//                 (sx.saturating_sub(inc), sy.saturating_sub(dec)),
-//                 (sx.saturating_sub(dec), sy.saturating_add(inc)),
-//             ]);
-//         }
-//     }
-
-//     points
-// }
-
 fn part1_inner(
     (pairs, (_, y_off), max_dist): &(Vec<(Point, Point)>, Point, usize),
     goal: usize,
 ) -> usize {
-    let (x0, x1) = pairs
-        .iter()
-        .map(|&((lx, _), (rx, _))| [lx, rx])
-        .flatten()
-        .minmax()
-        .into_option()
-        .unwrap();
-    let (y0, y1) = pairs
-        .iter()
-        .map(|&((_, ly), (_, ry))| [ly, ry])
-        .flatten()
-        .minmax()
-        .into_option()
-        .unwrap();
-
-    let mut possibles = Cave::new(
-        (x0 - max_dist, y0 - max_dist),
-        (x1 + max_dist, y1 + max_dist),
-        BeaconState::Possible,
-    );
     let goal_line = goal + y_off + max_dist;
+    let mut goal_intersects = HashSet::new();
 
     for &(sensor, beacon) in pairs.iter() {
-        for quad in SensorDiamond::new(sensor, beacon) {
-            for point in quad {
-                possibles[point] = BeaconState::Impossible;
-            }
+        // Maximum distance the sensor can see
+        let max_dist = manhattan_dist_unsigned(sensor, beacon);
+        // Vertical distance from sensor to goal line
+        let goal_dist = sensor.1.abs_diff(goal_line);
+
+        // If the sensor diamond won't reach our goal line, skip it
+        if goal_dist > max_dist {
+            continue;
+        }
+
+        // Half (rounded down) the length of the intersection
+        // between the sensor diamond and the goal line
+        let reach = max_dist - goal_dist;
+
+        for x in (sensor.0 - reach)..=(sensor.0 + reach) {
+            goal_intersects.insert(x);
         }
     }
 
-    for &(_, beacon) in pairs.iter() {
-        possibles[beacon] = BeaconState::Confirmed;
+    // Remove beacons which are on the goal line
+    for (_, (_, by)) in pairs.iter().filter(|&&(_, b)| b.1 == goal_line) {
+        goal_intersects.remove(by);
     }
 
-    possibles
-        .grid
-        .slice(s![.., goal_line])
-        .iter()
-        .filter(|&&s| s == BeaconState::Impossible)
-        .count()
+    goal_intersects.len()
 }
 
 const GOAL_LINE: usize = 2_000_000;
@@ -265,49 +161,13 @@ Sensor at x=14, y=3: closest beacon is at x=15, y=3
 Sensor at x=20, y=1: closest beacon is at x=15, y=3";
 
     #[test]
-    fn sensor_diamond() {
-        let mut points = super::sensor_diamond((5, 5), (6, 7));
-        points.sort_unstable();
-        assert_eq!(
-            points,
-            vec![
-                (2, 5),
-                (3, 4),
-                (3, 5),
-                (3, 6),
-                (4, 3),
-                (4, 4),
-                (4, 5),
-                (4, 6),
-                (4, 7),
-                (5, 2),
-                (5, 3),
-                (5, 4),
-                (5, 5),
-                (5, 6),
-                (5, 7),
-                (5, 8),
-                (6, 3),
-                (6, 4),
-                (6, 5),
-                (6, 6),
-                (6, 7),
-                (7, 4),
-                (7, 5),
-                (7, 6),
-                (8, 5),
-            ]
-        );
-    }
-
-    #[test]
     fn part1_example() {
         assert_eq!(part1_inner(&generate(SAMPLE_INPUT), 10), 26);
     }
 
     #[test]
     fn part1_mine() {
-        assert_eq!(solve_part1(&generate(&crate::get_input(15))), todo!());
+        assert_eq!(solve_part1(&generate(&crate::get_input(15))), 4879972);
     }
 
     #[test]
