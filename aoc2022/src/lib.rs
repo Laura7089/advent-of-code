@@ -48,9 +48,22 @@ type IResult<'a, T> = nom::IResult<&'a str, T>;
 type UPoint = (usize, usize);
 type IPoint = (isize, isize);
 
+fn manhattan_dist_signed(left: IPoint, right: IPoint) -> usize {
+    left.0.abs_diff(right.0) + left.1.abs_diff(right.1)
+}
+
+fn manhattan_dist_unsigned(left: UPoint, right: UPoint) -> usize {
+    left.0.abs_diff(right.0) + left.1.abs_diff(right.1)
+}
+
 fn make_usize(input: &str) -> IResult<usize> {
-    use nom::character::complete::u32;
-    nom::combinator::map(u32, |x| x as usize)(input)
+    use nom::character::complete::u64;
+    nom::combinator::map(u64, |x| x.try_into().unwrap())(input)
+}
+
+fn make_isize(input: &str) -> IResult<isize> {
+    use nom::character::complete::i64;
+    nom::combinator::map(i64, |x| x.try_into().unwrap())(input)
 }
 
 /// A 2-d `ndarray` which has inbuilt indexing logic to work with non-0-based indexing
@@ -133,7 +146,7 @@ impl<E: Copy + Into<char>> Display for OffsetGrid<E> {
             .grid
             .columns()
             .into_iter()
-            .map(|column| {
+            .flat_map(|column| {
                 column
                     .iter()
                     .copied()
@@ -141,7 +154,6 @@ impl<E: Copy + Into<char>> Display for OffsetGrid<E> {
                     .chain(['\n'].into_iter())
                     .collect::<Vec<_>>()
             })
-            .flatten()
             .collect();
         write!(f, "{full}")
     }

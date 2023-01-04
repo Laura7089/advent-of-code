@@ -103,25 +103,88 @@ fn generate(input: &str) -> (Vec<(Point, Point)>, Point, usize) {
     )
 }
 
-fn sensor_diamond(sensor @ (sx, sy): Point, beacon: Point) -> Vec<Point> {
-    let dist = manhattan_dist_unsigned(sensor, beacon);
-    // We add one for the sensor itself
-    let total_points = ((dist * (dist + 1)) * 2) + 1;
-    let mut points = Vec::with_capacity(total_points);
+#[derive(Debug, Clone)]
+struct SensorDiamond {
+    sensor: Point,
+    max_dist: usize,
+    current_dist: usize,
+    arc_dist: usize,
+}
 
-    for d in 1..dist {
-        for i in 0..d {
-            let x = i as isize;
-            let y = (d - i) as isize;
-            points.push((sx.saturating_add_signed(x), sy.saturating_add_signed(y)));
-            points.push((sx.saturating_add_signed(-x), sy.saturating_add_signed(y)));
-            points.push((sx.saturating_add_signed(-x), sy.saturating_add_signed(-y)));
-            points.push((sx.saturating_add_signed(x), sy.saturating_add_signed(-y)));
+impl SensorDiamond {
+    fn new(sensor: Point, beacon: Point) -> Self {
+        let dist = manhattan_dist_unsigned(sensor, beacon);
+        Self {
+            sensor,
+            max_dist: dist,
+            current_dist: 0,
+            arc_dist: 0,
         }
     }
-
-    points
 }
+
+impl Iterator for SensorDiamond {
+    type Item = [Point; 4];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // First return the sensor itself
+        if self.current_dist == 0 {
+            self.current_dist += 1;
+            // TODO: this is stupid
+            return Some([self.sensor; 4]);
+        }
+
+        // If we're at the end of the arc, move to the next ring
+        if self.arc_dist == self.current_dist {
+            self.arc_dist = 0;
+            self.current_dist += 1;
+        }
+
+        // If we've exceeded the sensor's range, don't return anything
+        if self.current_dist == self.max_dist + 1 {
+            return None;
+        }
+
+        let inc = self.arc_dist;
+        let dec = self.current_dist - self.arc_dist;
+        let (sx, sy) = self.sensor;
+
+        self.arc_dist += 1;
+
+        Some([
+            (sx.saturating_add(inc), sy.saturating_add(dec)),
+            (sx.saturating_add(dec), sy.saturating_sub(inc)),
+            (sx.saturating_sub(inc), sy.saturating_sub(dec)),
+            (sx.saturating_sub(dec), sy.saturating_add(inc)),
+        ])
+    }
+}
+
+// // Function removed because it used allocation
+// fn sensor_diamond(sensor @ (sx, sy): Point, beacon: Point) -> Vec<Point> {
+//     let dist = manhattan_dist_unsigned(sensor, beacon);
+
+//     // 4 * sum of 1..dist
+//     // add one for the sensor itself
+//     let total_points = ((dist * (dist + 1)) * 2) + 1;
+//     let mut points = Vec::with_capacity(total_points);
+//     points.push(sensor);
+
+//     for d in 1..=dist {
+//         for i in 0..d {
+//             let inc = i;
+//             let dec = d - i;
+//             points.extend_from_slice(&[
+//                 (sx.saturating_add(inc), sy.saturating_add(dec)),
+//                 (sx.saturating_add(dec), sy.saturating_sub(inc)),
+//                 (sx.saturating_sub(inc), sy.saturating_sub(dec)),
+//                 (sx.saturating_sub(dec), sy.saturating_add(inc)),
+//             ]);
+//         }
+//     }
+
+//     points
+// }
 
 fn part1_inner(
     (pairs, (_, y_off), max_dist): &(Vec<(Point, Point)>, Point, usize),
@@ -129,15 +192,15 @@ fn part1_inner(
 ) -> usize {
     let (x0, x1) = pairs
         .iter()
-        .map(|&((x, _), _)| x)
-        .chain(pairs.iter().map(|&(_, (x, _))| x))
+        .map(|&((lx, _), (rx, _))| [lx, rx])
+        .flatten()
         .minmax()
         .into_option()
         .unwrap();
     let (y0, y1) = pairs
         .iter()
-        .map(|&((_, y), _)| y)
-        .chain(pairs.iter().map(|&(_, (_, y))| y))
+        .map(|&((_, ly), (_, ry))| [ly, ry])
+        .flatten()
         .minmax()
         .into_option()
         .unwrap();
@@ -150,8 +213,10 @@ fn part1_inner(
     let goal_line = goal + y_off + max_dist;
 
     for &(sensor, beacon) in pairs.iter() {
-        for point in sensor_diamond(sensor, beacon) {
-            possibles[point] = BeaconState::Impossible;
+        for quad in SensorDiamond::new(sensor, beacon) {
+            for point in quad {
+                possibles[point] = BeaconState::Impossible;
+            }
         }
     }
 
@@ -198,6 +263,42 @@ Sensor at x=17, y=20: closest beacon is at x=21, y=22
 Sensor at x=16, y=7: closest beacon is at x=15, y=3
 Sensor at x=14, y=3: closest beacon is at x=15, y=3
 Sensor at x=20, y=1: closest beacon is at x=15, y=3";
+
+    #[test]
+    fn sensor_diamond() {
+        let mut points = super::sensor_diamond((5, 5), (6, 7));
+        points.sort_unstable();
+        assert_eq!(
+            points,
+            vec![
+                (2, 5),
+                (3, 4),
+                (3, 5),
+                (3, 6),
+                (4, 3),
+                (4, 4),
+                (4, 5),
+                (4, 6),
+                (4, 7),
+                (5, 2),
+                (5, 3),
+                (5, 4),
+                (5, 5),
+                (5, 6),
+                (5, 7),
+                (5, 8),
+                (6, 3),
+                (6, 4),
+                (6, 5),
+                (6, 6),
+                (6, 7),
+                (7, 4),
+                (7, 5),
+                (7, 6),
+                (8, 5),
+            ]
+        );
+    }
 
     #[test]
     fn part1_example() {
