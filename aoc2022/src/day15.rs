@@ -1,6 +1,4 @@
-use std::collections::HashSet;
-
-use crate::{manhattan_dist_signed, manhattan_dist_unsigned, UPoint as Point};
+use crate::{combine_ranges, manhattan_dist_signed, manhattan_dist_unsigned, UPoint as Point};
 
 mod parse {
     use crate::{make_isize, IPoint, IResult};
@@ -93,12 +91,14 @@ fn generate(input: &str) -> (Vec<(Point, Point)>, Point, usize) {
     )
 }
 
+const MERGE_PASSES: usize = 3;
+
 fn part1_inner(
     (pairs, (_, y_off), max_dist): &(Vec<(Point, Point)>, Point, usize),
     goal: usize,
 ) -> usize {
     let goal_line = goal + y_off + max_dist;
-    let mut goal_intersects = HashSet::new();
+    let mut intersects = Vec::new();
 
     for &(sensor, beacon) in pairs.iter() {
         // Maximum distance the sensor can see
@@ -115,17 +115,49 @@ fn part1_inner(
         // between the sensor diamond and the goal line
         let reach = max_dist - goal_dist;
 
-        for x in (sensor.0 - reach)..=(sensor.0 + reach) {
-            goal_intersects.insert(x);
+        let pair = (sensor.0 - reach, sensor.0 + reach);
+        let mut combined = false;
+
+        for i in 0..intersects.len() {
+            if let Some(new_pair) = combine_ranges(pair, intersects[i]) {
+                intersects.remove(i);
+                intersects.push(new_pair);
+                combined = true;
+                break;
+            }
+        }
+
+        if !combined {
+            intersects.push(pair);
         }
     }
 
-    // Remove beacons which are on the goal line
-    for (_, (_, by)) in pairs.iter().filter(|&&(_, b)| b.1 == goal_line) {
-        goal_intersects.remove(by);
+    for _ in 0..MERGE_PASSES {
+        for pairi in 1..intersects.len() {
+            // Since we're shrinking intersects, we need to ensure we don't
+            // overrun it
+            if pairi == intersects.len() {
+                break;
+            }
+
+            let (&[.., lpair], remaining) = intersects.split_at(pairi)
+            else { unreachable!() };
+
+            for i in 0..remaining.len() {
+                match combine_ranges(lpair, remaining[i]) {
+                    Some(new_pair) => {
+                        intersects.remove(pairi - 1);
+                        intersects.remove(i + pairi - 1);
+                        intersects.push(new_pair);
+                        break;
+                    }
+                    None => {}
+                }
+            }
+        }
     }
 
-    goal_intersects.len()
+    intersects.into_iter().map(|(l, r)| l.abs_diff(r)).sum()
 }
 
 const GOAL_LINE: usize = 2_000_000;

@@ -321,6 +321,30 @@ impl Iterator for ManhattanDiamond {
     }
 }
 
+fn combine_ranges(
+    lhs @ (l1, l2): (usize, usize),
+    rhs @ (r1, r2): (usize, usize),
+) -> Option<(usize, usize)> {
+    use std::cmp::Ordering::*;
+
+    match (l1.cmp(&r1), l2.cmp(&r2), l1.cmp(&r2), r1.cmp(&l2)) {
+        // Left fully encompasses right
+        (Less | Equal, Greater | Equal, _, _) => Some(lhs),
+        // Right fully encompasses left
+        (Greater | Equal, Less | Equal, _, _) => Some(rhs),
+
+        // Right starts in left:
+        // l1--------l2
+        //        r1--------r2
+        (Less, Less, Less, Less | Equal) => Some((l1, r2)),
+        // Left starts in right
+        // r1--------r2
+        //        l1----------l2
+        (Greater, Greater, Less | Equal, Less) => Some((r1, l2)),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
