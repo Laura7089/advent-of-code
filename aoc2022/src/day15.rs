@@ -1,4 +1,7 @@
-use crate::{combine_ranges, manhattan_dist_signed, manhattan_dist_unsigned, UPoint as Point};
+use crate::{
+    manhattan_dist_signed, manhattan_dist_unsigned, ranges::combine as combine_ranges, Pair,
+    UPoint as Point,
+};
 
 mod parse {
     use crate::{make_isize, IPoint, IResult};
@@ -57,8 +60,10 @@ fn get_offset(seq: impl IntoIterator<Item = isize>) -> usize {
     seq.into_iter().min().unwrap().min(0).abs() as usize
 }
 
+type SensPair = Pair<Point>;
+
 #[aoc_generator(day15)]
-fn generate(input: &str) -> (Vec<(Point, Point)>, Point, usize) {
+fn generate(input: &str) -> (Vec<SensPair>, Point, usize) {
     let points_raw = parse::beacons(input).unwrap().1;
 
     let max_dist = points_raw
@@ -94,7 +99,7 @@ fn generate(input: &str) -> (Vec<(Point, Point)>, Point, usize) {
 const MERGE_PASSES: usize = 3;
 
 fn part1_inner(
-    (pairs, (_, y_off), max_dist): &(Vec<(Point, Point)>, Point, usize),
+    (pairs, (_, y_off), max_dist): &(Vec<SensPair>, Point, usize),
     goal: usize,
 ) -> usize {
     let goal_line = goal + y_off + max_dist;
@@ -163,12 +168,12 @@ fn part1_inner(
 const GOAL_LINE: usize = 2_000_000;
 
 #[aoc(day15, part1)]
-fn solve_part1(args: &(Vec<(Point, Point)>, Point, usize)) -> usize {
+fn solve_part1(args: &(Vec<SensPair>, Point, usize)) -> usize {
     part1_inner(args, GOAL_LINE)
 }
 
 #[aoc(day15, part2)]
-fn solve_part2((pairs, (_, y_off), max_dist): &(Vec<(Point, Point)>, Point, usize)) -> usize {
+fn solve_part2((pairs, (_, y_off), max_dist): &(Vec<SensPair>, Point, usize)) -> usize {
     todo!()
 }
 

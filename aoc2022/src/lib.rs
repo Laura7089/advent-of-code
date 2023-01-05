@@ -45,8 +45,10 @@ use std::{
 
 type IResult<'a, T> = nom::IResult<&'a str, T>;
 
-type UPoint = (usize, usize);
-type IPoint = (isize, isize);
+type Pair<T> = (T, T);
+
+type UPoint = Pair<usize>;
+type IPoint = Pair<isize>;
 
 fn manhattan_dist_signed(left: IPoint, right: IPoint) -> usize {
     left.0.abs_diff(right.0) + left.1.abs_diff(right.1)
@@ -321,27 +323,30 @@ impl Iterator for ManhattanDiamond {
     }
 }
 
-fn combine_ranges(
-    lhs @ (l1, l2): (usize, usize),
-    rhs @ (r1, r2): (usize, usize),
-) -> Option<(usize, usize)> {
-    use std::cmp::Ordering::*;
+mod ranges {
+    use super::Pair;
 
-    match (l1.cmp(&r1), l2.cmp(&r2), l1.cmp(&r2), r1.cmp(&l2)) {
-        // Left fully encompasses right
-        (Less | Equal, Greater | Equal, _, _) => Some(lhs),
-        // Right fully encompasses left
-        (Greater | Equal, Less | Equal, _, _) => Some(rhs),
+    pub fn is_superset((l1, l2): Pair<usize>, (r1, r2): Pair<usize>) -> bool {
+        l1 <= r1 && l2 >= r2
+    }
 
-        // Right starts in left:
-        // l1--------l2
-        //        r1--------r2
-        (Less, Less, Less, Less | Equal) => Some((l1, r2)),
-        // Left starts in right
-        // r1--------r2
-        //        l1----------l2
-        (Greater, Greater, Less | Equal, Less) => Some((r1, l2)),
-        _ => None,
+    pub fn combine(
+        lhs @ (l1, l2): Pair<usize>,
+        rhs @ (r1, r2): Pair<usize>,
+    ) -> Option<(usize, usize)> {
+        if is_superset(lhs, rhs) {
+            Some(lhs)
+        } else if is_superset(rhs, lhs) {
+            Some(rhs)
+        } else if (l1..=l2).contains(&r1) {
+            // Right starts in left
+            Some((l1, r2))
+        } else if (r1..=r2).contains(&l1) {
+            // Left starts in right
+            Some((r1, l2))
+        } else {
+            None
+        }
     }
 }
 

@@ -1,4 +1,7 @@
-type Elf = (u32, u32);
+use crate::{ranges, Pair};
+
+type Elf = (usize, usize);
+type ElfPair = Pair<Elf>;
 
 fn elf_range(input: &str) -> Elf {
     let mut pair = input.split('-').map(|x| x.parse().unwrap());
@@ -6,7 +9,7 @@ fn elf_range(input: &str) -> Elf {
 }
 
 #[aoc_generator(day4)]
-fn generate(input: &str) -> Vec<(Elf, Elf)> {
+fn generate(input: &str) -> Vec<ElfPair> {
     input
         .lines()
         .map(|l| {
@@ -17,30 +20,18 @@ fn generate(input: &str) -> Vec<(Elf, Elf)> {
 }
 
 #[aoc(day4, part1)]
-fn solve_part1(input: &[(Elf, Elf)]) -> usize {
+fn solve_part1(input: &[ElfPair]) -> usize {
     input
         .iter()
-        .filter(|(l, r)| {
-            let l_in_r = l.0 >= r.0 && l.1 <= r.1;
-            let r_in_l = r.0 >= l.0 && r.1 <= l.1;
-            l_in_r || r_in_l
-        })
+        .filter(|&&(l, r)| ranges::is_superset(l, r) || ranges::is_superset(r, l))
         .count()
 }
 
 #[aoc(day4, part2)]
-fn solve_part2(input: &[(Elf, Elf)]) -> usize {
+fn solve_part2(input: &[ElfPair]) -> usize {
     input
         .iter()
-        .filter(|(l, r)| {
-            let left = (l.0)..=(l.1);
-            let right = (r.0)..=(r.1);
-
-            left.contains(&r.0)
-                || left.contains(&r.1)
-                || right.contains(&l.0)
-                || right.contains(&l.1)
-        })
+        .filter(|&&(l, r)| ranges::combine(l, r).is_some())
         .count()
 }
 
