@@ -1,4 +1,4 @@
-use crate::{manhattan, ranges::combine as combine_ranges, Pair, UPoint as Point};
+use crate::{manhattan, ranges, Pair, UPoint as Point};
 
 mod parse {
     use crate::{parse::*, IPoint};
@@ -111,7 +111,7 @@ fn part1_inner((pairs, (_, y_off)): &(Vec<SensPair>, Point), goal: usize) -> usi
         let mut combined = false;
 
         for i in 0..intersects.len() {
-            if let Some(new_pair) = combine_ranges(pair, intersects[i]) {
+            if let Some(new_pair) = ranges::union(pair, intersects[i]) {
                 intersects.remove(i);
                 intersects.push(new_pair);
                 combined = true;
@@ -136,7 +136,7 @@ fn part1_inner((pairs, (_, y_off)): &(Vec<SensPair>, Point), goal: usize) -> usi
             else { unreachable!() };
 
             for i in 0..remaining.len() {
-                match combine_ranges(lpair, remaining[i]) {
+                match ranges::union(lpair, remaining[i]) {
                     Some(new_pair) => {
                         intersects.remove(pairi - 1);
                         intersects.remove(i + pairi - 1);
@@ -169,14 +169,10 @@ fn part2_inner(
         .collect();
 
     for x in (lower + x_off)..(upper + x_off) {
-        'a: for y in (lower + y_off)..(upper + y_off) {
-            for &(sens, dist) in pairs.iter() {
-                // If the point is in range of a sensor, skip it
-                if manhattan::distu(sens, (x, y)) <= dist {
-                    continue 'a;
-                }
+        for y in (lower + y_off)..(upper + y_off) {
+            if !pairs.iter().any(|&(s, d)| manhattan::distu(s, (x, y)) <= d) {
+                return ((x - x_off) * 4_000_000) + y - y_off;
             }
-            return ((x - x_off) * 4_000_000) + y - y_off;
         }
     }
 

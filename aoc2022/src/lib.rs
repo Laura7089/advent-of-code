@@ -348,27 +348,78 @@ impl Iterator for ManhattanDiamond {
 
 mod ranges {
     use super::Pair;
+    type Range = Pair<usize>;
 
-    pub fn is_superset((l1, l2): Pair<usize>, (r1, r2): Pair<usize>) -> bool {
+    /// Relationship between one range and another
+    ///
+    /// Value | Meaning
+    /// ---|---
+    /// `NoIntersect` | the ranges do not overlap at all
+    /// `IntersectBeginning` | the other range overlaps this one at the beginning
+    /// `IntersectEnd` | the other range overlaps this one at the end
+    /// `Contains` | this range fully contains the other
+    /// `ContainedBy` | the other range fully contains this one
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+    enum RangeRel {
+        NoIntersect,
+        IntersectBeginning,
+        IntersectEnd,
+        Contains,
+        ContainedBy,
+    }
+
+    impl RangeRel {
+        pub fn find(this: Range, other: Range) -> Self {
+            if is_superset(this, other) {
+                Self::Contains
+            } else if is_superset(other, this) {
+                Self::ContainedBy
+            } else if (this.0..=this.1).contains(&other.0) {
+                Self::IntersectEnd
+            } else if (other.0..=other.1).contains(&this.0) {
+                Self::IntersectBeginning
+            } else {
+                Self::NoIntersect
+            }
+        }
+    }
+
+    pub fn is_superset((l1, l2): Range, (r1, r2): Range) -> bool {
         l1 <= r1 && l2 >= r2
     }
 
-    pub fn combine(
-        lhs @ (l1, l2): Pair<usize>,
-        rhs @ (r1, r2): Pair<usize>,
-    ) -> Option<(usize, usize)> {
-        if is_superset(lhs, rhs) {
-            Some(lhs)
-        } else if is_superset(rhs, lhs) {
-            Some(rhs)
-        } else if (l1..=l2).contains(&r1) {
-            // Right starts in left
-            Some((l1, r2))
-        } else if (r1..=r2).contains(&l1) {
-            // Left starts in right
-            Some((r1, l2))
-        } else {
-            None
+    pub fn union(lhs @ (l1, l2): Range, rhs @ (r1, r2): Range) -> Option<Pair<usize>> {
+        match RangeRel::find(lhs, rhs) {
+            RangeRel::Contains => Some(lhs),
+            RangeRel::ContainedBy => Some(rhs),
+            RangeRel::IntersectEnd => Some((l1, r2)),
+            RangeRel::IntersectBeginning => Some((r1, l2)),
+            RangeRel::NoIntersect => None,
+        }
+    }
+
+    /// Tries to "subtract" the right range pair from the left
+    ///
+    /// That is, it finds the result of `lhs / rhs` in set logic.
+    ///
+    /// Returns:
+    ///
+    /// - `Some(((0, 0), None))` if `rhs` fully contains `lhs` or the two ranges are equal
+    /// - `None` if the two ranges do not intersect
+    /// - `Some((res, None))` if `rhs` partially overlaps `lhs`
+    /// - `Some((newl, Some(newr)))` if `rhs` bisects `lhs`
+    pub fn diff(lhs: Range, rhs: Range) -> Option<(Range, Option<Range>)> {
+        if lhs == rhs {
+            return Some(((0, 0), None));
+        }
+        match RangeRel::find(lhs, rhs) {
+            RangeRel::ContainedBy => Some(((0, 0), None)),
+            RangeRel::NoIntersect => None,
+            RangeRel::IntersectBeginning => Some(((rhs.1 + 1, lhs.1), None)),
+            RangeRel::IntersectEnd => Some(((lhs.0, rhs.0 - 1), None)),
+            RangeRel::Contains if lhs.0 == rhs.0 => Some(((rhs.0 + 1, lhs.1), None)),
+            RangeRel::Contains if lhs.1 == rhs.1 => Some(((lhs.0, lhs.1 - 1), None)),
+            RangeRel::Contains => Some(((lhs.0, rhs.0 - 1), Some((rhs.1 + 1, lhs.1)))),
         }
     }
 }
