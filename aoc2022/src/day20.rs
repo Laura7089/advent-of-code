@@ -20,7 +20,8 @@ fn solve_part1(input: &[(usize, isize)]) -> isize {
         let newi = index_mod(i, n, input.len());
         input[j].0 = newi;
 
-        let modifier = if n < 0 { 1 } else { -1 }; // Elements moving forwards or backwards?
+        // Elements moving forwards or backwards?
+        let modifier = if n < 0 { 1 } else { -1 };
         if i as isize + n >= 0 {
             // The element hasn't circled round
             let lower = newi.min(i);
@@ -45,7 +46,7 @@ fn solve_part1(input: &[(usize, isize)]) -> isize {
 
     GROVE_INDICES
         .iter()
-        .map(|i| wrapping_index(&mut input, *i, 0).1)
+        .map(|i| wrapping_index(&input, *i, 0).1)
         .sum()
 }
 

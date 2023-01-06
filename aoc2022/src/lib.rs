@@ -43,29 +43,55 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-type IResult<'a, T> = nom::IResult<&'a str, T>;
-
 type Pair<T> = (T, T);
 
 type UPoint = Pair<usize>;
 type IPoint = Pair<isize>;
 
-fn manhattan_dist_signed(left: IPoint, right: IPoint) -> usize {
-    left.0.abs_diff(right.0) + left.1.abs_diff(right.1)
+/// Manhattan distances
+mod manhattan {
+    use num_traits::Signed;
+    use std::ops::{Add, Sub};
+
+    use super::Pair;
+
+    /// Manhattan distance between two (signed) points
+    pub fn dists<T>((lx, ly): Pair<T>, (rx, ry): Pair<T>) -> T
+    where
+        T: Add<T, Output = T> + Sub<T, Output = T> + Ord + Signed,
+    {
+        let x = if lx > rx { lx - rx } else { rx - lx };
+        let y = if ly > ry { ly - ry } else { ry - ly };
+        x.abs() + y.abs()
+    }
+
+    /// Manhattan distance between two (unsigned) points
+    pub fn distu<T>((lx, ly): Pair<T>, (rx, ry): Pair<T>) -> T
+    where
+        T: Add<T, Output = T> + Sub<T, Output = T> + Ord,
+    {
+        let x = if lx > rx { lx - rx } else { rx - lx };
+        let y = if ly > ry { ly - ry } else { ry - ly };
+        x + y
+    }
 }
 
-fn manhattan_dist_unsigned(left: UPoint, right: UPoint) -> usize {
-    left.0.abs_diff(right.0) + left.1.abs_diff(right.1)
-}
+/// Parsing helpers
+mod parse {
+    use nom::{
+        character::complete::{i64, u64},
+        combinator::map,
+    };
 
-fn make_usize(input: &str) -> IResult<usize> {
-    use nom::character::complete::u64;
-    nom::combinator::map(u64, |x| x.try_into().unwrap())(input)
-}
+    pub type IResult<'a, T> = nom::IResult<&'a str, T>;
 
-fn make_isize(input: &str) -> IResult<isize> {
-    use nom::character::complete::i64;
-    nom::combinator::map(i64, |x| x.try_into().unwrap())(input)
+    pub fn usize(input: &str) -> IResult<usize> {
+        map(u64, |x| x.try_into().unwrap())(input)
+    }
+
+    pub fn isize(input: &str) -> IResult<isize> {
+        map(i64, |x| x.try_into().unwrap())(input)
+    }
 }
 
 /// A 2-d `ndarray` which has inbuilt indexing logic to work with non-0-based indexing
@@ -142,22 +168,15 @@ impl<E> IndexMut<UPoint> for OffsetGrid<E> {
     }
 }
 
-impl<E: Copy + Into<char>> Display for OffsetGrid<E> {
+impl<E: Display> Display for OffsetGrid<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let full: String = self
-            .grid
-            .columns()
-            .into_iter()
-            .flat_map(|column| {
-                column
-                    .iter()
-                    .copied()
-                    .map(Into::into)
-                    .chain(['\n'].into_iter())
-                    .collect::<Vec<_>>()
-            })
-            .collect();
-        write!(f, "{full}")
+        for column in self.grid.columns() {
+            for elem in column {
+                write!(f, "{elem}")?;
+            }
+            write!(f, "\n")?;
+        }
+        Ok(())
     }
 }
 
@@ -186,6 +205,9 @@ fn index_mod(orig: usize, modifier: isize, len: usize) -> usize {
     (index % len as isize) as usize
 }
 
+/// Iterate over the points adjacent to another
+///
+/// The first four given are the directly adjacent ones, the next four are adjacent diagonally.
 #[derive(Clone, Debug)]
 struct Adjacents<const N: usize> {
     base: UPoint,
@@ -240,6 +262,7 @@ impl<const N: usize> Adjacents<N> {
     }
 }
 
+/// Generate a diamond shape of points a given distance around another point
 #[derive(Debug, Clone)]
 enum ManhattanDiamond {
     NonZero {
@@ -354,29 +377,33 @@ mod ranges {
 mod tests {
     use super::*;
 
-    #[test]
-    fn adjacents_sanity() {
-        assert_eq!(
-            Adjacents::<4>::new((10, 10)).collect::<Vec<_>>(),
-            vec![(11, 10), (10, 9), (9, 10), (10, 11)]
-        );
-    }
+    mod adjacents {
+        use super::Adjacents;
 
-    #[test]
-    fn adjacents_filtered_sanity() {
-        assert_eq!(
-            Adjacents::<4>::new((10, 10))
-                .constrain((20, 20))
-                .collect::<Vec<_>>(),
-            vec![(11, 10), (10, 9), (9, 10), (10, 11)]
-        );
+        #[test]
+        fn sanity() {
+            assert_eq!(
+                Adjacents::<4>::new((10, 10)).collect::<Vec<_>>(),
+                vec![(11, 10), (10, 9), (9, 10), (10, 11)]
+            );
+        }
 
-        assert_eq!(
-            Adjacents::<4>::new((0, 0))
-                .constrain((2, 2))
-                .collect::<Vec<_>>(),
-            vec![(1, 0), (0, 1)]
-        );
+        #[test]
+        fn filtered() {
+            assert_eq!(
+                Adjacents::<4>::new((10, 10))
+                    .constrain((20, 20))
+                    .collect::<Vec<_>>(),
+                vec![(11, 10), (10, 9), (9, 10), (10, 11)]
+            );
+
+            assert_eq!(
+                Adjacents::<4>::new((0, 0))
+                    .constrain((2, 2))
+                    .collect::<Vec<_>>(),
+                vec![(1, 0), (0, 1)]
+            );
+        }
     }
 
     #[test]

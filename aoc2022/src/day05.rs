@@ -3,7 +3,7 @@ type Stacks = Vec<Vec<char>>;
 
 mod parse {
     use super::{Move, Stacks};
-    use crate::{make_usize, IResult};
+    use crate::parse::*;
     use nom::{
         branch::alt,
         bytes::complete::tag,
@@ -29,9 +29,9 @@ mod parse {
 
     fn move_single(input: &str) -> IResult<Move> {
         tuple((
-            pre(tag("move "), make_usize),
-            map(pre(tag(" from "), make_usize), |x| x - 1),
-            map(pre(tag(" to "), make_usize), |x| x - 1),
+            pre(tag("move "), usize),
+            map(pre(tag(" from "), usize), |x| x - 1),
+            map(pre(tag(" to "), usize), |x| x - 1),
         ))(input)
     }
 

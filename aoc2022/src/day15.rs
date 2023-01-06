@@ -1,10 +1,7 @@
-use crate::{
-    manhattan_dist_signed, manhattan_dist_unsigned, ranges::combine as combine_ranges, Pair,
-    UPoint as Point,
-};
+use crate::{manhattan, ranges::combine as combine_ranges, Pair, UPoint as Point};
 
 mod parse {
-    use crate::{make_isize, IPoint, IResult};
+    use crate::{parse::*, IPoint};
     use nom::{
         bytes::complete::tag,
         character::complete::line_ending,
@@ -13,8 +10,8 @@ mod parse {
     };
 
     fn pair(input: &str) -> IResult<IPoint> {
-        let x = pre(tag("x="), make_isize);
-        let y = pre(tag("y="), make_isize);
+        let x = pre(tag("x="), isize);
+        let y = pre(tag("y="), isize);
         seppair(x, tag(", "), y)(input)
     }
 
@@ -63,17 +60,11 @@ fn get_offset(seq: impl IntoIterator<Item = isize>) -> usize {
 type SensPair = Pair<Point>;
 
 #[aoc_generator(day15)]
-fn generate(input: &str) -> (Vec<SensPair>, Point, usize) {
+fn generate(input: &str) -> (Vec<SensPair>, Pair<usize>) {
     let points_raw = parse::beacons(input).unwrap().1;
 
-    let max_dist = points_raw
-        .iter()
-        .map(|&(l, r)| manhattan_dist_signed(l, r))
-        .max()
-        .unwrap();
-
-    let x_off = get_offset(points_raw.iter().map(|&((lx, _), (rx, _))| lx.min(rx)));
-    let y_off = get_offset(points_raw.iter().map(|&((_, ly), (_, ry))| ly.min(ry)));
+    let x_off = get_offset(points_raw.iter().flat_map(|&((l, _), (r, _))| [l, r]));
+    let y_off = get_offset(points_raw.iter().flat_map(|&((_, l), (_, r))| [l, r]));
 
     (
         points_raw
@@ -81,33 +72,29 @@ fn generate(input: &str) -> (Vec<SensPair>, Point, usize) {
             .map(|((sx, sy), (bx, by))| {
                 (
                     (
-                        (x_off + max_dist).saturating_add_signed(sx),
-                        (y_off + max_dist).saturating_add_signed(sy),
+                        (x_off).saturating_add_signed(sx),
+                        (y_off).saturating_add_signed(sy),
                     ),
                     (
-                        (x_off + max_dist).saturating_add_signed(bx),
-                        (y_off + max_dist).saturating_add_signed(by),
+                        (x_off).saturating_add_signed(bx),
+                        (y_off).saturating_add_signed(by),
                     ),
                 )
             })
             .collect(),
         (x_off, y_off),
-        max_dist,
     )
 }
 
 const MERGE_PASSES: usize = 3;
 
-fn part1_inner(
-    (pairs, (_, y_off), max_dist): &(Vec<SensPair>, Point, usize),
-    goal: usize,
-) -> usize {
-    let goal_line = goal + y_off + max_dist;
+fn part1_inner((pairs, (_, y_off)): &(Vec<SensPair>, Point), goal: usize) -> usize {
+    let goal_line = goal + y_off;
     let mut intersects = Vec::new();
 
     for &(sensor, beacon) in pairs.iter() {
         // Maximum distance the sensor can see
-        let max_dist = manhattan_dist_unsigned(sensor, beacon);
+        let max_dist = manhattan::distu(sensor, beacon);
         // Vertical distance from sensor to goal line
         let goal_dist = sensor.1.abs_diff(goal_line);
 
@@ -168,13 +155,37 @@ fn part1_inner(
 const GOAL_LINE: usize = 2_000_000;
 
 #[aoc(day15, part1)]
-fn solve_part1(args: &(Vec<SensPair>, Point, usize)) -> usize {
+fn solve_part1(args: &(Vec<SensPair>, Point)) -> usize {
     part1_inner(args, GOAL_LINE)
 }
 
+fn part2_inner(
+    (pairs, (x_off, y_off)): &(Vec<SensPair>, Point),
+    (lower, upper): Pair<usize>,
+) -> usize {
+    let pairs: Vec<_> = pairs
+        .iter()
+        .map(|&(sensor, beacon)| (sensor, manhattan::distu(sensor, beacon)))
+        .collect();
+
+    for x in (lower + x_off)..(upper + x_off) {
+        'a: for y in (lower + y_off)..(upper + y_off) {
+            for &(sens, dist) in pairs.iter() {
+                // If the point is in range of a sensor, skip it
+                if manhattan::distu(sens, (x, y)) <= dist {
+                    continue 'a;
+                }
+            }
+            return ((x - x_off) * 4_000_000) + y - y_off;
+        }
+    }
+
+    panic!("No suitable location found");
+}
+
 #[aoc(day15, part2)]
-fn solve_part2((pairs, (_, y_off), max_dist): &(Vec<SensPair>, Point, usize)) -> usize {
-    todo!()
+fn solve_part2(args: &(Vec<SensPair>, Point)) -> usize {
+    part2_inner(args, (0, 4_000_000))
 }
 
 #[cfg(test)]
@@ -209,7 +220,7 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3";
 
     #[test]
     fn part2_example() {
-        assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+        assert_eq!(part2_inner(&generate(SAMPLE_INPUT), (0, 20)), 56000011);
     }
 
     #[test]

@@ -5,7 +5,7 @@ type Snafu = i64;
 
 mod parse {
     use super::Snafu;
-    use crate::IResult;
+    use crate::parse::*;
     use nom::{
         character::complete::{line_ending, one_of},
         combinator::map,
