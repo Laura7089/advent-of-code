@@ -191,11 +191,8 @@ fn part2_inner(
         });
 
         if let Some(x) = xs.demolish(intersects) {
-            println!("Found suitable range: {x:?}");
             return (x.to_single().unwrap() - x_off) * 4_000_000 + (y - y_off);
         }
-
-        println!("Couldn't find any matches at y={y}");
     }
 
     panic!("No suitable location found");
@@ -243,6 +240,9 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3";
 
     #[test]
     fn part2_mine() {
-        assert_eq!(solve_part2(&generate(&crate::get_input(15))), todo!());
+        assert_eq!(
+            solve_part2(&generate(&crate::get_input(15))),
+            12525726647448
+        );
     }
 }

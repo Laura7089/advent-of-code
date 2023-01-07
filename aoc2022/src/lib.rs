@@ -467,7 +467,7 @@ mod ranges {
                 }),
                 RangeRel::Contains if le == re => Success(Self {
                     start: ls,
-                    end: le - 1,
+                    end: rs - 1,
                 }),
                 RangeRel::Contains => SuccessBisect(
                     Self {
@@ -490,18 +490,12 @@ mod ranges {
         pub fn demolish(self, mut diffs: impl Iterator<Item = Self> + Clone) -> Option<Self> {
             let mut current = self;
             while let Some(rhs) = diffs.next() {
-                println!("Trying to reduce {current:?} with {rhs:?}");
-
                 use DiffResult::*;
                 match current.diff(rhs) {
-                    Empty => {
-                        println!("{current:?} destroyed");
-                        return None;
-                    }
+                    Empty => return None,
                     NoChange(_) => {}
                     Success(new) => current = new,
                     SuccessBisect(l, r) => {
-                        println!("Bisected into {l:?} .. {r:?}");
                         let l = l.demolish(diffs.clone());
                         let r = r.demolish(diffs.clone());
                         return l.or(r);
