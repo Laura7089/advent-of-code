@@ -54,7 +54,7 @@ Sensor at x=9, y=16: closest beacon is at x=10, y=16"
 }
 
 fn get_offset(seq: impl IntoIterator<Item = isize>) -> usize {
-    seq.into_iter().min().unwrap().min(0).abs() as usize
+    seq.into_iter().min().unwrap().min(0).unsigned_abs()
 }
 
 type SensPair = Pair<Point>;
@@ -138,15 +138,13 @@ fn part1_inner((pairs, (_, y_off)): &(Vec<SensPair>, Point), goal: usize) -> usi
             let (&[.., lpair], remaining) = intersects.split_at(pairi)
             else { unreachable!() };
 
+            #[allow(clippy::needless_range_loop)]
             for i in 0..remaining.len() {
-                match lpair.union(remaining[i]) {
-                    Some(new_pair) => {
-                        intersects.remove(pairi - 1);
-                        intersects.remove(i + pairi - 1);
-                        intersects.push(new_pair);
-                        break;
-                    }
-                    None => {}
+                if let Some(new_pair) = lpair.union(remaining[i]) {
+                    intersects.remove(pairi - 1);
+                    intersects.remove(i + pairi - 1);
+                    intersects.push(new_pair);
+                    break;
                 }
             }
         }

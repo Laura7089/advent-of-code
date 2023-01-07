@@ -3,6 +3,8 @@
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::clone_on_copy)]
+#![allow(clippy::wildcard_imports)]
+#![allow(clippy::similar_names)]
 
 #[macro_use]
 extern crate aoc_runner_derive;
@@ -113,15 +115,15 @@ mod manhattan {
 
         fn next(&mut self) -> Option<Self::Item> {
             match self {
-                // Handle zero-dist case
-                Self::Zero { done: true, .. } => None,
+                // End of iteration, ie:
+                // - Zero distance and we're done
+                // - We're on the "fifth" quadrant
+                Self::Zero { done: true, .. } | Self::NonZero { quadrant: 5, .. } => None,
                 Self::Zero { done, centre } => {
                     *done = true;
                     Some(*centre)
                 }
 
-                // If we're on the "fifth" quadrant, stop returning
-                Self::NonZero { quadrant: 5, .. } => None,
                 // If we're at the end of the quadrant, move to the next
                 Self::NonZero {
                     quad_dist,
@@ -244,12 +246,8 @@ impl<E> OffsetGrid<E> {
     #[must_use]
     fn convert_index(&self, (x, y): UPoint) -> UPoint {
         let ((left, top), _) = self.limits;
-        if x < left {
-            panic!("x={x} is less than the left limit ({left})");
-        }
-        if y < top {
-            panic!("y={y} is less than the top limit ({top})");
-        }
+        assert!(x >= left, "x={x} is less than the left limit ({left})");
+        assert!(y >= top, "y={y} is less than the top limit ({top})");
         (x - left, y - top)
     }
 }
@@ -274,7 +272,7 @@ impl<E: Display> Display for OffsetGrid<E> {
             for elem in column {
                 write!(f, "{elem}")?;
             }
-            write!(f, "\n")?;
+            writeln!(f)?;
         }
         Ok(())
     }
@@ -400,10 +398,13 @@ mod ranges {
     }
 
     impl Range {
+        #[must_use]
+        #[allow(clippy::len_without_is_empty)]
         pub fn len(self) -> usize {
             self.end - self.start + 1
         }
 
+        #[must_use]
         pub fn to_single(self) -> Option<usize> {
             if self.len() == 1 {
                 Some(self.start)
@@ -412,6 +413,7 @@ mod ranges {
             }
         }
 
+        #[must_use]
         pub fn relationship(self, other: Range) -> RangeRel {
             if self.is_superset(other) {
                 RangeRel::Contains
@@ -426,14 +428,17 @@ mod ranges {
             }
         }
 
+        #[must_use]
         pub fn is_superset(self, rhs: Range) -> bool {
             self.start <= rhs.start && self.end >= rhs.end
         }
 
+        #[must_use]
         pub fn contains(self, x: usize) -> bool {
             (self.start..=self.end).contains(&x)
         }
 
+        #[must_use]
         pub fn union(self, rhs: Range) -> Option<Self> {
             match self.relationship(rhs) {
                 RangeRel::Contains => Some(self),
@@ -453,9 +458,11 @@ mod ranges {
         /// Tries to "subtract" the right range pair from the left
         ///
         /// That is, it finds the result of `lhs / rhs` in set logic.
+        #[must_use]
         pub fn diff(self, rhs @ Range { start: rs, end: re }: Range) -> DiffResult {
-            let Range { start: ls, end: le } = self;
             use DiffResult::*;
+
+            let Range { start: ls, end: le } = self;
             if self == rhs {
                 return Empty;
             }
@@ -496,6 +503,7 @@ mod ranges {
         /// # Note
         ///
         /// Assumes that only one range will remain.
+        #[must_use]
         pub fn demolish(self, mut diffs: impl Iterator<Item = Self> + Clone) -> Option<Self> {
             let mut current = self;
             while let Some(rhs) = diffs.next() {

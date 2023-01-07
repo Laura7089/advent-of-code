@@ -132,11 +132,6 @@ const FLOOR_OFFSET: usize = 2;
 
 #[aoc(day14, part2)]
 fn solve_part2(cave: &Cave) -> usize {
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    fn is_rock(tile: &Tile) -> bool {
-        tile == &Tile::Rock
-    }
-
     let mut cave = cave.clone();
     let side_expand = cave.true_dim().1;
     cave.expand(0, FLOOR_OFFSET, side_expand, side_expand, Tile::Air);
