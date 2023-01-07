@@ -1,4 +1,4 @@
-use crate::{index_mod, wrapping_index};
+use crate::grids::toroidal_index_single;
 
 #[aoc_generator(day20)]
 fn generate(input: &str) -> Vec<(usize, isize)> {
@@ -9,7 +9,7 @@ fn generate(input: &str) -> Vec<(usize, isize)> {
         .collect()
 }
 
-const GROVE_INDICES: &[usize] = &[1_000, 2_000, 3_000];
+const GROVE_INDICES: &[isize] = &[1_000, 2_000, 3_000];
 
 #[aoc(day20, part1)]
 fn solve_part1(input: &[(usize, isize)]) -> isize {
@@ -17,25 +17,34 @@ fn solve_part1(input: &[(usize, isize)]) -> isize {
 
     for j in 0..input.len() {
         let (i, n) = input[j];
-        let newi = index_mod(i, n, input.len());
+        let newi = toroidal_index_single(n.saturating_add_unsigned(i), input.len());
         input[j].0 = newi;
 
         // Elements moving forwards or backwards?
-        let modifier = if n < 0 { 1 } else { -1 };
+        let modifier = if n < 0 { 1 } else { -1 } as isize;
         if i as isize + n >= 0 {
             // The element hasn't circled round
             let lower = newi.min(i);
             let upper = newi.max(i);
             for o in lower..upper {
-                input[o].0 = index_mod(input[o].0, modifier, input.len());
+                input[o].0 = toroidal_index_single(
+                    modifier.saturating_add_unsigned(input[o].0),
+                    input.len(),
+                );
             }
         } else {
             // The element has circled round
             for o in i..input.len() {
-                input[o].0 = index_mod(input[o].0, modifier, input.len());
+                input[o].0 = toroidal_index_single(
+                    modifier.saturating_add_unsigned(input[o].0),
+                    input.len(),
+                );
             }
             for o in 0..newi {
-                input[o].0 = index_mod(input[o].0, modifier, input.len());
+                input[o].0 = toroidal_index_single(
+                    modifier.saturating_add_unsigned(input[o].0),
+                    input.len(),
+                );
             }
         }
     }
@@ -46,7 +55,7 @@ fn solve_part1(input: &[(usize, isize)]) -> isize {
 
     GROVE_INDICES
         .iter()
-        .map(|i| wrapping_index(&input, *i, 0).1)
+        .map(|&i| input[toroidal_index_single(i, input.len())].1)
         .sum()
 }
 

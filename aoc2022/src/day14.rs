@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
-use crate::{OffsetGrid, UPoint as Point};
+use crate::{grids::Offset, UPoint as Point};
 use itertools::Itertools;
 use ndarray::s;
 
-type Cave = OffsetGrid<Tile>;
+type Cave = Offset<Tile>;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 enum Tile {

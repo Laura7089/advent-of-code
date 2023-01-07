@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::ops::{Add, Div, Mul, Sub};
 
+use crate::arith::{FullOp, Op};
+
 mod parse {
     use super::*;
     use crate::parse::*;
@@ -48,42 +50,6 @@ mod parse {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-enum Op {
-    Add,
-    Sub,
-    Mul,
-    Div,
-}
-
-impl Op {
-    /// Applies the operation on `left` with `right`
-    fn forwards<T>(self, left: T, right: T) -> T
-    where
-        T: Add<T, Output = T> + Sub<T, Output = T> + Mul<T, Output = T> + Div<T, Output = T>,
-    {
-        match self {
-            Op::Add => left + right,
-            Op::Sub => left - right,
-            Op::Mul => left * right,
-            Op::Div => left / right,
-        }
-    }
-
-    /// Applies the "opposite" of the operation with `right` on `left`
-    fn backwards<T>(self, left: T, right: T) -> T
-    where
-        T: Add<T, Output = T> + Sub<T, Output = T> + Mul<T, Output = T> + Div<T, Output = T>,
-    {
-        match self {
-            Op::Add => left - right,
-            Op::Sub => left + right,
-            Op::Mul => left / right,
-            Op::Div => left * right,
-        }
-    }
-}
-
 /// A simple mathematical expression
 ///
 /// It can either be a known value, which is just mutated as other known-value operations are
@@ -91,7 +57,7 @@ impl Op {
 /// evaluation.
 #[derive(Clone, Debug, PartialEq)]
 enum Expr {
-    Var(Vec<(Op, usize)>),
+    Var(Vec<FullOp<usize>>),
     Fixed(usize),
 }
 
@@ -101,49 +67,22 @@ impl Expr {
     /// Tries to mathematically simplify the expression by combining similar operations or pruning
     /// no-ops
     fn simplify(&mut self) {
+        // We can only simplify Exprs with variables in them
         if let Var(ref mut ops) = self {
             let mut i = 0;
 
             // TODO: this would probably be faster backwards...
             while i < ops.len() - 1 {
-                let left = ops[i];
-                let right = ops[i + 1];
-
-                match (left, right) {
-                    ((Op::Add, l), (Op::Add, r)) => {
-                        ops.remove(i);
-                        ops.remove(i);
-                        ops.insert(i, (Op::Add, l + r));
+                if let Some(newop) = ops[i].try_combine(ops[i + 1]) {
+                    ops.remove(i);
+                    ops.remove(i);
+                    if !newop.is_noop() {
+                        ops.insert(i, newop);
                     }
-                    ((Op::Sub, l), (Op::Sub, r)) => {
-                        ops.remove(i);
-                        ops.remove(i);
-                        ops.insert(i, (Op::Sub, l + r));
-                    }
-                    ((Op::Add, a), (Op::Sub, s)) | ((Op::Sub, s), (Op::Add, a)) if a > s => {
-                        ops.remove(i);
-                        ops.remove(i);
-                        ops.insert(i, (Op::Sub, a - s));
-                    }
-                    ((Op::Add, a), (Op::Sub, s)) | ((Op::Sub, s), (Op::Add, a)) if a == s => {
-                        ops.remove(i);
-                        ops.remove(i);
-                    }
-                    ((Op::Mul, l), (Op::Mul, r)) => {
-                        ops.remove(i);
-                        ops.remove(i);
-                        ops.insert(i, (Op::Mul, l * r));
-                    }
-                    ((Op::Div, l), (Op::Div, r)) => {
-                        ops.remove(i);
-                        ops.remove(i);
-                        ops.insert(i, (Op::Div, l * r));
-                    }
-                    _ => {}
                 }
 
                 // Remove noops
-                if let (Op::Mul | Op::Div, 1) | (Op::Add | Op::Sub, 0) = ops[i] {
+                if ops[i].is_noop() {
                     ops.remove(i);
                 } else {
                     i += 1;
@@ -152,7 +91,7 @@ impl Expr {
         }
     }
 
-    fn push_op(&mut self, op: (Op, usize)) {
+    fn push_op(&mut self, op: FullOp<usize>) {
         if let Var(ref mut list) = self {
             list.push(op);
             self.simplify();
@@ -167,11 +106,11 @@ impl Add<Self> for Expr {
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
             (mut v @ Var(_), Fixed(n)) | (Fixed(n), mut v @ Var(_)) => {
-                v.push_op((Op::Add, n));
+                v.push_op(FullOp(Op::Add, n));
                 v
             }
             (Fixed(l), Fixed(r)) => Fixed(l + r),
-            _ => unreachable!("Tried to perform an add on two unknown expressions"),
+            (Var(_), Var(_)) => unreachable!("Tried to perform an add on two variable expressions"),
         }
     }
 }
@@ -181,11 +120,11 @@ impl Sub<Self> for Expr {
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
             (mut v @ Var(_), Fixed(n)) | (Fixed(n), mut v @ Var(_)) => {
-                v.push_op((Op::Sub, n));
+                v.push_op(FullOp(Op::Sub, n));
                 v
             }
             (Fixed(l), Fixed(r)) => Fixed(l - r),
-            _ => unreachable!("Tried to perform a sub on two unknown expressions"),
+            (Var(_), Var(_)) => panic!("Tried to perform a sub on two unknown expressions"),
         }
     }
 }
@@ -195,11 +134,11 @@ impl Mul<Self> for Expr {
     fn mul(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
             (mut v @ Var(_), Fixed(n)) | (Fixed(n), mut v @ Var(_)) => {
-                v.push_op((Op::Mul, n));
+                v.push_op(FullOp(Op::Mul, n));
                 v
             }
             (Fixed(l), Fixed(r)) => Fixed(l * r),
-            _ => unreachable!("Tried to perform a mul on two unknown expressions"),
+            _ => panic!("Tried to perform a mul on two unknown expressions"),
         }
     }
 }
@@ -209,11 +148,11 @@ impl Div<Self> for Expr {
     fn div(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
             (mut v @ Var(_), Fixed(n)) | (Fixed(n), mut v @ Var(_)) => {
-                v.push_op((Op::Div, n));
+                v.push_op(FullOp(Op::Div, n));
                 v
             }
             (Fixed(l), Fixed(r)) => Fixed(l / r),
-            _ => unreachable!("Tried to perform a div on two unknown expressions"),
+            _ => panic!("Tried to perform a div on two unknown expressions"),
         }
     }
 }
@@ -228,15 +167,16 @@ enum Job {
 }
 
 impl Job {
-    fn resolve<'a>(&self, map: &BTreeMap<Name, Job>) -> Expr {
+    fn resolve(&self, map: &BTreeMap<Name, Job>) -> Expr {
         match self {
             Job::Literal(n) => n.clone(),
             Job::Op(op, l, r) => {
                 // TODO: cloning here could be a potential slowdown, but it
                 // seems impossible to avoid
+                // Perhaps each monkey is only used once, so we can pull out of the map?
                 let l = map[l].clone();
                 let r = map[r].clone();
-                op.forwards(l.resolve(map), r.resolve(map))
+                op.apply(l.resolve(map), r.resolve(map))
             }
         }
     }
@@ -258,7 +198,7 @@ fn solve_part1(input: &BTreeMap<Name, Job>) -> usize {
     if let Fixed(n) = input[b"root"].resolve(input) {
         n
     } else {
-        unreachable!()
+        panic!("part 1 somehow has a variable expression in it")
     }
 }
 
@@ -278,8 +218,9 @@ fn solve_part2(input: &BTreeMap<Name, Job>) -> usize {
         }
     };
 
-    for (op, val) in to_solve.into_iter().rev() {
-        current = op.backwards(current, val);
+    println!("{current} from {to_solve:?}");
+    for op in to_solve.into_iter().rev() {
+        current = op.apply_rev(current);
     }
 
     current
