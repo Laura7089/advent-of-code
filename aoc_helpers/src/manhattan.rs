@@ -26,6 +26,7 @@ where
 }
 
 /// Generate a "ring" shape of points a fixed distance around a point
+#[allow(missing_docs)]
 #[derive(Debug, Clone)]
 pub enum Ring {
     NonZero {
@@ -41,6 +42,7 @@ pub enum Ring {
 }
 
 impl Ring {
+    /// Get a new `Ring`, with a distance of `dist` from `centre`
     pub fn new(centre: UPoint, dist: usize) -> Self {
         if dist == 0 {
             Self::Zero {

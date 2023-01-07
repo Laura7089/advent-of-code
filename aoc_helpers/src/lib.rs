@@ -1,3 +1,4 @@
+//! Various helper functions and types for problems likely to come up in advent of code challenges.
 #![warn(clippy::pedantic)]
 #![allow(clippy::enum_glob_use)]
 #![allow(clippy::cast_sign_loss)]
@@ -5,10 +6,14 @@
 #![allow(clippy::clone_on_copy)]
 #![allow(clippy::wildcard_imports)]
 #![allow(clippy::similar_names)]
+#![warn(missing_docs)]
 
+/// Quick tuple-pair type alias
 pub type Pair<T> = (T, T);
 
+/// Unsigned 2D point
 pub type UPoint = Pair<usize>;
+/// Signed 2D point
 pub type IPoint = Pair<isize>;
 
 pub mod arith;
@@ -23,12 +28,15 @@ pub mod parse {
         combinator::map,
     };
 
+    /// [`nom::IResult`] preloaded with `&str` as the input type
     pub type IResult<'a, T> = nom::IResult<&'a str, T>;
 
+    /// Parses a [`u64`] into a [`usize`]
     pub fn usize(input: &str) -> IResult<usize> {
         map(u64, |x| x.try_into().unwrap())(input)
     }
 
+    /// Parses a [`i64`] into a [`isize`]
     pub fn isize(input: &str) -> IResult<isize> {
         map(i64, |x| x.try_into().unwrap())(input)
     }
@@ -56,6 +64,7 @@ impl<const N: usize> Adjacents<N> {
         (1, 1),
     ];
 
+    /// Create a new [`Adjacents`]
     #[must_use]
     pub const fn new(base: UPoint) -> Self {
         Self { base, i: 0 }
@@ -79,7 +88,8 @@ impl<const N: usize> Iterator for Adjacents<N> {
 }
 
 impl<const N: usize> Adjacents<N> {
-    pub fn constrain(self, (mx, my): UPoint) -> impl Iterator<Item = UPoint> {
+    /// Filter out points outside of a certain magnitude
+    pub fn constrain(self, (mx, my): Pair<usize>) -> impl Iterator<Item = UPoint> {
         let (mx, my) = (mx as isize, my as isize);
         self.filter_map(move |(x, y)| {
             if (0..mx).contains(&x) && (0..my).contains(&y) {

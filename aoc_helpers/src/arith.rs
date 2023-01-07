@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
 /// A simple arithmetic operation
+#[allow(missing_docs)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Op {
     Add,
@@ -59,6 +60,7 @@ where
         + PartialEq
         + Eq,
 {
+    /// Check if the operation would have no effect
     pub fn is_noop(self) -> bool {
         match self.0 {
             Op::Add | Op::Sub => self.1 == T::zero(),
@@ -66,10 +68,19 @@ where
         }
     }
 
+    /// Apply the operation to an input
+    ///
+    /// For example:
+    ///
+    /// ```
+    /// # use aoc_helpers::arith::{FullOp, Op};
+    /// assert_eq!(FullOp(Op::Div, 3).apply(9), 3);
+    /// ```
     pub fn apply(self, input: T) -> T {
         self.0.apply(input, self.1)
     }
 
+    /// Apply the opposite of the operation to an input
     pub fn apply_rev(self, input: T) -> T {
         self.0.apply_rev(input, self.1)
     }

@@ -24,6 +24,11 @@ impl<E> Offset<E>
 where
     E: Copy,
 {
+    /// Create a new offset grid
+    ///
+    /// The first argument is the top-left allowed coordinate (inclusive), the second is the
+    /// bottom-right (inclusive).
+    /// `elem` is the element to fill the matrix with.
     pub fn new(min @ (x0, y0): UPoint, max @ (x1, y1): UPoint, elem: E) -> Self {
         Self {
             grid: Array2::from_elem((x1 - x0 + 1, y1 - y0 + 1), elem),
@@ -31,6 +36,9 @@ where
         }
     }
 
+    /// Expand the grid in some combination of directions
+    ///
+    /// Pads with `elem`.
     pub fn expand(&mut self, top: usize, bottom: usize, left: usize, right: usize, elem: E) {
         let (ox, oy) = self.grid.dim();
         let (otl, obr) = self.limits;
@@ -60,12 +68,17 @@ where
 impl<E> Offset<E> {
     delegate! {
         to self.grid {
+            /// The "true" dimensions of the grid
+            ///
+            /// That is, the actual size of the matrix within.
             #[call(dim)]
             pub fn true_dim(&self) -> UPoint;
+            /// Iterate over an axis of the grid
             pub fn axis_iter(&self, axis: Axis) -> ndarray::iter::AxisIter<E, Ix1>;
         }
     }
 
+    /// Check if a point falls with the grid
     #[must_use]
     pub fn contains(&self, (x, y): UPoint) -> bool {
         let ((x0, y0), (x1, y1)) = self.limits;
@@ -107,8 +120,10 @@ impl<E: Display> Display for Offset<E> {
     }
 }
 
+/// A grid that has wrapping (toroidal) indexing
 pub struct Toroidal<T>(pub Array2<T>);
 
+/// Modify unconstrained `index` to index into something of size `len`
 #[must_use]
 pub fn toroidal_index_single(mut index: isize, len: usize) -> usize {
     if index < 0 {
@@ -121,12 +136,13 @@ pub fn toroidal_index_single(mut index: isize, len: usize) -> usize {
 impl<T> Toroidal<T> {
     delegate! {
         to self.0 {
+            /// Size/shape of the grid
             pub fn dim(&self) -> (usize, usize);
         }
     }
 
     #[must_use]
-    pub fn convert_index((x, y): IPoint, (xlim, ylim): UPoint) -> UPoint {
+    fn convert_index((x, y): IPoint, (xlim, ylim): UPoint) -> UPoint {
         (
             toroidal_index_single(x, xlim),
             toroidal_index_single(y, ylim),

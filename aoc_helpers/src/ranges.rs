@@ -1,30 +1,31 @@
 //! Utilities for dealing with ranges and their combinations
 
 /// An inclusive, contiguous range of `usize`
+// TODO: make generic over the element type
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Range {
+    /// Start of the range, inclusive
     pub start: usize,
+    /// End of the range, inclusive
     pub end: usize,
 }
 
 /// Relationship between one range and another
-///
-/// Value | Meaning
-/// ---|---
-/// `NoIntersect` | the ranges do not overlap at all
-/// `IntersectBeginning` | the other range overlaps this one at the beginning
-/// `IntersectEnd` | the other range overlaps this one at the end
-/// `Contains` | this range fully contains the other
-/// `ContainedBy` | the other range fully contains this one
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum RangeRel {
+    /// ranges do not overlap at all
     NoIntersect,
+    /// other range overlaps this one's beginning
     IntersectBeginning,
+    /// other range overlaps this one's end
     IntersectEnd,
+    /// this range fully contains the other
     Contains,
+    /// other range fully contains this one
     ContainedBy,
 }
 
+/// Enumeration of possible `diff` interactions
 pub enum DiffResult {
     /// rhs completely contains lhs thus the result is the empty set
     Empty,
@@ -37,12 +38,18 @@ pub enum DiffResult {
 }
 
 impl Range {
+    /// The number of elements in the range
+    ///
+    /// Guaranteed to be always at least `1`.
     #[must_use]
     #[allow(clippy::len_without_is_empty)]
     pub fn len(self) -> usize {
         self.end - self.start + 1
     }
 
+    /// Tries to extract one number from `self`
+    ///
+    /// If `self` covers more than one number, returns `None`.
     #[must_use]
     pub fn to_single(self) -> Option<usize> {
         if self.len() == 1 {
@@ -52,6 +59,7 @@ impl Range {
         }
     }
 
+    /// Find the [`RangeRel`] of `self` to `other`
     #[must_use]
     pub fn relationship(self, other: Range) -> RangeRel {
         if self.is_superset(other) {
@@ -67,16 +75,21 @@ impl Range {
         }
     }
 
+    /// Check is `self` is a superset of `rhs`
     #[must_use]
     pub fn is_superset(self, rhs: Range) -> bool {
         self.start <= rhs.start && self.end >= rhs.end
     }
 
+    /// Check if `self` contains a particular value
     #[must_use]
     pub fn contains(self, x: usize) -> bool {
         (self.start..=self.end).contains(&x)
     }
 
+    /// Try to find the union of `self` and `rhs`
+    ///
+    /// Returns `None` if `self` and `rhs` are completely disjoint.
     #[must_use]
     pub fn union(self, rhs: Range) -> Option<Self> {
         match self.relationship(rhs) {
