@@ -237,24 +237,33 @@ impl<E> OffsetGrid<E> {
 
     #[must_use]
     fn contains(&self, (x, y): UPoint) -> bool {
-        let ((x1, y1), (x0, y0)) = self.limits;
+        let ((x0, y0), (x1, y1)) = self.limits;
         (x0..=x1).contains(&x) && (y0..=y1).contains(&y)
+    }
+
+    #[must_use]
+    fn convert_index(&self, (x, y): UPoint) -> UPoint {
+        let ((left, top), _) = self.limits;
+        if x < left {
+            panic!("x={x} is less than the left limit ({left})");
+        }
+        if y < top {
+            panic!("y={y} is less than the top limit ({top})");
+        }
+        (x - left, y - top)
     }
 }
 
 impl<E> Index<UPoint> for OffsetGrid<E> {
     type Output = E;
-    fn index(&self, mut index: UPoint) -> &Self::Output {
-        index.0 -= self.limits.0 .0;
-        index.1 -= self.limits.0 .1;
-        &self.grid[index]
+    fn index(&self, index: UPoint) -> &Self::Output {
+        &self.grid[self.convert_index(index)]
     }
 }
 
 impl<E> IndexMut<UPoint> for OffsetGrid<E> {
-    fn index_mut(&mut self, mut index: UPoint) -> &mut Self::Output {
-        index.0 -= self.limits.0 .0;
-        index.1 -= self.limits.0 .1;
+    fn index_mut(&mut self, index: UPoint) -> &mut Self::Output {
+        let index = self.convert_index(index);
         &mut self.grid[index]
     }
 }
@@ -425,7 +434,7 @@ mod ranges {
             (self.start..=self.end).contains(&x)
         }
 
-        pub fn union(self, rhs @ Range { start: r1, end: r2 }: Range) -> Option<Self> {
+        pub fn union(self, rhs: Range) -> Option<Self> {
             match self.relationship(rhs) {
                 RangeRel::Contains => Some(self),
                 RangeRel::ContainedBy => Some(rhs),
@@ -504,6 +513,15 @@ mod ranges {
             }
 
             Some(current)
+        }
+    }
+
+    impl IntoIterator for Range {
+        type Item = usize;
+        type IntoIter = std::ops::RangeInclusive<usize>;
+
+        fn into_iter(self) -> Self::IntoIter {
+            self.start..=self.end
         }
     }
 }

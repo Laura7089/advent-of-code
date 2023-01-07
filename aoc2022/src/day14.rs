@@ -1,6 +1,8 @@
+use std::fmt::Display;
+
 use crate::{OffsetGrid, UPoint as Point};
 use itertools::Itertools;
-use ndarray::{s, Axis};
+use ndarray::s;
 
 type Cave = OffsetGrid<Tile>;
 
@@ -12,13 +14,17 @@ enum Tile {
     Sand,
 }
 
-impl From<Tile> for char {
-    fn from(value: Tile) -> Self {
-        match value {
-            Tile::Air => '.',
-            Tile::Rock => '#',
-            Tile::Sand => 'o',
-        }
+impl Display for Tile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Tile::Air => '.',
+                Tile::Rock => '#',
+                Tile::Sand => 'o',
+            }
+        )
     }
 }
 
@@ -76,6 +82,7 @@ fn generate(input: &str) -> Cave {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 enum SandFall {
+    /// Sand falls to the given position
     Falls(Point),
     /// Sand has come to rest
     Rests,
