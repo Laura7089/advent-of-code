@@ -1,4 +1,4 @@
-use aoc_helpers::{manhattan, Pair, Range, UPoint as Point};
+use aoc_helpers::{manhattan, ranges::Range, Pair, UPoint as Point};
 
 mod parse {
     use aoc_helpers::{parse::*, IPoint};
