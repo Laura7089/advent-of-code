@@ -1,8 +1,8 @@
-use std::fmt::Display;
-
-use crate::{grids::Offset, UPoint as Point};
 use itertools::Itertools;
 use ndarray::s;
+use std::fmt::Display;
+
+use aoc_helpers::{grids::Offset, UPoint as Point};
 
 type Cave = Offset<Tile>;
 

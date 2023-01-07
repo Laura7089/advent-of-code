@@ -1,4 +1,4 @@
-use crate::grids::toroidal_index_single;
+use aoc_helpers::grids::toroidal_index_single;
 
 #[aoc_generator(day20)]
 fn generate(input: &str) -> Vec<(usize, isize)> {

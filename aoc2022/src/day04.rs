@@ -1,4 +1,4 @@
-use crate::{Pair, Range as Elf};
+use aoc_helpers::{Pair, Range as Elf};
 
 type ElfPair = Pair<Elf>;
 

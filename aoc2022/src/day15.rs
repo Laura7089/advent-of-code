@@ -1,7 +1,7 @@
-use crate::{manhattan, Pair, Range, UPoint as Point};
+use aoc_helpers::{manhattan, Pair, Range, UPoint as Point};
 
 mod parse {
-    use crate::{parse::*, IPoint};
+    use aoc_helpers::{parse::*, IPoint};
     use nom::{
         bytes::complete::tag,
         character::complete::line_ending,

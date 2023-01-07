@@ -1,6 +1,6 @@
 #![allow(clippy::reversed_empty_ranges)]
 
-use crate::UPoint as Point;
+use aoc_helpers::UPoint as Point;
 use ndarray::prelude::*;
 
 #[aoc_generator(day8)]

@@ -3,7 +3,7 @@ type Stacks = Vec<Vec<char>>;
 
 mod parse {
     use super::{Move, Stacks};
-    use crate::parse::*;
+    use aoc_helpers::parse::*;
     use nom::{
         branch::alt,
         bytes::complete::tag,

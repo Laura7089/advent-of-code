@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 use std::ops::{Add, Div, Mul, Sub};
 
-use crate::arith::{FullOp, Op};
+use aoc_helpers::arith::{FullOp, Op};
 
 mod parse {
     use super::*;
-    use crate::parse::*;
+    use aoc_helpers::parse::*;
 
     use nom::{
         branch::alt,
