@@ -1,11 +1,13 @@
-use crate::{ranges, Pair};
+use crate::{Pair, Range as Elf};
 
-type Elf = (usize, usize);
 type ElfPair = Pair<Elf>;
 
 fn elf_range(input: &str) -> Elf {
     let mut pair = input.split('-').map(|x| x.parse().unwrap());
-    (pair.next().unwrap(), pair.next().unwrap())
+    Elf {
+        start: pair.next().unwrap(),
+        end: pair.next().unwrap(),
+    }
 }
 
 #[aoc_generator(day4)]
@@ -23,16 +25,13 @@ fn generate(input: &str) -> Vec<ElfPair> {
 fn solve_part1(input: &[ElfPair]) -> usize {
     input
         .iter()
-        .filter(|&&(l, r)| ranges::is_superset(l, r) || ranges::is_superset(r, l))
+        .filter(|&&(l, r)| l.is_superset(r) || r.is_superset(l))
         .count()
 }
 
 #[aoc(day4, part2)]
 fn solve_part2(input: &[ElfPair]) -> usize {
-    input
-        .iter()
-        .filter(|&&(l, r)| ranges::combine(l, r).is_some())
-        .count()
+    input.iter().filter(|&&(l, r)| l.union(r).is_some()).count()
 }
 
 #[cfg(test)]

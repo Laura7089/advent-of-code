@@ -1,4 +1,4 @@
-use crate::{manhattan, ranges, Pair, UPoint as Point};
+use crate::{manhattan, Pair, Range, UPoint as Point};
 
 mod parse {
     use crate::{parse::*, IPoint};
@@ -107,11 +107,14 @@ fn part1_inner((pairs, (_, y_off)): &(Vec<SensPair>, Point), goal: usize) -> usi
         // between the sensor diamond and the goal line
         let reach = max_dist - goal_dist;
 
-        let pair = (sensor.0 - reach, sensor.0 + reach);
+        let pair = Range {
+            start: sensor.0 - reach,
+            end: sensor.0 + reach,
+        };
         let mut combined = false;
 
         for i in 0..intersects.len() {
-            if let Some(new_pair) = ranges::union(pair, intersects[i]) {
+            if let Some(new_pair) = pair.union(intersects[i]) {
                 intersects.remove(i);
                 intersects.push(new_pair);
                 combined = true;
@@ -136,7 +139,7 @@ fn part1_inner((pairs, (_, y_off)): &(Vec<SensPair>, Point), goal: usize) -> usi
             else { unreachable!() };
 
             for i in 0..remaining.len() {
-                match ranges::union(lpair, remaining[i]) {
+                match lpair.union(remaining[i]) {
                     Some(new_pair) => {
                         intersects.remove(pairi - 1);
                         intersects.remove(i + pairi - 1);
@@ -149,7 +152,7 @@ fn part1_inner((pairs, (_, y_off)): &(Vec<SensPair>, Point), goal: usize) -> usi
         }
     }
 
-    intersects.into_iter().map(|(l, r)| l.abs_diff(r)).sum()
+    intersects.into_iter().map(|r| r.len() - 1).sum()
 }
 
 const GOAL_LINE: usize = 2_000_000;
@@ -168,12 +171,31 @@ fn part2_inner(
         .map(|&(sensor, beacon)| (sensor, manhattan::distu(sensor, beacon)))
         .collect();
 
-    for x in (lower + x_off)..(upper + x_off) {
-        for y in (lower + y_off)..(upper + y_off) {
-            if !pairs.iter().any(|&(s, d)| manhattan::distu(s, (x, y)) <= d) {
-                return ((x - x_off) * 4_000_000) + y - y_off;
+    for y in (lower + y_off)..(upper + y_off) {
+        let xs = Range {
+            start: lower + x_off,
+            end: upper + x_off,
+        };
+
+        let intersects = pairs.iter().filter_map(|&((sx, sy), dist)| {
+            let height_diff = sy.abs_diff(y);
+            if height_diff > dist {
+                None
+            } else {
+                let arm_len = dist - height_diff;
+                Some(Range {
+                    start: sx.saturating_sub(arm_len),
+                    end: sx + arm_len,
+                })
             }
+        });
+
+        if let Some(x) = xs.demolish(intersects) {
+            println!("Found suitable range: {x:?}");
+            return (x.to_single().unwrap() - x_off) * 4_000_000 + (y - y_off);
         }
+
+        println!("Couldn't find any matches at y={y}");
     }
 
     panic!("No suitable location found");

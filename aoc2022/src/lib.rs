@@ -53,7 +53,7 @@ mod manhattan {
     use num_traits::Signed;
     use std::ops::{Add, Sub};
 
-    use super::Pair;
+    use super::{Pair, UPoint};
 
     /// Manhattan distance between two (signed) points
     pub fn dists<T>((lx, ly): Pair<T>, (rx, ry): Pair<T>) -> T
@@ -73,6 +73,90 @@ mod manhattan {
         let x = if lx > rx { lx - rx } else { rx - lx };
         let y = if ly > ry { ly - ry } else { ry - ly };
         x + y
+    }
+
+    /// Generate a "ring" shape of points a fixed distance around a point
+    #[derive(Debug, Clone)]
+    pub enum Ring {
+        NonZero {
+            centre: UPoint,
+            dist: usize,
+            quad_dist: usize,
+            quadrant: usize,
+        },
+        Zero {
+            centre: UPoint,
+            done: bool,
+        },
+    }
+
+    impl Ring {
+        pub fn new(centre: UPoint, dist: usize) -> Self {
+            if dist == 0 {
+                Self::Zero {
+                    done: false,
+                    centre,
+                }
+            } else {
+                Self::NonZero {
+                    centre,
+                    dist,
+                    quad_dist: 0,
+                    quadrant: 1,
+                }
+            }
+        }
+    }
+
+    impl Iterator for Ring {
+        type Item = UPoint;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            match self {
+                // Handle zero-dist case
+                Self::Zero { done: true, .. } => None,
+                Self::Zero { done, centre } => {
+                    *done = true;
+                    Some(*centre)
+                }
+
+                // If we're on the "fifth" quadrant, stop returning
+                Self::NonZero { quadrant: 5, .. } => None,
+                // If we're at the end of the quadrant, move to the next
+                Self::NonZero {
+                    quad_dist,
+                    dist,
+                    quadrant,
+                    ..
+                } if quad_dist == dist => {
+                    *quad_dist = 0;
+                    *quadrant += 1;
+                    self.next()
+                }
+                // Base case, actually return :)
+                Self::NonZero {
+                    centre: (sx, sy),
+                    dist,
+                    quad_dist,
+                    quadrant,
+                } => {
+                    // Pull current values out
+                    let inc = *quad_dist;
+                    let dec = *dist - *quad_dist;
+
+                    // Increment for next loop
+                    *quad_dist += 1;
+
+                    Some(match quadrant {
+                        1 => (sx.saturating_add(inc), sy.saturating_add(dec)),
+                        2 => (sx.saturating_add(dec), sy.saturating_sub(inc)),
+                        3 => (sx.saturating_sub(inc), sy.saturating_sub(dec)),
+                        4 => (sx.saturating_sub(dec), sy.saturating_add(inc)),
+                        _ => unreachable!(),
+                    })
+                }
+            }
+        }
     }
 }
 
@@ -129,7 +213,14 @@ where
             .assign(&self.grid);
 
         self.grid = new_arr;
-        self.limits.0 = (otl.0 - left, otl.1 - top);
+        self.limits.0 = (
+            otl.0
+                .checked_sub(left)
+                .expect("Cannot expand this far left"),
+            otl.1
+                .checked_sub(top)
+                .expect("Cannot expand this far upwards"),
+        );
         self.limits.1 = (obr.0 + right, obr.1 + bottom);
     }
 }
@@ -146,8 +237,8 @@ impl<E> OffsetGrid<E> {
 
     #[must_use]
     fn contains(&self, (x, y): UPoint) -> bool {
-        ((self.limits.0 .1)..=(self.limits.1 .1)).contains(&y)
-            && ((self.limits.0 .0)..=(self.limits.1 .0)).contains(&x)
+        let ((x1, y1), (x0, y0)) = self.limits;
+        (x0..=x1).contains(&x) && (y0..=y1).contains(&y)
     }
 }
 
@@ -262,93 +353,13 @@ impl<const N: usize> Adjacents<N> {
     }
 }
 
-/// Generate a diamond shape of points a given distance around another point
-#[derive(Debug, Clone)]
-enum ManhattanDiamond {
-    NonZero {
-        centre: UPoint,
-        dist: usize,
-        quad_dist: usize,
-        quadrant: usize,
-    },
-    Zero {
-        centre: UPoint,
-        done: bool,
-    },
-}
-
-impl ManhattanDiamond {
-    fn new(centre: UPoint, dist: usize) -> Self {
-        if dist == 0 {
-            Self::Zero {
-                done: false,
-                centre,
-            }
-        } else {
-            Self::NonZero {
-                centre,
-                dist,
-                quad_dist: 0,
-                quadrant: 1,
-            }
-        }
-    }
-}
-
-impl Iterator for ManhattanDiamond {
-    type Item = UPoint;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            // Handle zero-dist case
-            Self::Zero { done: true, .. } => None,
-            Self::Zero { done, centre } => {
-                *done = true;
-                Some(*centre)
-            }
-
-            // If we're on the "fifth" quadrant, stop returning
-            Self::NonZero { quadrant: 5, .. } => None,
-            // If we're at the end of the quadrant, move to the next
-            Self::NonZero {
-                quad_dist,
-                dist,
-                quadrant,
-                ..
-            } if quad_dist == dist => {
-                *quad_dist = 0;
-                *quadrant += 1;
-                self.next()
-            }
-            // Base case, actually return :)
-            Self::NonZero {
-                centre: (sx, sy),
-                dist,
-                quad_dist,
-                quadrant,
-            } => {
-                // Pull current values out
-                let inc = *quad_dist;
-                let dec = *dist - *quad_dist;
-
-                // Increment for next loop
-                *quad_dist += 1;
-
-                Some(match quadrant {
-                    1 => (sx.saturating_add(inc), sy.saturating_add(dec)),
-                    2 => (sx.saturating_add(dec), sy.saturating_sub(inc)),
-                    3 => (sx.saturating_sub(inc), sy.saturating_sub(dec)),
-                    4 => (sx.saturating_sub(dec), sy.saturating_add(inc)),
-                    _ => unreachable!(),
-                })
-            }
-        }
-    }
-}
-
 mod ranges {
-    use super::Pair;
-    type Range = Pair<usize>;
+    /// An inclusive, contiguous range of `usize`
+    #[derive(Copy, Clone, Debug, PartialEq)]
+    pub struct Range {
+        pub start: usize,
+        pub end: usize,
+    }
 
     /// Relationship between one range and another
     ///
@@ -360,7 +371,7 @@ mod ranges {
     /// `Contains` | this range fully contains the other
     /// `ContainedBy` | the other range fully contains this one
     #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    enum RangeRel {
+    pub enum RangeRel {
         NoIntersect,
         IntersectBeginning,
         IntersectEnd,
@@ -368,61 +379,141 @@ mod ranges {
         ContainedBy,
     }
 
-    impl RangeRel {
-        pub fn find(this: Range, other: Range) -> Self {
-            if is_superset(this, other) {
-                Self::Contains
-            } else if is_superset(other, this) {
-                Self::ContainedBy
-            } else if (this.0..=this.1).contains(&other.0) {
-                Self::IntersectEnd
-            } else if (other.0..=other.1).contains(&this.0) {
-                Self::IntersectBeginning
+    pub enum DiffResult {
+        /// rhs completely contains lhs thus the result is the empty set
+        Empty,
+        /// lhs does not change (no overlap)
+        NoChange(Range),
+        /// successful diff
+        Success(Range),
+        /// successful diff, lhs is bisected
+        SuccessBisect(Range, Range),
+    }
+
+    impl Range {
+        pub fn len(self) -> usize {
+            self.end - self.start + 1
+        }
+
+        pub fn to_single(self) -> Option<usize> {
+            if self.len() == 1 {
+                Some(self.start)
             } else {
-                Self::NoIntersect
+                None
             }
         }
-    }
 
-    pub fn is_superset((l1, l2): Range, (r1, r2): Range) -> bool {
-        l1 <= r1 && l2 >= r2
-    }
-
-    pub fn union(lhs @ (l1, l2): Range, rhs @ (r1, r2): Range) -> Option<Pair<usize>> {
-        match RangeRel::find(lhs, rhs) {
-            RangeRel::Contains => Some(lhs),
-            RangeRel::ContainedBy => Some(rhs),
-            RangeRel::IntersectEnd => Some((l1, r2)),
-            RangeRel::IntersectBeginning => Some((r1, l2)),
-            RangeRel::NoIntersect => None,
+        pub fn relationship(self, other: Range) -> RangeRel {
+            if self.is_superset(other) {
+                RangeRel::Contains
+            } else if other.is_superset(self) {
+                RangeRel::ContainedBy
+            } else if self.contains(other.start) {
+                RangeRel::IntersectEnd
+            } else if other.contains(self.start) {
+                RangeRel::IntersectBeginning
+            } else {
+                RangeRel::NoIntersect
+            }
         }
-    }
 
-    /// Tries to "subtract" the right range pair from the left
-    ///
-    /// That is, it finds the result of `lhs / rhs` in set logic.
-    ///
-    /// Returns:
-    ///
-    /// - `Some(((0, 0), None))` if `rhs` fully contains `lhs` or the two ranges are equal
-    /// - `None` if the two ranges do not intersect
-    /// - `Some((res, None))` if `rhs` partially overlaps `lhs`
-    /// - `Some((newl, Some(newr)))` if `rhs` bisects `lhs`
-    pub fn diff(lhs: Range, rhs: Range) -> Option<(Range, Option<Range>)> {
-        if lhs == rhs {
-            return Some(((0, 0), None));
+        pub fn is_superset(self, rhs: Range) -> bool {
+            self.start <= rhs.start && self.end >= rhs.end
         }
-        match RangeRel::find(lhs, rhs) {
-            RangeRel::ContainedBy => Some(((0, 0), None)),
-            RangeRel::NoIntersect => None,
-            RangeRel::IntersectBeginning => Some(((rhs.1 + 1, lhs.1), None)),
-            RangeRel::IntersectEnd => Some(((lhs.0, rhs.0 - 1), None)),
-            RangeRel::Contains if lhs.0 == rhs.0 => Some(((rhs.0 + 1, lhs.1), None)),
-            RangeRel::Contains if lhs.1 == rhs.1 => Some(((lhs.0, lhs.1 - 1), None)),
-            RangeRel::Contains => Some(((lhs.0, rhs.0 - 1), Some((rhs.1 + 1, lhs.1)))),
+
+        pub fn contains(self, x: usize) -> bool {
+            (self.start..=self.end).contains(&x)
+        }
+
+        pub fn union(self, rhs @ Range { start: r1, end: r2 }: Range) -> Option<Self> {
+            match self.relationship(rhs) {
+                RangeRel::Contains => Some(self),
+                RangeRel::ContainedBy => Some(rhs),
+                RangeRel::IntersectEnd => Some(Self {
+                    start: self.start,
+                    end: rhs.end,
+                }),
+                RangeRel::IntersectBeginning => Some(Self {
+                    start: rhs.start,
+                    end: self.end,
+                }),
+                RangeRel::NoIntersect => None,
+            }
+        }
+
+        /// Tries to "subtract" the right range pair from the left
+        ///
+        /// That is, it finds the result of `lhs / rhs` in set logic.
+        pub fn diff(self, rhs @ Range { start: rs, end: re }: Range) -> DiffResult {
+            let Range { start: ls, end: le } = self;
+            use DiffResult::*;
+            if self == rhs {
+                return Empty;
+            }
+            match self.relationship(rhs) {
+                RangeRel::ContainedBy => Empty,
+                RangeRel::NoIntersect => NoChange(self),
+                RangeRel::IntersectBeginning => Success(Self {
+                    start: re + 1,
+                    end: le,
+                }),
+                RangeRel::IntersectEnd => Success(Self {
+                    start: ls,
+                    end: rs - 1,
+                }),
+                RangeRel::Contains if ls == rs => Success(Self {
+                    start: re + 1,
+                    end: le,
+                }),
+                RangeRel::Contains if le == re => Success(Self {
+                    start: ls,
+                    end: le - 1,
+                }),
+                RangeRel::Contains => SuccessBisect(
+                    Self {
+                        start: ls,
+                        end: rs - 1,
+                    },
+                    Self {
+                        start: re + 1,
+                        end: le,
+                    },
+                ),
+            }
+        }
+
+        /// Repeatedly [`Range::diff`] the elements of `diffs` from `self`
+        ///
+        /// # Note
+        ///
+        /// Assumes that only one range will remain.
+        pub fn demolish(self, mut diffs: impl Iterator<Item = Self> + Clone) -> Option<Self> {
+            let mut current = self;
+            while let Some(rhs) = diffs.next() {
+                println!("Trying to reduce {current:?} with {rhs:?}");
+
+                use DiffResult::*;
+                match current.diff(rhs) {
+                    Empty => {
+                        println!("{current:?} destroyed");
+                        return None;
+                    }
+                    NoChange(_) => {}
+                    Success(new) => current = new,
+                    SuccessBisect(l, r) => {
+                        println!("Bisected into {l:?} .. {r:?}");
+                        let l = l.demolish(diffs.clone());
+                        let r = r.demolish(diffs.clone());
+                        return l.or(r);
+                    }
+                }
+            }
+
+            Some(current)
         }
     }
 }
+pub use ranges::Range;
 
 #[cfg(test)]
 mod tests {
@@ -459,9 +550,9 @@ mod tests {
 
     #[test]
     fn manhattan_diamond() {
-        use super::ManhattanDiamond;
+        use super::manhattan::Ring;
         assert_eq!(
-            ManhattanDiamond::new((5, 5), 2).collect::<Vec<_>>(),
+            Ring::new((5, 5), 2).collect::<Vec<_>>(),
             vec![
                 (5, 7),
                 (6, 6),
@@ -474,9 +565,6 @@ mod tests {
             ]
         );
 
-        assert_eq!(
-            ManhattanDiamond::new((0, 0), 0).collect::<Vec<_>>(),
-            vec![(0, 0)]
-        );
+        assert_eq!(Ring::new((0, 0), 0).collect::<Vec<_>>(), vec![(0, 0)]);
     }
 }
