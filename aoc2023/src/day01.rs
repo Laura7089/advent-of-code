@@ -32,22 +32,11 @@ const DIGITS: [&str; 10] = [
 ];
 
 fn get_digit_word(input: &str) -> Option<usize> {
-    if input.is_empty() {
-        return None;
+    match input.as_bytes().get(0) {
+        None => None,
+        Some(b) if is_digit(b) => Some(*b as usize - 48),
+        _ => DIGITS.iter().position(|w| input.starts_with(w)),
     }
-
-    let first_char = input.as_bytes()[0];
-    if first_char >= 48 && first_char < 59 {
-        return Some(first_char as usize - 48);
-    }
-
-    for (i, word) in DIGITS.iter().enumerate() {
-        if input.starts_with(word) {
-            return Some(i);
-        }
-    }
-
-    None
 }
 
 #[aoc(day01, part2)]
