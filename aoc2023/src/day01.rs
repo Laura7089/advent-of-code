@@ -1,11 +1,10 @@
-#[aoc_generator(day01)]
-fn generate(input: &str) -> String {
-    input.to_owned()
-}
-
 #[inline(always)]
-fn is_digit(&byte: &u8) -> bool {
-    byte >= 48 && byte < 59
+fn get_digit(byte: u8) -> Option<usize> {
+    if byte >= 48 && byte < 59 {
+        Some(byte as usize - 48)
+    } else {
+        None
+    }
 }
 
 #[aoc(day01, part1)]
@@ -15,12 +14,11 @@ fn solve_part1(input: &str) -> usize {
         .map(|line| {
             let first = line
                 .bytes()
-                .find(is_digit)
+                .find_map(get_digit)
                 .ok_or_else(|| format!("Couldn't find a digit in the line: '{line}'"))
-                .unwrap() as usize
-                - 48;
+                .unwrap();
 
-            let last = line.bytes().rev().find(is_digit).unwrap() as usize - 48;
+            let last = line.bytes().rev().find_map(get_digit).unwrap();
 
             (first * 10) + last
         })
@@ -32,11 +30,8 @@ const DIGITS: [&str; 10] = [
 ];
 
 fn get_digit_word(input: &str) -> Option<usize> {
-    match input.as_bytes().get(0) {
-        None => None,
-        Some(b) if is_digit(b) => Some(*b as usize - 48),
-        _ => DIGITS.iter().position(|w| input.starts_with(w)),
-    }
+    let first_byte = input.bytes().next()?;
+    get_digit(first_byte).or_else(|| DIGITS.iter().position(|w| input.starts_with(w)))
 }
 
 #[aoc(day01, part2)]
