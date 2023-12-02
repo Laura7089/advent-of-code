@@ -1,39 +1,10 @@
-use std::ops::Add;
-
 #[derive(Clone, PartialEq, Debug)]
 struct Game {
     id: usize,
     samples: Vec<Sample>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
-struct Sample([Option<usize>; 3]);
-
-fn add_opt_pair<T: Add<Output = T>>(lhs: Option<T>, rhs: Option<T>) -> Option<T> {
-    match (lhs, rhs) {
-        (Some(l), Some(r)) => Some(l + r),
-        (Some(v), None) | (None, Some(v)) => Some(v),
-        _ => None,
-    }
-}
-
-impl Add for Sample {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self([
-            add_opt_pair(self.0[0], rhs.0[0]),
-            add_opt_pair(self.0[1], rhs.0[1]),
-            add_opt_pair(self.0[2], rhs.0[2]),
-        ])
-    }
-}
-
-impl std::iter::Sum<Sample> for Sample {
-    fn sum<I: Iterator<Item = Sample>>(iter: I) -> Self {
-        iter.fold(Default::default(), |l, r| l + r)
-    }
-}
+type Sample = [usize; 3];
 
 mod parse {
     use nom::branch::alt;
@@ -66,19 +37,21 @@ mod parse {
     }
 
     fn cubes(input: &str) -> Result<Sample> {
-        let (rem, seq) = separated_list1(tag(", "), cube)(input)?;
-        Ok((rem, seq.into_iter().sum()))
+        map(separated_list1(tag(", "), cube), |seq| {
+            seq.into_iter()
+                .fold([0; 3], |l, r| [l[0] + r[0], l[1] + r[1], l[2] + r[2]])
+        })(input)
     }
 
     fn cube(input: &str) -> Result<Sample> {
         let (rem, (amt, colour)) =
             separated_pair(pu32, tag(" "), alt((tag("red"), tag("green"), tag("blue"))))(input)?;
 
-        let mut sample: Sample = Default::default();
+        let mut sample = [0; 3];
         match colour {
-            "red" => sample.0[0].insert(amt as usize),
-            "green" => sample.0[1].insert(amt as usize),
-            "blue" => sample.0[2].insert(amt as usize),
+            "red" => sample[0] = amt as usize,
+            "green" => sample[1] = amt as usize,
+            "blue" => sample[2] = amt as usize,
             _ => panic!("Bad colour: {colour}"),
         };
 
@@ -91,16 +64,13 @@ mod parse {
 
         #[test]
         fn test_cube() {
-            assert_eq!(cube("3 blue"), Ok(("", Sample([None, None, Some(3),]))));
-            assert_eq!(cube("28 red"), Ok(("", Sample([Some(28), None, None]))));
+            assert_eq!(cube("3 blue"), Ok(("", [0, 0, 3])));
+            assert_eq!(cube("28 red"), Ok(("", [28, 0, 0])));
         }
 
         #[test]
         fn test_cubes() {
-            assert_eq!(
-                cubes("3 blue, 1 red"),
-                Ok(("", Sample([Some(1), None, Some(3),])))
-            );
+            assert_eq!(cubes("3 blue, 1 red"), Ok(("", [1, 0, 3])));
         }
     }
 }
@@ -111,13 +81,9 @@ fn generate(input: &str) -> Vec<Game> {
 }
 
 fn game_maxes(game: &Game) -> [usize; 3] {
-    game.samples
-        .iter()
-        // Turn `None`s into `0`s
-        .map(|s| s.0.map(|v| v.unwrap_or(0)))
-        .fold([0, 0, 0], |l, r| {
-            [l[0].max(r[0]), l[1].max(r[1]), l[2].max(r[2])]
-        })
+    game.samples.iter().fold([0, 0, 0], |l, r| {
+        [l[0].max(r[0]), l[1].max(r[1]), l[2].max(r[2])]
+    })
 }
 
 #[aoc(day02, part1)]
@@ -129,7 +95,7 @@ fn solve_part1(input: &[Game]) -> usize {
         .filter_map(|game| {
             let complies = game_maxes(game)
                 .into_iter()
-                .zip(TARGET.clone().into_iter())
+                .zip(TARGET.into_iter())
                 .all(|(g, t)| g <= t);
             if complies {
                 Some(game.id)
