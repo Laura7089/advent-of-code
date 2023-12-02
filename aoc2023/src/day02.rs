@@ -110,6 +110,16 @@ fn generate(input: &str) -> Vec<Game> {
     parse::games(input).unwrap().1
 }
 
+fn game_maxes(game: &Game) -> [usize; 3] {
+    game.samples
+        .iter()
+        // Turn `None`s into `0`s
+        .map(|s| s.0.map(|v| v.unwrap_or(0)))
+        .fold([0, 0, 0], |l, r| {
+            [l[0].max(r[0]), l[1].max(r[1]), l[2].max(r[2])]
+        })
+}
+
 #[aoc(day02, part1)]
 fn solve_part1(input: &[Game]) -> usize {
     const TARGET: [usize; 3] = [12, 13, 14];
@@ -117,16 +127,7 @@ fn solve_part1(input: &[Game]) -> usize {
     input
         .iter()
         .filter_map(|game| {
-            let maxes = game
-                .samples
-                .iter()
-                // Turn `None`s into `0`s
-                .map(|s| s.0.map(|v| v.unwrap_or(0)))
-                .fold([0, 0, 0], |l, r| {
-                    [l[0].max(r[0]), l[1].max(r[1]), l[2].max(r[2])]
-                });
-
-            let complies = maxes
+            let complies = game_maxes(game)
                 .into_iter()
                 .zip(TARGET.clone().into_iter())
                 .all(|(g, t)| g <= t);
@@ -140,8 +141,11 @@ fn solve_part1(input: &[Game]) -> usize {
 }
 
 #[aoc(day02, part2)]
-fn solve_part2(_input: &[Game]) -> usize {
-    todo!()
+fn solve_part2(input: &[Game]) -> usize {
+    input
+        .iter()
+        .map(|game| game_maxes(game).into_iter().fold(1, |l, r| l * r))
+        .sum()
 }
 
 #[cfg(test)]
@@ -174,12 +178,12 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 2286);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(02))), todo!());
+            assert_eq!(solve_part2(&generate(&crate::get_input(02))), 63542);
         }
     }
 }
