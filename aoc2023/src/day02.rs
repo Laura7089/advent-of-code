@@ -1,9 +1,4 @@
-#[derive(Clone, PartialEq, Debug)]
-struct Game {
-    id: usize,
-    samples: Vec<Sample>,
-}
-
+type Game = Vec<Sample>;
 type Sample = [usize; 3];
 
 mod parse {
@@ -12,7 +7,7 @@ mod parse {
     use nom::character::complete::{newline, u32 as pu32};
     use nom::combinator::map;
     use nom::multi::separated_list1;
-    use nom::sequence::{preceded, separated_pair};
+    use nom::sequence::{preceded, separated_pair, tuple};
 
     use super::{Game, Sample};
 
@@ -23,16 +18,9 @@ mod parse {
     }
 
     fn game(input: &str) -> Result<Game> {
-        map(
-            separated_pair(
-                preceded(tag("Game "), pu32),
-                tag(": "),
-                separated_list1(tag("; "), cubes),
-            ),
-            |(id, samples)| Game {
-                id: id as usize,
-                samples,
-            },
+        preceded(
+            tuple((tag("Game "), pu32, tag(": "))),
+            separated_list1(tag("; "), cubes),
         )(input)
     }
 
@@ -81,7 +69,7 @@ fn generate(input: &str) -> Vec<Game> {
 }
 
 fn game_maxes(game: &Game) -> [usize; 3] {
-    game.samples.iter().fold([0, 0, 0], |l, r| {
+    game.iter().fold([0, 0, 0], |l, r| {
         [l[0].max(r[0]), l[1].max(r[1]), l[2].max(r[2])]
     })
 }
@@ -92,13 +80,14 @@ fn solve_part1(input: &[Game]) -> usize {
 
     input
         .iter()
-        .filter_map(|game| {
+        .enumerate()
+        .filter_map(|(id, game)| {
             let complies = game_maxes(game)
                 .into_iter()
                 .zip(TARGET.into_iter())
                 .all(|(g, t)| g <= t);
             if complies {
-                Some(game.id)
+                Some(id + 1)
             } else {
                 None
             }
