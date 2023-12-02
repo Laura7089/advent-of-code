@@ -65,19 +65,19 @@ mod tests {
         #[test]
         fn example() {
             assert_eq!(
-                solve_part1(&generate(
+                solve_part1(
                     "1abc2
 pqr3stu8vwx
 a1b2c3d4e5f
 treb7uchet"
-                )),
+                ),
                 142
             );
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part1(&generate(&crate::get_input(01))), 54630);
+            assert_eq!(solve_part1(&crate::get_input(01)), 54630);
         }
     }
 
@@ -87,7 +87,7 @@ treb7uchet"
         #[test]
         fn example() {
             assert_eq!(
-                solve_part2(&generate(
+                solve_part2(
                     "two1nine
 eightwothree
 abcone2threexyz
@@ -95,14 +95,14 @@ xtwone3four
 4nineeightseven2
 zoneight234
 7pqrstsixteen"
-                )),
+                ),
                 281
             );
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(01))), 54770);
+            assert_eq!(solve_part2(&crate::get_input(01)), 54770);
         }
     }
 }
