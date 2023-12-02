@@ -1,49 +1,42 @@
 type Game = Vec<Sample>;
-type Sample = [usize; 3];
+type Sample = [u32; 3];
 
 mod parse {
     use nom::branch::alt;
-    use nom::bytes::complete::tag;
+    use nom::bytes::complete::{is_not, tag};
     use nom::character::complete::{newline, u32 as pu32};
     use nom::combinator::map;
-    use nom::multi::separated_list1;
-    use nom::sequence::{preceded, separated_pair, tuple};
+    use nom::multi::separated_list1 as sepl;
+    use nom::sequence::{preceded, separated_pair as sepp, tuple};
 
     use super::{Game, Sample};
 
     type Result<'a, T> = nom::IResult<&'a str, T>;
 
     pub fn games(input: &str) -> Result<Vec<Game>> {
-        separated_list1(newline, game)(input)
-    }
-
-    fn game(input: &str) -> Result<Game> {
-        preceded(
-            tuple((tag("Game "), pu32, tag(": "))),
-            separated_list1(tag("; "), cubes),
+        sepl(
+            newline,
+            preceded(tuple((is_not(":"), tag(": "))), sepl(tag("; "), cubes)),
         )(input)
     }
 
     fn cubes(input: &str) -> Result<Sample> {
-        map(separated_list1(tag(", "), cube), |seq| {
+        map(sepl(tag(", "), cube), |seq| {
             seq.into_iter()
                 .fold([0; 3], |l, r| [l[0] + r[0], l[1] + r[1], l[2] + r[2]])
         })(input)
     }
 
     fn cube(input: &str) -> Result<Sample> {
-        let (rem, (amt, colour)) =
-            separated_pair(pu32, tag(" "), alt((tag("red"), tag("green"), tag("blue"))))(input)?;
-
-        let mut sample = [0; 3];
-        match colour {
-            "red" => sample[0] = amt as usize,
-            "green" => sample[1] = amt as usize,
-            "blue" => sample[2] = amt as usize,
-            _ => panic!("Bad colour: {colour}"),
-        };
-
-        Ok((rem, sample))
+        map(
+            sepp(pu32, tag(" "), alt((tag("red"), tag("green"), tag("blue")))),
+            |(amt, colour)| match colour {
+                "red" => [amt, 0, 0],
+                "green" => [0, amt, 0],
+                "blue" => [0, 0, amt],
+                _ => panic!("Bad colour: {colour}"),
+            },
+        )(input)
     }
 
     #[cfg(test)]
@@ -68,7 +61,7 @@ fn generate(input: &str) -> Vec<Game> {
     parse::games(input).unwrap().1
 }
 
-fn game_maxes(game: &Game) -> [usize; 3] {
+fn game_maxes(game: &Game) -> [u32; 3] {
     game.iter().fold([0, 0, 0], |l, r| {
         [l[0].max(r[0]), l[1].max(r[1]), l[2].max(r[2])]
     })
@@ -76,17 +69,17 @@ fn game_maxes(game: &Game) -> [usize; 3] {
 
 #[aoc(day02, part1)]
 fn solve_part1(input: &[Game]) -> usize {
-    const TARGET: [usize; 3] = [12, 13, 14];
+    const TARGET: [u32; 3] = [12, 13, 14];
 
     input
         .iter()
         .enumerate()
         .filter_map(|(id, game)| {
-            let complies = game_maxes(game)
+            if game_maxes(game)
                 .into_iter()
                 .zip(TARGET.into_iter())
-                .all(|(g, t)| g <= t);
-            if complies {
+                .all(|(g, t)| g <= t)
+            {
                 Some(id + 1)
             } else {
                 None
@@ -96,7 +89,7 @@ fn solve_part1(input: &[Game]) -> usize {
 }
 
 #[aoc(day02, part2)]
-fn solve_part2(input: &[Game]) -> usize {
+fn solve_part2(input: &[Game]) -> u32 {
     input
         .iter()
         .map(|game| game_maxes(game).into_iter().fold(1, |l, r| l * r))
