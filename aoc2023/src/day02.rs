@@ -7,11 +7,7 @@ struct Game {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-struct Sample {
-    red: Option<usize>,
-    green: Option<usize>,
-    blue: Option<usize>,
-}
+struct Sample([Option<usize>; 3]);
 
 fn add_opt_pair<T: Add<Output = T>>(lhs: Option<T>, rhs: Option<T>) -> Option<T> {
     match (lhs, rhs) {
@@ -25,11 +21,11 @@ impl Add for Sample {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self {
-            red: add_opt_pair(self.red, rhs.red),
-            green: add_opt_pair(self.green, rhs.green),
-            blue: add_opt_pair(self.blue, rhs.blue),
-        }
+        Self([
+            add_opt_pair(self.0[0], rhs.0[0]),
+            add_opt_pair(self.0[1], rhs.0[1]),
+            add_opt_pair(self.0[2], rhs.0[2]),
+        ])
     }
 }
 
@@ -80,9 +76,9 @@ mod parse {
 
         let mut sample: Sample = Default::default();
         match colour {
-            "red" => sample.red.insert(amt as usize),
-            "green" => sample.green.insert(amt as usize),
-            "blue" => sample.blue.insert(amt as usize),
+            "red" => sample.0[0].insert(amt as usize),
+            "green" => sample.0[1].insert(amt as usize),
+            "blue" => sample.0[2].insert(amt as usize),
             _ => panic!("Bad colour: {colour}"),
         };
 
@@ -95,40 +91,15 @@ mod parse {
 
         #[test]
         fn test_cube() {
-            assert_eq!(
-                cube("3 blue"),
-                Ok((
-                    "",
-                    Sample {
-                        blue: Some(3),
-                        ..Default::default()
-                    }
-                ))
-            );
-            assert_eq!(
-                cube("28 red"),
-                Ok((
-                    "",
-                    Sample {
-                        red: Some(28),
-                        ..Default::default()
-                    }
-                ))
-            );
+            assert_eq!(cube("3 blue"), Ok(("", Sample([None, None, Some(3),]))));
+            assert_eq!(cube("28 red"), Ok(("", Sample([Some(28), None, None]))));
         }
 
         #[test]
         fn test_cubes() {
             assert_eq!(
                 cubes("3 blue, 1 red"),
-                Ok((
-                    "",
-                    Sample {
-                        blue: Some(3),
-                        red: Some(1),
-                        green: None
-                    }
-                ))
+                Ok(("", Sample([Some(1), None, Some(3),])))
             );
         }
     }
@@ -146,11 +117,20 @@ fn solve_part1(input: &[Game]) -> usize {
     input
         .iter()
         .filter_map(|game| {
-            let ts: Sample = game.samples.iter().cloned().sum();
-            let r = ts.red.unwrap_or(0);
-            let g = ts.green.unwrap_or(0);
-            let b = ts.blue.unwrap_or(0);
-            if r <= TARGET[0] && g <= TARGET[1] && b <= TARGET[2] {
+            let maxes = game
+                .samples
+                .iter()
+                // Turn `None`s into `0`s
+                .map(|s| s.0.map(|v| v.unwrap_or(0)))
+                .fold([0, 0, 0], |l, r| {
+                    [l[0].max(r[0]), l[1].max(r[1]), l[2].max(r[2])]
+                });
+
+            let complies = maxes
+                .into_iter()
+                .zip(TARGET.clone().into_iter())
+                .all(|(g, t)| g <= t);
+            if complies {
                 Some(game.id)
             } else {
                 None
@@ -185,7 +165,7 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part1(&generate(&crate::get_input(02))), todo!());
+            assert_eq!(solve_part1(&generate(&crate::get_input(02))), 2268);
         }
     }
 
