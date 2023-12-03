@@ -1,9 +1,11 @@
+use std::cmp::max;
+
 type Game = Vec<Sample>;
 type Sample = [u32; 3];
 
 mod parse {
     use nom::branch::alt;
-    use nom::bytes::complete::{is_not, tag};
+    use nom::bytes::complete::{is_not, tag, take};
     use nom::character::complete::{newline, u32 as pu32};
     use nom::combinator::map;
     use nom::multi::separated_list1 as sepl;
@@ -16,7 +18,10 @@ mod parse {
     pub fn games(input: &str) -> Result<Vec<Game>> {
         sepl(
             newline,
-            preceded(tuple((is_not(":"), tag(": "))), sepl(tag("; "), cubes)),
+            preceded(
+                tuple((take(6u8), is_not(" "), take(1u8))),
+                sepl(tag("; "), cubes),
+            ),
         )(input)
     }
 
@@ -29,7 +34,11 @@ mod parse {
 
     fn cube(input: &str) -> Result<Sample> {
         map(
-            sepp(pu32, tag(" "), alt((tag("red"), tag("green"), tag("blue")))),
+            sepp(
+                pu32,
+                take(1u8),
+                alt((tag("red"), tag("green"), tag("blue"))),
+            ),
             |(amt, colour)| match colour {
                 "red" => [amt, 0, 0],
                 "green" => [0, amt, 0],
@@ -63,7 +72,7 @@ fn generate(input: &str) -> Vec<Game> {
 
 fn game_maxes(game: &Game) -> [u32; 3] {
     game.iter().fold([0, 0, 0], |l, r| {
-        [l[0].max(r[0]), l[1].max(r[1]), l[2].max(r[2])]
+        [max(l[0], r[0]), max(l[1], r[1]), max(l[2], r[2])]
     })
 }
 
