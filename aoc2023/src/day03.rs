@@ -1,7 +1,11 @@
+/// Sparse matrix of part markers.
 struct PartMap(Vec<Vec<usize>>);
 
 impl PartMap {
-    fn new(input: &str, pred: impl Fn(char) -> bool) -> Self {
+    /// Parse the matrix from a string input.
+    ///
+    /// Treats any characters for which `pred` returns `true` as part markers.
+    fn parse_from(input: &str, pred: impl Fn(char) -> bool) -> Self {
         Self(
             input
                 .lines()
@@ -15,6 +19,10 @@ impl PartMap {
         )
     }
 
+    /// Check if a rectangle is adjacent to any parts.
+    ///
+    /// If the 1-height, `len`-width rectangle starting at `(x1, y)` is adjacent to
+    /// any part markers, return `true`.
     fn search_rect1(&self, y: usize, x1: usize, len: usize) -> bool {
         let right_lim = x1 + len + 1;
 
@@ -47,6 +55,9 @@ impl PartMap {
         false
     }
 
+    /// Find all part markers adjacent to a rectangle.
+    ///
+    /// Uses the same logic as [`Self::search_rect1`].
     fn search_rect(&self, y: usize, x1: usize, len: usize) -> Vec<(usize, usize)> {
         todo!()
     }
@@ -57,28 +68,32 @@ fn part1_pred(c: char) -> bool {
     c != '.' && !c.is_digit(10)
 }
 
-fn find_number_sequence(input: &str, skip: usize) -> Option<(&str, usize, usize)> {
-    let mut num_seq = input
+/// Find the next digit sequence in `line`.
+///
+/// If one is found, returns `Some((slice, start_idx, len))` where `slice` is the digit sequence.
+/// Skips over `skipn` chars at the beginning of the line.
+fn find_digit_seq(line: &str, skipn: usize) -> Option<(&str, usize, usize)> {
+    let mut num_seq = line
         .chars()
         .enumerate()
-        .skip(skip)
+        .skip(skipn)
         .skip_while(|v| !v.1.is_digit(10));
 
     let (start, _) = num_seq.next()?;
     let len = num_seq.take_while(|v| v.1.is_digit(10)).count() + 1;
-    Some((&input[start..(start + len)], start, len))
+    Some((&line[start..(start + len)], start, len))
 }
 
 #[aoc(day03, part1)]
 fn solve_part1(input: &str) -> usize {
-    let symbols_locs = PartMap::new(input, part1_pred);
+    let symbols_locs = PartMap::parse_from(input, part1_pred);
 
     let mut total = 0;
     for (y, line) in input.lines().enumerate() {
         let mut reached = 0;
 
         // Process numbers on the line one by one
-        while let Some((seq, start, len)) = find_number_sequence(line, reached) {
+        while let Some((seq, start, len)) = find_digit_seq(line, reached) {
             reached = start + len + 1;
             if symbols_locs.search_rect1(y, start, len) {
                 total += seq.parse::<usize>().unwrap();
@@ -96,7 +111,7 @@ fn part2_pred(c: char) -> bool {
 
 #[aoc(day03, part2)]
 fn solve_part2(input: &str) -> usize {
-    let pot_gears = PartMap::new(input, part2_pred);
+    let pot_gears = PartMap::parse_from(input, part2_pred);
     let mut gear_map: Vec<Vec<(usize, usize)>> = pot_gears
         .0
         .iter()
@@ -124,7 +139,7 @@ mod tests {
 
     #[test]
     fn test_get_symbols_locs() {
-        let locs = PartMap::new(SAMPLE_INPUT, part1_pred);
+        let locs = PartMap::parse_from(SAMPLE_INPUT, part1_pred);
 
         assert_eq!(
             locs.0,
@@ -145,7 +160,7 @@ mod tests {
 
     #[test]
     fn test_contains_adj_rect() {
-        let locs = PartMap::new(SAMPLE_INPUT, part1_pred);
+        let locs = PartMap::parse_from(SAMPLE_INPUT, part1_pred);
 
         assert!(locs.search_rect1(0, 0, 3));
         assert!(locs.search_rect1(2, 6, 3));
@@ -156,7 +171,7 @@ mod tests {
 
         // Found earlier
         let test_case = "....\n.12*\n....";
-        assert!(PartMap::new(test_case, part1_pred).search_rect1(1, 1, 2));
+        assert!(PartMap::parse_from(test_case, part1_pred).search_rect1(1, 1, 2));
     }
 
     #[test]
@@ -167,7 +182,7 @@ mod tests {
                 let mut current_case = test_case.to_vec();
                 current_case[(y * 5) + x] = b'*';
                 let current_case = String::from_utf8(current_case).unwrap();
-                assert!(PartMap::new(&current_case, part1_pred).search_rect1(1, 1, 2));
+                assert!(PartMap::parse_from(&current_case, part1_pred).search_rect1(1, 1, 2));
             }
         }
     }
