@@ -74,15 +74,16 @@ fn part1_pred(c: char) -> bool {
 ///
 /// If one is found, returns `Some((slice, start_idx, len))` where `slice` is the digit sequence.
 /// Skips over `skipn` chars at the beginning of the line.
-fn find_digit_seq(line: &str, skipn: usize) -> Option<(&str, usize, usize)> {
+fn find_digit_seq<'a>(line: &'a str, pointer: &mut usize) -> Option<(&'a str, usize, usize)> {
     let mut num_seq = line
         .chars()
         .enumerate()
-        .skip(skipn)
+        .skip(*pointer)
         .skip_while(|v| !v.1.is_digit(10));
 
     let (start, _) = num_seq.next()?;
     let len = num_seq.take_while(|v| v.1.is_digit(10)).count() + 1;
+    *pointer = start + len + 1;
     Some((&line[start..(start + len)], start, len))
 }
 
@@ -92,11 +93,8 @@ fn solve_part1(input: &str) -> usize {
 
     let mut total = 0;
     for (y, line) in input.lines().enumerate() {
-        let mut reached = 0;
-
-        // Process numbers on the line one by one
-        while let Some((seq, start, len)) = find_digit_seq(line, reached) {
-            reached = start + len + 1;
+        let mut ptr = 0;
+        while let Some((seq, start, len)) = find_digit_seq(line, &mut ptr) {
             if symbols_locs.search_rect_any(y, start, len) {
                 total += seq.parse::<usize>().unwrap();
             }
