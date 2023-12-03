@@ -93,10 +93,11 @@ fn find_digit_seq<'a>(line: &'a str, pointer: &mut usize) -> Option<(&'a str, us
 #[aoc(day03, part1)]
 fn solve_part1(input: &str) -> usize {
     let symbols_locs = PartMap::parse_from(input, part1_pred);
-    let lines: Vec<_> = input.lines().collect();
 
     #[cfg(feature = "rayon")]
-    return lines
+    return input
+        .lines()
+        .collect::<Vec<_>>()
         .into_par_iter()
         .enumerate()
         .map(|(y, line)| {
