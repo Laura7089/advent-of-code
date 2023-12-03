@@ -1,4 +1,3 @@
-type Coord = (usize, usize);
 type PartMap = Vec<Vec<usize>>;
 
 fn get_symbols_locs(input: &str) -> PartMap {
@@ -19,27 +18,30 @@ fn get_symbols_locs(input: &str) -> PartMap {
         .collect()
 }
 
-fn contains_adj(container: &PartMap, (px, py): Coord) -> bool {
-    // Top row
-    if py != 0 {
-        for x in [px.saturating_sub(1), px, px + 1] {
-            if container[py - 1].contains(&x) {
+fn contains_adj_rect(container: &PartMap, y: usize, x1: usize, len: usize) -> bool {
+    let right_lim = x1 + len + 1;
+
+    // Bottom row
+    if y != 0 {
+        for x in x1.saturating_sub(1)..right_lim {
+            if container[y - 1].contains(&x) {
                 return true;
             }
         }
     }
 
     // Middle row
-    for x in [px.saturating_sub(1), px + 1] {
-        if container[py].contains(&x) {
-            return true;
-        }
+    if container[y].contains(&x1.saturating_sub(1)) {
+        return true;
+    }
+    if container[y].contains(&(right_lim - 1)) {
+        return true;
     }
 
     // Top row
-    if py != container.len() - 1 {
-        for x in [px.saturating_sub(1), px, px + 1] {
-            if container[py + 1].contains(&x) {
+    if y != container.len() - 1 {
+        for x in x1.saturating_sub(1)..right_lim {
+            if container[y + 1].contains(&x) {
                 return true;
             }
         }
@@ -68,25 +70,20 @@ fn solve_part1(input: &str) -> usize {
                 .take_while(|(_, c)| c.is_digit(10))
                 .peekable();
 
-            let num_start = match num_seq.peek() {
+            let start = match num_seq.peek() {
                 Some(&(x, _)) => x,
                 // We're at the end of the line
                 None => break,
             };
-            let mut num_end = num_start;
+            let len = num_seq.count();
 
-            let mut is_part = false;
-            for (x, _) in num_seq {
-                if !is_part && contains_adj(&symbols_locs, (x, y)) {
-                    is_part = true;
-                }
-                num_end += 1;
-            }
+            let is_part = contains_adj_rect(&symbols_locs, y, start, len);
 
-            reached = num_end + 1;
+            let end = start + len;
+            reached = end + 1;
             if is_part {
                 // Only parse when we need to
-                part_numbers.push(line[num_start..num_end].parse().unwrap());
+                part_numbers.push(line[start..end].parse().unwrap());
             }
         }
     }
@@ -134,6 +131,36 @@ mod tests {
                 vec![],
             ]
         );
+    }
+
+    #[test]
+    fn test_contains_adj_rect() {
+        let locs = get_symbols_locs(SAMPLE_INPUT);
+
+        assert!(contains_adj_rect(&locs, 0, 0, 3));
+        assert!(contains_adj_rect(&locs, 2, 6, 3));
+        assert!(contains_adj_rect(&locs, 5, 0, 3));
+        assert!(contains_adj_rect(&locs, 6, 2, 3));
+        assert!(contains_adj_rect(&locs, 7, 6, 3));
+        assert!(!contains_adj_rect(&locs, 5, 7, 2));
+
+        // Found earlier
+        let test_case = "....\n.12*\n....";
+        assert!(contains_adj_rect(&get_symbols_locs(test_case), 1, 1, 2));
+    }
+
+    #[test]
+    fn test_contains_adj_rect_diags() {
+        let test_case = b"....\n.12.\n....";
+        for x in [0, 3] {
+            for y in [0, 2] {
+                let mut current_case = test_case.to_vec();
+                current_case[(y * 5) + x] = b'*';
+                let current_case = String::from_utf8(current_case).unwrap();
+                println!("Testing:\n{current_case}");
+                assert!(contains_adj_rect(&get_symbols_locs(&current_case), 1, 1, 2));
+            }
+        }
     }
 
     mod part1 {
