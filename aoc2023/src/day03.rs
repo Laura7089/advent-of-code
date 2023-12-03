@@ -1,3 +1,6 @@
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+
 // TODO: wish this could be a generator :(
 fn generate_rect(y: usize, y_max: usize, x1: usize, len: usize) -> Vec<(usize, usize)> {
     let right_lim = x1 + len + 1;
@@ -90,18 +93,38 @@ fn find_digit_seq<'a>(line: &'a str, pointer: &mut usize) -> Option<(&'a str, us
 #[aoc(day03, part1)]
 fn solve_part1(input: &str) -> usize {
     let symbols_locs = PartMap::parse_from(input, part1_pred);
+    let lines: Vec<_> = input.lines().collect();
 
-    let mut total = 0;
-    for (y, line) in input.lines().enumerate() {
-        let mut ptr = 0;
-        while let Some((seq, start, len)) = find_digit_seq(line, &mut ptr) {
-            if symbols_locs.search_rect_any(y, start, len) {
-                total += seq.parse::<usize>().unwrap();
+    #[cfg(feature = "rayon")]
+    return lines
+        .into_par_iter()
+        .enumerate()
+        .map(|(y, line)| {
+            let mut ptr = 0;
+            let mut total = 0;
+            while let Some((seq, start, len)) = find_digit_seq(line, &mut ptr) {
+                if symbols_locs.search_rect_any(y, start, len) {
+                    total += seq.parse::<usize>().unwrap();
+                }
+            }
+            total
+        })
+        .sum();
+
+    #[cfg(not(feature = "rayon"))]
+    {
+        let mut total = 0;
+        for (y, line) in input.lines().enumerate() {
+            let mut ptr = 0;
+            while let Some((seq, start, len)) = find_digit_seq(line, &mut ptr) {
+                if symbols_locs.search_rect_any(y, start, len) {
+                    total += seq.parse::<usize>().unwrap();
+                }
             }
         }
-    }
 
-    total
+        return total;
+    }
 }
 
 #[aoc(day03, part2)]
