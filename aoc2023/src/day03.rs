@@ -1,46 +1,47 @@
 type Coord = (usize, usize);
+type PartMap = Vec<Vec<usize>>;
 
-fn get_symbols_locs(input: &str) -> Vec<Coord> {
+fn get_symbols_locs(input: &str) -> PartMap {
     input
         .lines()
-        .enumerate()
-        .flat_map(|(y, line)| {
-            line.chars().enumerate().filter_map(move |(x, c)| {
-                if c != '.' && !c.is_digit(10) {
-                    Some((x, y))
-                } else {
-                    None
-                }
-            })
+        .map(|line| {
+            line.chars()
+                .enumerate()
+                .filter_map(move |(x, c)| {
+                    if c != '.' && !c.is_digit(10) {
+                        Some(x)
+                    } else {
+                        None
+                    }
+                })
+                .collect()
         })
         .collect()
 }
 
-fn contains_adj(container: &[Coord], (px, py): Coord) -> bool {
-    // For readability, assume we're not gonna overflow a usize
-    let adjs = &[
-        // Top row
-        (px.saturating_sub(1), py.saturating_sub(1)),
-        (px, py.saturating_sub(1)),
-        (px + 1, py.saturating_sub(1)),
-        // Middle row
-        (px.saturating_sub(1), py),
-        (px + 1, py),
-        // Bottom row
-        (px.saturating_sub(1), py + 1),
-        (px, py + 1),
-        (px + 1, py + 1),
-    ];
-
-    for focus in container.iter().skip_while(|&(_, y)| y.abs_diff(py) > 1) {
-        // The `skip_while` will only work once; once we're out of range again,
-        // don't bother checking more
-        if focus.1.abs_diff(py) > 1 {
-            break;
+fn contains_adj(container: &PartMap, (px, py): Coord) -> bool {
+    // Top row
+    if py != 0 {
+        for x in [px.saturating_sub(1), px, px + 1] {
+            if container[py - 1].contains(&x) {
+                return true;
+            }
         }
+    }
 
-        if adjs.contains(focus) {
+    // Middle row
+    for x in [px.saturating_sub(1), px + 1] {
+        if container[py].contains(&x) {
             return true;
+        }
+    }
+
+    // Top row
+    if py != container.len() - 1 {
+        for x in [px.saturating_sub(1), px, px + 1] {
+            if container[py + 1].contains(&x) {
+                return true;
+            }
         }
     }
 
@@ -51,11 +52,14 @@ fn contains_adj(container: &[Coord], (px, py): Coord) -> bool {
 fn solve_part1(input: &str) -> usize {
     let symbols_locs = get_symbols_locs(input);
 
-    let mut part_numbers: Vec<usize> = Vec::with_capacity(symbols_locs.len() * 2);
+    let mut part_numbers = Vec::with_capacity(symbols_locs.len() * 2);
 
     for (y, line) in input.lines().enumerate() {
         let mut reached = 0;
+
+        // Process numbers on the line one by one
         loop {
+            // Find the next number sequence
             let mut num_seq = line
                 .chars()
                 .enumerate()
@@ -76,13 +80,13 @@ fn solve_part1(input: &str) -> usize {
                 if !is_part && contains_adj(&symbols_locs, (x, y)) {
                     is_part = true;
                 }
-                num_end = x + 1;
+                num_end += 1;
             }
 
-            let num_raw = &line[num_start..num_end];
             reached = num_end + 1;
             if is_part {
-                part_numbers.push(num_raw.parse().unwrap());
+                // Only parse when we need to
+                part_numbers.push(line[num_start..num_end].parse().unwrap());
             }
         }
     }
@@ -115,7 +119,21 @@ mod tests {
     fn test_get_symbols_locs() {
         let locs = get_symbols_locs(SAMPLE_INPUT);
 
-        assert_eq!(locs, vec![(3, 1), (6, 3), (3, 4), (5, 5), (3, 8), (5, 8)]);
+        assert_eq!(
+            locs,
+            vec![
+                vec![],
+                vec![3],
+                vec![],
+                vec![6],
+                vec![3],
+                vec![5],
+                vec![],
+                vec![],
+                vec![3, 5],
+                vec![],
+            ]
+        );
     }
 
     mod part1 {
