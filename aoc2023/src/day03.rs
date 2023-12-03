@@ -1,60 +1,63 @@
-type PartMap = Vec<Vec<usize>>;
+struct PartMap(Vec<Vec<usize>>);
 
-fn get_symbols_locs(input: &str) -> PartMap {
-    input
-        .lines()
-        .map(|line| {
-            line.chars()
-                .enumerate()
-                .filter_map(move |(x, c)| {
-                    if c != '.' && !c.is_digit(10) {
-                        Some(x)
-                    } else {
-                        None
-                    }
+impl PartMap {
+    fn new(input: &str) -> Self {
+        Self(
+            input
+                .lines()
+                .map(|line| {
+                    line.chars()
+                        .enumerate()
+                        .filter_map(move |(x, c)| {
+                            if c != '.' && !c.is_digit(10) {
+                                Some(x)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
                 })
-                .collect()
-        })
-        .collect()
-}
+                .collect(),
+        )
+    }
 
-fn contains_adj_rect(container: &PartMap, y: usize, x1: usize, len: usize) -> bool {
-    let right_lim = x1 + len + 1;
+    fn search_rect(&self, y: usize, x1: usize, len: usize) -> bool {
+        let right_lim = x1 + len + 1;
 
-    // Bottom row
-    if y != 0 {
-        for x in x1.saturating_sub(1)..right_lim {
-            if container[y - 1].contains(&x) {
-                return true;
+        // Bottom row
+        if y != 0 {
+            for x in x1.saturating_sub(1)..right_lim {
+                if self.0[y - 1].contains(&x) {
+                    return true;
+                }
             }
         }
-    }
 
-    // Middle row
-    if container[y].contains(&x1.saturating_sub(1)) {
-        return true;
-    }
-    if container[y].contains(&(right_lim - 1)) {
-        return true;
-    }
+        // Middle row
+        if self.0[y].contains(&x1.saturating_sub(1)) {
+            return true;
+        }
+        if self.0[y].contains(&(right_lim - 1)) {
+            return true;
+        }
 
-    // Top row
-    if y != container.len() - 1 {
-        for x in x1.saturating_sub(1)..right_lim {
-            if container[y + 1].contains(&x) {
-                return true;
+        // Top row
+        if y != self.0.len() - 1 {
+            for x in x1.saturating_sub(1)..right_lim {
+                if self.0[y + 1].contains(&x) {
+                    return true;
+                }
             }
         }
-    }
 
-    false
+        false
+    }
 }
 
 #[aoc(day03, part1)]
 fn solve_part1(input: &str) -> usize {
-    let symbols_locs = get_symbols_locs(input);
-
-    let mut part_numbers = Vec::with_capacity(symbols_locs.len() * 2);
+    let symbols_locs = PartMap::new(input);
+    let mut part_numbers = Vec::with_capacity(symbols_locs.0.len() * 2);
 
     for (y, line) in input.lines().enumerate() {
         let mut reached = 0;
@@ -77,7 +80,7 @@ fn solve_part1(input: &str) -> usize {
             };
             let len = num_seq.count();
 
-            let is_part = contains_adj_rect(&symbols_locs, y, start, len);
+            let is_part = symbols_locs.search_rect(y, start, len);
 
             let end = start + len;
             reached = end + 1;
@@ -114,10 +117,10 @@ mod tests {
 
     #[test]
     fn test_get_symbols_locs() {
-        let locs = get_symbols_locs(SAMPLE_INPUT);
+        let locs = PartMap::new(SAMPLE_INPUT);
 
         assert_eq!(
-            locs,
+            locs.0,
             vec![
                 vec![],
                 vec![3],
@@ -135,18 +138,18 @@ mod tests {
 
     #[test]
     fn test_contains_adj_rect() {
-        let locs = get_symbols_locs(SAMPLE_INPUT);
+        let locs = PartMap::new(SAMPLE_INPUT);
 
-        assert!(contains_adj_rect(&locs, 0, 0, 3));
-        assert!(contains_adj_rect(&locs, 2, 6, 3));
-        assert!(contains_adj_rect(&locs, 5, 0, 3));
-        assert!(contains_adj_rect(&locs, 6, 2, 3));
-        assert!(contains_adj_rect(&locs, 7, 6, 3));
-        assert!(!contains_adj_rect(&locs, 5, 7, 2));
+        assert!(locs.search_rect(0, 0, 3));
+        assert!(locs.search_rect(2, 6, 3));
+        assert!(locs.search_rect(5, 0, 3));
+        assert!(locs.search_rect(6, 2, 3));
+        assert!(locs.search_rect(7, 6, 3));
+        assert!(!locs.search_rect(5, 7, 2));
 
         // Found earlier
         let test_case = "....\n.12*\n....";
-        assert!(contains_adj_rect(&get_symbols_locs(test_case), 1, 1, 2));
+        assert!(PartMap::new(test_case).search_rect(1, 1, 2));
     }
 
     #[test]
@@ -157,8 +160,7 @@ mod tests {
                 let mut current_case = test_case.to_vec();
                 current_case[(y * 5) + x] = b'*';
                 let current_case = String::from_utf8(current_case).unwrap();
-                println!("Testing:\n{current_case}");
-                assert!(contains_adj_rect(&get_symbols_locs(&current_case), 1, 1, 2));
+                assert!(PartMap::new(&current_case).search_rect(1, 1, 2));
             }
         }
     }
