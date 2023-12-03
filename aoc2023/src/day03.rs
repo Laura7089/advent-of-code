@@ -95,10 +95,11 @@ fn solve_part1(input: &str) -> usize {
     let symbols_locs = PartMap::parse_from(input, part1_pred);
 
     #[cfg(feature = "rayon")]
-    return input
-        .lines()
-        .collect::<Vec<_>>()
-        .into_par_iter()
+    let lines = input.lines().collect::<Vec<_>>().into_par_iter();
+    #[cfg(not(feature = "rayon"))]
+    let lines = input.lines();
+
+    lines
         .enumerate()
         .map(|(y, line)| {
             let mut ptr = 0;
@@ -110,22 +111,7 @@ fn solve_part1(input: &str) -> usize {
             }
             total
         })
-        .sum();
-
-    #[cfg(not(feature = "rayon"))]
-    {
-        let mut total = 0;
-        for (y, line) in input.lines().enumerate() {
-            let mut ptr = 0;
-            while let Some((seq, start, len)) = find_digit_seq(line, &mut ptr) {
-                if symbols_locs.search_rect_any(y, start, len) {
-                    total += seq.parse::<usize>().unwrap();
-                }
-            }
-        }
-
-        return total;
-    }
+        .sum()
 }
 
 #[aoc(day03, part2)]
