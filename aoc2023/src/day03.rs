@@ -1,3 +1,27 @@
+// TODO: wish this could be a generator :(
+fn generate_rect(y: usize, y_max: usize, x1: usize, len: usize) -> Vec<(usize, usize)> {
+    let right_lim = x1 + len + 1;
+    let mut coords = Vec::with_capacity(x1 * 3);
+
+    // Bottom row
+    if y != 0 {
+        for x in x1.saturating_sub(1)..right_lim {
+            coords.push((x, y - 1));
+        }
+    }
+    // Middle row
+    coords.push((x1.saturating_sub(1), y));
+    coords.push((right_lim - 1, y));
+    // Top row
+    if y != y_max {
+        for x in x1.saturating_sub(1)..right_lim {
+            coords.push((x, y + 1));
+        }
+    }
+
+    coords
+}
+
 /// Sparse matrix of part markers.
 struct PartMap(Vec<Vec<usize>>);
 
@@ -19,47 +43,32 @@ impl PartMap {
         )
     }
 
-    /// Check if a rectangle is adjacent to any parts.
-    ///
-    /// If the 1-height, `len`-width rectangle starting at `(x1, y)` is adjacent to
-    /// any part markers, return `true`.
-    fn search_rect1(&self, y: usize, x1: usize, len: usize) -> bool {
-        let right_lim = x1 + len + 1;
-
-        // Bottom row
-        if y != 0 {
-            for x in x1.saturating_sub(1)..right_lim {
-                if self.0[y - 1].contains(&x) {
-                    return true;
-                }
-            }
-        }
-
-        // Middle row
-        if self.0[y].contains(&x1.saturating_sub(1)) {
-            return true;
-        }
-        if self.0[y].contains(&(right_lim - 1)) {
-            return true;
-        }
-
-        // Top row
-        if y != self.0.len() - 1 {
-            for x in x1.saturating_sub(1)..right_lim {
-                if self.0[y + 1].contains(&x) {
-                    return true;
-                }
-            }
-        }
-
-        false
-    }
-
     /// Find all part markers adjacent to a rectangle.
     ///
-    /// Uses the same logic as [`Self::search_rect1`].
-    fn search_rect(&self, y: usize, x1: usize, len: usize) -> Vec<(usize, usize)> {
-        todo!()
+    /// If the 1-height, `len`-width rectangle starting at `(x1, y)` is adjacent to
+    /// a part marker, it is yielded here.
+    fn search_rect<'a>(
+        &'a self,
+        y: usize,
+        x1: usize,
+        len: usize,
+    ) -> impl Iterator<Item = (usize, usize)> + 'a {
+        generate_rect(y, self.0.len() - 1, x1, len)
+            .into_iter()
+            .filter_map(|(x, y)| {
+                if self.0[y].contains(&x) {
+                    Some((x, y))
+                } else {
+                    None
+                }
+            })
+    }
+
+    /// Find if a rectangle has any adjacent part markers.
+    ///
+    /// See [`Self::search_rect`].
+    fn search_rect_any(&self, y: usize, x1: usize, len: usize) -> bool {
+        self.search_rect(y, x1, len).next().is_some()
     }
 }
 
@@ -95,7 +104,7 @@ fn solve_part1(input: &str) -> usize {
         // Process numbers on the line one by one
         while let Some((seq, start, len)) = find_digit_seq(line, reached) {
             reached = start + len + 1;
-            if symbols_locs.search_rect1(y, start, len) {
+            if symbols_locs.search_rect_any(y, start, len) {
                 total += seq.parse::<usize>().unwrap();
             }
         }
@@ -104,14 +113,9 @@ fn solve_part1(input: &str) -> usize {
     total
 }
 
-#[inline(always)]
-fn part2_pred(c: char) -> bool {
-    c == '*'
-}
-
 #[aoc(day03, part2)]
 fn solve_part2(input: &str) -> usize {
-    let pot_gears = PartMap::parse_from(input, part2_pred);
+    let pot_gears = PartMap::parse_from(input, |c| c == '*');
     let mut gear_map: Vec<Vec<(usize, usize)>> = pot_gears
         .0
         .iter()
@@ -162,16 +166,16 @@ mod tests {
     fn test_contains_adj_rect() {
         let locs = PartMap::parse_from(SAMPLE_INPUT, part1_pred);
 
-        assert!(locs.search_rect1(0, 0, 3));
-        assert!(locs.search_rect1(2, 6, 3));
-        assert!(locs.search_rect1(5, 0, 3));
-        assert!(locs.search_rect1(6, 2, 3));
-        assert!(locs.search_rect1(7, 6, 3));
-        assert!(!locs.search_rect1(5, 7, 2));
+        assert!(locs.search_rect_any(0, 0, 3));
+        assert!(locs.search_rect_any(2, 6, 3));
+        assert!(locs.search_rect_any(5, 0, 3));
+        assert!(locs.search_rect_any(6, 2, 3));
+        assert!(locs.search_rect_any(7, 6, 3));
+        assert!(!locs.search_rect_any(5, 7, 2));
 
         // Found earlier
         let test_case = "....\n.12*\n....";
-        assert!(PartMap::parse_from(test_case, part1_pred).search_rect1(1, 1, 2));
+        assert!(PartMap::parse_from(test_case, part1_pred).search_rect_any(1, 1, 2));
     }
 
     #[test]
@@ -182,7 +186,7 @@ mod tests {
                 let mut current_case = test_case.to_vec();
                 current_case[(y * 5) + x] = b'*';
                 let current_case = String::from_utf8(current_case).unwrap();
-                assert!(PartMap::parse_from(&current_case, part1_pred).search_rect1(1, 1, 2));
+                assert!(PartMap::parse_from(&current_case, part1_pred).search_rect_any(1, 1, 2));
             }
         }
     }
