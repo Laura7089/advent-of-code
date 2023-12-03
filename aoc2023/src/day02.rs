@@ -94,11 +94,7 @@ fn solve_part1(input: &[Game]) -> usize {
         .filter_map(|(id, game)| {
             let [r, g, b] = game_maxes(game);
             let [tr, tg, tb] = TARGET;
-            if r <= tr && g <= tg && b <= tb {
-                Some(id + 1)
-            } else {
-                None
-            }
+            (r <= tr && g <= tg && b <= tb).then_some(id + 1)
         })
         .sum()
 }

@@ -30,17 +30,16 @@ impl PartMap {
     ///
     /// Treats any characters for which `pred` returns `true` as part markers.
     fn parse_from(input: &str, pred: impl Fn(char) -> bool) -> Self {
-        Self(
-            input
-                .lines()
-                .map(|line| {
-                    line.chars()
-                        .enumerate()
-                        .filter_map(|(x, c)| if pred(c) { Some(x) } else { None })
-                        .collect()
-                })
-                .collect(),
-        )
+        let inner = input
+            .lines()
+            .map(|line| {
+                line.chars()
+                    .enumerate()
+                    .filter_map(|(x, c)| pred(c).then_some(x))
+                    .collect()
+            })
+            .collect();
+        Self(inner)
     }
 
     /// Find all part markers adjacent to a rectangle.
@@ -55,13 +54,7 @@ impl PartMap {
     ) -> impl Iterator<Item = (usize, usize)> + 'a {
         generate_rect(y, self.0.len() - 1, x1, len)
             .into_iter()
-            .filter_map(|(x, y)| {
-                if self.0[y].contains(&x) {
-                    Some((x, y))
-                } else {
-                    None
-                }
-            })
+            .filter_map(|(x, y)| self.0[y].contains(&x).then_some((x, y)))
     }
 
     /// Find if a rectangle has any adjacent part markers.
