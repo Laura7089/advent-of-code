@@ -19,6 +19,9 @@ mod parse {
         sepl(
             newline,
             preceded(
+                // We could just skip until ": " here, but instead we can
+                // leverage that we know we can skip certain numbers of characters
+                // without checking them
                 tuple((take(6u8), is_not(" "), take(1u8))),
                 sepl(tag("; "), cubes),
             ),
@@ -28,6 +31,7 @@ mod parse {
     fn cubes(input: &str) -> Result<Sample> {
         map(sepl(tag(", "), cube), |seq| {
             seq.into_iter()
+                // Horrendous, wish there was a better way to do elementwise array combination
                 .fold([0; 3], |l, r| [l[0] + r[0], l[1] + r[1], l[2] + r[2]])
         })(input)
     }
@@ -37,13 +41,16 @@ mod parse {
             sepp(
                 pu32,
                 take(1u8),
+                // using the `take` method here gave a performance regression :(
                 alt((tag("red"), tag("green"), tag("blue"))),
             ),
             |(amt, colour)| match colour {
                 "red" => [amt, 0, 0],
                 "green" => [0, amt, 0],
                 "blue" => [0, 0, amt],
-                _ => panic!("Bad colour: {colour}"),
+                // Cheeky: this is basically a compile-time assertion that the input is
+                // *definitely* correct (trust me bro), but it doesn't cause UB so...
+                _ => unreachable!("Bad colour in input"),
             },
         )(input)
     }
@@ -72,6 +79,7 @@ fn generate(input: &str) -> Vec<Game> {
 
 fn game_maxes(game: &Game) -> [u32; 3] {
     game.iter().fold([0, 0, 0], |l, r| {
+        // also horrendous
         [max(l[0], r[0]), max(l[1], r[1]), max(l[2], r[2])]
     })
 }
@@ -84,11 +92,9 @@ fn solve_part1(input: &[Game]) -> usize {
         .iter()
         .enumerate()
         .filter_map(|(id, game)| {
-            if game_maxes(game)
-                .into_iter()
-                .zip(TARGET.into_iter())
-                .all(|(g, t)| g <= t)
-            {
+            let [r, g, b] = game_maxes(game);
+            let [tr, tg, tb] = TARGET;
+            if r <= tr && g <= tg && b <= tb {
                 Some(id + 1)
             } else {
                 None
@@ -101,7 +107,10 @@ fn solve_part1(input: &[Game]) -> usize {
 fn solve_part2(input: &[Game]) -> u32 {
     input
         .iter()
-        .map(|game| game_maxes(game).into_iter().fold(1, |l, r| l * r))
+        .map(|game| {
+            let [r, g, b] = game_maxes(game);
+            r * g * b
+        })
         .sum()
 }
 
