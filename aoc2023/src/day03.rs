@@ -1,27 +1,21 @@
 struct PartMap(Vec<Vec<usize>>);
 
 impl PartMap {
-    fn new(input: &str) -> Self {
+    fn new(input: &str, pred: impl Fn(char) -> bool) -> Self {
         Self(
             input
                 .lines()
                 .map(|line| {
                     line.chars()
                         .enumerate()
-                        .filter_map(move |(x, c)| {
-                            if c != '.' && !c.is_digit(10) {
-                                Some(x)
-                            } else {
-                                None
-                            }
-                        })
+                        .filter_map(|(x, c)| if pred(c) { Some(x) } else { None })
                         .collect()
                 })
                 .collect(),
         )
     }
 
-    fn search_rect(&self, y: usize, x1: usize, len: usize) -> bool {
+    fn search_rect1(&self, y: usize, x1: usize, len: usize) -> bool {
         let right_lim = x1 + len + 1;
 
         // Bottom row
@@ -52,50 +46,63 @@ impl PartMap {
 
         false
     }
+
+    fn search_rect(&self, y: usize, x1: usize, len: usize) -> Vec<(usize, usize)> {
+        todo!()
+    }
+}
+
+#[inline(always)]
+fn part1_pred(c: char) -> bool {
+    c != '.' && !c.is_digit(10)
+}
+
+fn find_number_sequence(input: &str, skip: usize) -> Option<(&str, usize, usize)> {
+    let mut num_seq = input
+        .chars()
+        .enumerate()
+        .skip(skip)
+        .skip_while(|v| !v.1.is_digit(10));
+
+    let (start, _) = num_seq.next()?;
+    let len = num_seq.take_while(|v| v.1.is_digit(10)).count() + 1;
+    Some((&input[start..(start + len)], start, len))
 }
 
 #[aoc(day03, part1)]
 fn solve_part1(input: &str) -> usize {
-    let symbols_locs = PartMap::new(input);
-    let mut part_numbers = Vec::with_capacity(symbols_locs.0.len() * 2);
+    let symbols_locs = PartMap::new(input, part1_pred);
 
+    let mut total = 0;
     for (y, line) in input.lines().enumerate() {
         let mut reached = 0;
 
         // Process numbers on the line one by one
-        loop {
-            // Find the next number sequence
-            let mut num_seq = line
-                .chars()
-                .enumerate()
-                .skip(reached)
-                .skip_while(|(_, c)| !c.is_digit(10))
-                .take_while(|(_, c)| c.is_digit(10))
-                .peekable();
-
-            let start = match num_seq.peek() {
-                Some(&(x, _)) => x,
-                // We're at the end of the line
-                None => break,
-            };
-            let len = num_seq.count();
-
-            let is_part = symbols_locs.search_rect(y, start, len);
-
-            let end = start + len;
-            reached = end + 1;
-            if is_part {
-                // Only parse when we need to
-                part_numbers.push(line[start..end].parse().unwrap());
+        while let Some((seq, start, len)) = find_number_sequence(line, reached) {
+            reached = start + len + 1;
+            if symbols_locs.search_rect1(y, start, len) {
+                total += seq.parse::<usize>().unwrap();
             }
         }
     }
 
-    part_numbers.iter().sum()
+    total
+}
+
+#[inline(always)]
+fn part2_pred(c: char) -> bool {
+    c == '*'
 }
 
 #[aoc(day03, part2)]
-fn solve_part2(_input: &str) -> usize {
+fn solve_part2(input: &str) -> usize {
+    let pot_gears = PartMap::new(input, part2_pred);
+    let mut gear_map: Vec<Vec<(usize, usize)>> = pot_gears
+        .0
+        .iter()
+        .map(|xs| xs.iter().map(|&x| (x, 0)).collect())
+        .collect();
+
     todo!()
 }
 
@@ -117,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_get_symbols_locs() {
-        let locs = PartMap::new(SAMPLE_INPUT);
+        let locs = PartMap::new(SAMPLE_INPUT, part1_pred);
 
         assert_eq!(
             locs.0,
@@ -138,18 +145,18 @@ mod tests {
 
     #[test]
     fn test_contains_adj_rect() {
-        let locs = PartMap::new(SAMPLE_INPUT);
+        let locs = PartMap::new(SAMPLE_INPUT, part1_pred);
 
-        assert!(locs.search_rect(0, 0, 3));
-        assert!(locs.search_rect(2, 6, 3));
-        assert!(locs.search_rect(5, 0, 3));
-        assert!(locs.search_rect(6, 2, 3));
-        assert!(locs.search_rect(7, 6, 3));
-        assert!(!locs.search_rect(5, 7, 2));
+        assert!(locs.search_rect1(0, 0, 3));
+        assert!(locs.search_rect1(2, 6, 3));
+        assert!(locs.search_rect1(5, 0, 3));
+        assert!(locs.search_rect1(6, 2, 3));
+        assert!(locs.search_rect1(7, 6, 3));
+        assert!(!locs.search_rect1(5, 7, 2));
 
         // Found earlier
         let test_case = "....\n.12*\n....";
-        assert!(PartMap::new(test_case).search_rect(1, 1, 2));
+        assert!(PartMap::new(test_case, part1_pred).search_rect1(1, 1, 2));
     }
 
     #[test]
@@ -160,7 +167,7 @@ mod tests {
                 let mut current_case = test_case.to_vec();
                 current_case[(y * 5) + x] = b'*';
                 let current_case = String::from_utf8(current_case).unwrap();
-                assert!(PartMap::new(&current_case).search_rect(1, 1, 2));
+                assert!(PartMap::new(&current_case, part1_pred).search_rect1(1, 1, 2));
             }
         }
     }
