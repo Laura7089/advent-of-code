@@ -17,14 +17,30 @@ fn get_symbols_locs(input: &str) -> Vec<Coord> {
 }
 
 fn contains_adj(container: &[Coord], (px, py): Coord) -> bool {
-    const MODS: &[isize] = &[-1, 0, 1];
+    // For readability, assume we're not gonna overflow a usize
+    let adjs = &[
+        // Top row
+        (px.saturating_sub(1), py.saturating_sub(1)),
+        (px, py.saturating_sub(1)),
+        (px + 1, py.saturating_sub(1)),
+        // Middle row
+        (px.saturating_sub(1), py),
+        (px + 1, py),
+        // Bottom row
+        (px.saturating_sub(1), py + 1),
+        (px, py + 1),
+        (px + 1, py + 1),
+    ];
 
-    for &ym in MODS.iter() {
-        for &xm in MODS.iter() {
-            let changed_point = (px.saturating_add_signed(xm), py.saturating_add_signed(ym));
-            if container.contains(&changed_point) {
-                return true;
-            }
+    for focus in container.iter().skip_while(|&(_, y)| y.abs_diff(py) > 1) {
+        // The `skip_while` will only work once; once we're out of range again,
+        // don't bother checking more
+        if focus.1.abs_diff(py) > 1 {
+            break;
+        }
+
+        if adjs.contains(focus) {
+            return true;
         }
     }
 
@@ -48,13 +64,14 @@ fn solve_part1(input: &str) -> usize {
                 .take_while(|(_, c)| c.is_digit(10))
                 .peekable();
 
-            let mut is_part = false;
             let num_start = match num_seq.peek() {
                 Some(&(x, _)) => x,
+                // We're at the end of the line
                 None => break,
             };
             let mut num_end = num_start;
 
+            let mut is_part = false;
             for (x, _) in num_seq {
                 if !is_part && contains_adj(&symbols_locs, (x, y)) {
                     is_part = true;
@@ -120,7 +137,7 @@ mod tests {
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(SAMPLE_INPUT), todo!());
+            assert_eq!(solve_part2(SAMPLE_INPUT), 467835);
         }
 
         #[test]
