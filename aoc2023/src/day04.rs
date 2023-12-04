@@ -3,8 +3,7 @@ type Card = (Vec<usize>, Vec<usize>);
 mod parse {
     use nom::{
         bytes::complete::{is_not, take},
-        character::complete::{self as nchar, newline, space1},
-        combinator::map,
+        character::complete::{newline, space1},
         multi::separated_list1,
         sequence::{preceded, separated_pair, tuple},
     };
@@ -23,30 +22,43 @@ mod parse {
     }
 
     fn num_list(input: &str) -> Result<Vec<usize>> {
-        separated_list1(space1, map(nchar::u32, |v| v as usize))(input)
+        let mut nums = Vec::with_capacity(25);
+        let mut ptr = 0;
+
+        for num in input
+            .lines()
+            .flat_map(|l| l.split(" | "))
+            .take(1)
+            .flat_map(|l| l.split(" "))
+        {
+            ptr += num.len() + 1;
+            if let Ok(n) = num.parse() {
+                nums.push(n);
+            }
+        }
+        ptr = ptr.saturating_sub(1);
+
+        Ok((&input[ptr..], nums))
+
+        // All that for a drop of blood?
+        // separated_list1(space1, map(nchar::u32, |v| v as usize))(input)
     }
 
     #[cfg(test)]
     mod tests {
         use super::*;
+        use test_case::test_case;
 
-        #[test]
-        fn test_card() {
-            assert_eq!(
-                card("Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53"),
-                Ok((
-                    "",
-                    (vec![41, 48, 83, 86, 17], vec![83, 86, 6, 31, 17, 9, 48, 53])
-                ))
-            );
-
-            assert_eq!(
-                card("Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1"),
-                Ok((
-                    "",
-                    (vec![1, 21, 53, 59, 44], vec![69, 82, 63, 72, 16, 21, 14, 1])
-                ))
-            );
+        #[test_case(
+            "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53",
+            (vec![41, 48, 83, 86, 17], vec![83, 86, 6, 31, 17, 9, 48, 53])
+        )]
+        #[test_case(
+            "Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1",
+            (vec![1, 21, 53, 59, 44], vec![69, 82, 63, 72, 16, 21, 14, 1])
+        )]
+        fn test_card(raw: &str, res: crate::day04::Card) {
+            assert_eq!(card(raw), Ok(("", res)));
         }
     }
 }
