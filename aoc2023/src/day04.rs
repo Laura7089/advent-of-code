@@ -53,31 +53,36 @@ mod parse {
 
 #[aoc_generator(day04)]
 fn generate(input: &str) -> Vec<Card> {
-    let (rem, cards) = parse::cards(input).expect("Parse failure");
-    if rem != "" {
-        panic!("Input not fully parsed, remaining:\n{rem}");
-    }
-    cards
+    parse::cards(input).expect("Parse failure").1
+}
+
+fn nmatches((winners, ours): &Card) -> usize {
+    winners.iter().filter(|n| ours.contains(n)).count()
 }
 
 #[aoc(day04, part1)]
 fn solve_part1(cards: &[Card]) -> usize {
     cards
         .iter()
-        .filter_map(|(winners, ours)| {
-            winners
-                .iter()
-                .filter(|n| ours.contains(n))
-                .count()
-                .checked_sub(1)
-                .map(|n| 1 << n)
-        })
+        .filter_map(|c| nmatches(c).checked_sub(1).map(|n| 1 << n))
         .sum()
 }
 
 #[aoc(day04, part2)]
-fn solve_part2(_input: &[Card]) -> usize {
-    todo!()
+fn solve_part2(cards: &[Card]) -> usize {
+    let mut copies = vec![1; cards.len()];
+
+    for (i, card) in cards.iter().enumerate() {
+        let our_copies = copies[i];
+        let n = nmatches(card);
+        if n > 0 {
+            copies[(i + 1)..=(i + n)]
+                .iter_mut()
+                .for_each(|c| *c += our_copies);
+        }
+    }
+
+    copies.into_iter().sum()
 }
 
 #[cfg(test)]
@@ -111,12 +116,12 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11";
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 30);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(04))), todo!());
+            assert_eq!(solve_part2(&generate(&crate::get_input(04))), 9924412);
         }
     }
 }
