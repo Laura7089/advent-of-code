@@ -44,10 +44,10 @@ mod parse {
                 // using the `take` method here gave a performance regression :(
                 alt((tag("red"), tag("green"), tag("blue"))),
             ),
-            |(amt, colour)| match colour {
-                "red" => [amt, 0, 0],
-                "green" => [0, amt, 0],
-                "blue" => [0, 0, amt],
+            |(amt, colour): (_, &str)| match colour.as_bytes()[0] {
+                b'r' => [amt, 0, 0],
+                b'g' => [0, amt, 0],
+                b'b' => [0, 0, amt],
                 // Cheeky: this is basically a compile-time assertion that the input is
                 // *definitely* correct (trust me bro), but it doesn't cause UB so...
                 _ => unreachable!("Bad colour in input"),
