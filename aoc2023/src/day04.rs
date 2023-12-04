@@ -22,6 +22,7 @@ mod parse {
         )(input)
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     fn num_list(input: &str) -> Result<Vec<usize>> {
         let mut nums = Vec::with_capacity(25);
         let mut ptr = 0;
@@ -30,7 +31,7 @@ mod parse {
             .lines()
             .flat_map(|l| l.split(" | "))
             .take(1)
-            .flat_map(|l| l.split(" "))
+            .flat_map(|l| l.split(' '))
         {
             ptr += num.len() + 1;
             if let Ok(n) = num.parse() {
