@@ -86,12 +86,9 @@ fn solve_part2(cards: &[Card]) -> usize {
 
     for (i, card) in cards.iter().enumerate() {
         let our_copies = copies[i];
-        let n = nmatches(card);
-        if n > 0 {
-            copies[(i + 1)..=(i + n)]
-                .iter_mut()
-                .for_each(|c| *c += our_copies);
-        }
+        copies[(i + 1)..=(i + nmatches(card))]
+            .iter_mut()
+            .for_each(|c| *c += our_copies);
     }
 
     copies.into_iter().sum()
