@@ -76,7 +76,7 @@ fn part1_pred(c: char) -> bool {
 /// Find the next digit sequence in `line`.
 ///
 /// If one is found, returns `Some((slice, start_idx, len))` where `slice` is the digit sequence.
-/// Skips over `skipn` chars at the beginning of the line.
+/// Skips over `pointer` chars at the beginning of the line.
 fn find_digit_seq<'a>(line: &'a str, pointer: &mut usize) -> Option<(&'a str, usize, usize)> {
     let mut num_seq = line
         .chars()
@@ -93,11 +93,10 @@ fn find_digit_seq<'a>(line: &'a str, pointer: &mut usize) -> Option<(&'a str, us
 #[aoc(day03, part1)]
 fn solve_part1(input: &str) -> usize {
     let symbols_locs = PartMap::parse_from(input, part1_pred);
+    let lines = input.lines();
 
     #[cfg(feature = "rayon")]
-    let lines = input.lines().collect::<Vec<_>>().into_par_iter();
-    #[cfg(not(feature = "rayon"))]
-    let lines = input.lines();
+    let lines = lines.collect::<Vec<_>>().into_par_iter();
 
     lines
         .enumerate()
