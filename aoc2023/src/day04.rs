@@ -11,6 +11,7 @@ mod parse {
     type Result<'a, T> = nom::IResult<&'a str, T>;
 
     pub fn cards(input: &str) -> Result<Vec<super::Card>> {
+        // tried painstakingly rayon'ing this, but it's slower
         separated_list1(newline, card)(input)
     }
 
