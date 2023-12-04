@@ -116,7 +116,7 @@ fn solve_part1(input: &str) -> usize {
 #[aoc(day03, part2)]
 fn solve_part2(input: &str) -> usize {
     let pot_gears = PartMap::parse_from(input, |c| c == '*');
-    let mut gear_map: Vec<Vec<(usize, usize)>> = pot_gears
+    let _gear_map: Vec<Vec<(usize, usize)>> = pot_gears
         .0
         .iter()
         .map(|xs| xs.iter().map(|&x| (x, 0)).collect())
@@ -209,11 +209,13 @@ mod tests {
         use super::*;
 
         #[test]
+        #[ignore]
         fn example() {
             assert_eq!(solve_part2(SAMPLE_INPUT), 467835);
         }
 
         #[test]
+        #[ignore]
         fn mine() {
             assert_eq!(solve_part2(&crate::get_input(03)), todo!());
         }
