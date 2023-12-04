@@ -49,12 +49,12 @@ impl PartMap {
     ///
     /// If the 1-height, `len`-width rectangle starting at `(x1, y)` is adjacent to
     /// a part marker, it is yielded here.
-    fn search_rect<'a>(
-        &'a self,
+    fn search_rect(
+        &self,
         y: usize,
         x1: usize,
         len: usize,
-    ) -> impl Iterator<Item = (usize, usize)> + 'a {
+    ) -> impl Iterator<Item = (usize, usize)> + '_ {
         generate_rect(y, self.0.len() - 1, x1, len)
             .into_iter()
             .filter_map(|(x, y)| self.0[y].contains(&x).then_some((x, y)))
@@ -70,7 +70,7 @@ impl PartMap {
 
 #[inline(always)]
 fn part1_pred(c: char) -> bool {
-    c != '.' && !c.is_digit(10)
+    c != '.' && !c.is_ascii_digit()
 }
 
 /// Find the next digit sequence in `line`.
@@ -82,10 +82,10 @@ fn find_digit_seq<'a>(line: &'a str, pointer: &mut usize) -> Option<(&'a str, us
         .chars()
         .enumerate()
         .skip(*pointer)
-        .skip_while(|v| !v.1.is_digit(10));
+        .skip_while(|v| !v.1.is_ascii_digit());
 
     let (start, _) = num_seq.next()?;
-    let len = num_seq.take_while(|v| v.1.is_digit(10)).count() + 1;
+    let len = num_seq.take_while(|v| v.1.is_ascii_digit()).count() + 1;
     *pointer = start + len + 1;
     Some((&line[start..(start + len)], start, len))
 }

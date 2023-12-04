@@ -1,6 +1,6 @@
 #[inline(always)]
 fn get_digit(byte: u8) -> Option<usize> {
-    (byte >= 48 && byte < 59).then_some(byte as usize - 48)
+    (48..59).contains(&byte).then_some(byte as usize - 48)
 }
 
 #[aoc(day01, part1)]

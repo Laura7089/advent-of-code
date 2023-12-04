@@ -1,3 +1,6 @@
+#![warn(clippy::pedantic)]
+#![allow(clippy::inline_always)]
+
 #[macro_use]
 extern crate aoc_runner_derive;
 
