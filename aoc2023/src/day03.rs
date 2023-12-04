@@ -3,21 +3,21 @@ use rayon::prelude::*;
 
 // TODO: wish this could be a generator :(
 fn generate_rect(y: usize, y_max: usize, x1: usize, len: usize) -> Vec<(usize, usize)> {
-    let right_lim = x1 + len + 1;
-    let mut coords = Vec::with_capacity(x1 * 3);
+    let right_lim = x1 + len;
+    let mut coords = Vec::with_capacity((len * 2) + 2);
 
     // Bottom row
-    if y != 0 {
-        for x in x1.saturating_sub(1)..right_lim {
-            coords.push((x, y - 1));
+    if let Some(y) = y.checked_sub(1) {
+        for x in x1.saturating_sub(1)..=right_lim {
+            coords.push((x, y));
         }
     }
     // Middle row
     coords.push((x1.saturating_sub(1), y));
-    coords.push((right_lim - 1, y));
+    coords.push((right_lim, y));
     // Top row
     if y != y_max {
-        for x in x1.saturating_sub(1)..right_lim {
+        for x in x1.saturating_sub(1)..=right_lim {
             coords.push((x, y + 1));
         }
     }
@@ -57,7 +57,7 @@ impl PartMap {
     ) -> impl Iterator<Item = (usize, usize)> + '_ {
         generate_rect(y, self.0.len() - 1, x1, len)
             .into_iter()
-            .filter_map(|(x, y)| self.0[y].contains(&x).then_some((x, y)))
+            .filter(|(x, y)| self.0[*y].contains(x))
     }
 
     /// Find if a rectangle has any adjacent part markers.
