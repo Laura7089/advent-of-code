@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::{array, cmp::max};
 
 type Game = Vec<Sample>;
 type Sample = [u32; 3];
@@ -31,8 +31,8 @@ mod parse {
     fn cubes(input: &str) -> Result<Sample> {
         map(sepl(tag(", "), cube), |seq| {
             seq.into_iter()
-                // Horrendous, wish there was a better way to do elementwise array combination
-                .fold([0; 3], |l, r| [l[0] + r[0], l[1] + r[1], l[2] + r[2]])
+                .reduce(|l, r| std::array::from_fn(|i| l[i] + r[i]))
+                .expect("Bag with no samples!")
         })(input)
     }
 
@@ -78,10 +78,8 @@ fn generate(input: &str) -> Vec<Game> {
 }
 
 fn game_maxes(game: &Game) -> [u32; 3] {
-    game.iter().fold([0, 0, 0], |l, r| {
-        // also horrendous
-        [max(l[0], r[0]), max(l[1], r[1]), max(l[2], r[2])]
-    })
+    game.iter()
+        .fold([0, 0, 0], |l, r| array::from_fn(|i| max(l[i], r[i])))
 }
 
 #[aoc(day02, part1)]
