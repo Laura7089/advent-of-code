@@ -4,15 +4,17 @@ mod parse {
     use nom::{
         bytes::complete::{is_not, take},
         character::complete::{newline, space1},
-        multi::separated_list1,
-        sequence::{preceded, separated_pair, tuple},
+        combinator::{iterator, opt},
+        sequence::{preceded, separated_pair, terminated, tuple},
     };
 
     type Result<'a, T> = nom::IResult<&'a str, T>;
 
-    pub fn cards(input: &str) -> Result<Vec<super::Card>> {
-        // tried painstakingly rayon'ing this, but it's slower
-        separated_list1(newline, card)(input)
+    // TODO: BADBADnaughtyBADBADBADprogrammersBADgetnaughtyBADBADBADsignaturesBAD
+    pub fn cards<'a>(
+        input: &'a str,
+    ) -> crate::PIterStr<impl FnMut(&'a str) -> Result<'a, super::Card>> {
+        iterator(input, terminated(card, opt(newline)))
     }
 
     fn card(input: &str) -> Result<super::Card> {
@@ -65,25 +67,20 @@ mod parse {
     }
 }
 
-#[aoc_generator(day04)]
-fn generate(input: &str) -> Vec<Card> {
-    parse::cards(input).expect("Parse failure").1
-}
-
 fn nmatches((winners, ours): &Card) -> usize {
     winners.iter().filter(|n| ours.contains(n)).count()
 }
 
 #[aoc(day04, part1)]
-fn solve_part1(cards: &[Card]) -> usize {
-    cards
-        .iter()
-        .filter_map(|c| nmatches(c).checked_sub(1).map(|n| 1 << n))
+fn solve_part1(input: &str) -> usize {
+    parse::cards(input)
+        .filter_map(|c| nmatches(&c).checked_sub(1).map(|n| 1 << n))
         .sum()
 }
 
 #[aoc(day04, part2)]
-fn solve_part2(cards: &[Card]) -> usize {
+fn solve_part2(input: &str) -> usize {
+    let cards: Vec<_> = parse::cards(input).collect();
     let mut copies = vec![1; cards.len()];
 
     for (i, card) in cards.iter().enumerate() {
@@ -113,12 +110,12 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11";
 
         #[test]
         fn example() {
-            assert_eq!(solve_part1(&generate(SAMPLE_INPUT)), 13);
+            assert_eq!(solve_part1(SAMPLE_INPUT), 13);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part1(&generate(&crate::get_input(04))), 25010);
+            assert_eq!(solve_part1(&crate::get_input(04)), 25010);
         }
     }
 
@@ -127,12 +124,12 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11";
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 30);
+            assert_eq!(solve_part2(SAMPLE_INPUT), 30);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(04))), 9924412);
+            assert_eq!(solve_part2(&crate::get_input(04)), 9924412);
         }
     }
 }

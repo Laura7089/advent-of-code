@@ -11,6 +11,9 @@ mod day04;
 
 aoc_lib! { year = 2023 }
 
+// TODO: this is absolutely horrendous and I shouldn't have to do it
+type PIterStr<'a, F> = nom::combinator::ParserIterator<&'a str, nom::error::Error<&'a str>, F>;
+
 #[cfg(test)]
 fn get_input(day: u32) -> String {
     std::fs::read_to_string(format!("./input/2023/day{day}.txt"))
