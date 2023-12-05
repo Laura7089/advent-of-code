@@ -1,96 +1,42 @@
 use std::{array, cmp::max};
 
-type Game = Vec<Sample>;
 type Sample = [u32; 3];
 
-mod parse {
-    use nom::branch::alt;
-    use nom::bytes::complete::{is_not, tag, take};
-    use nom::character::complete::{newline, u32 as pu32};
-    use nom::combinator::map;
-    use nom::multi::separated_list1 as sepl;
-    use nom::sequence::{preceded, separated_pair as sepp, tuple};
-
-    use super::{Game, Sample};
-
-    type Result<'a, T> = nom::IResult<&'a str, T>;
-
-    pub fn games(input: &str) -> Result<Vec<Game>> {
-        sepl(
-            newline,
-            preceded(
-                // We could just skip until ": " here, but instead we can
-                // leverage that we know we can skip certain numbers of characters
-                // without checking them
-                tuple((take(6u8), is_not(" "), take(1u8))),
-                sepl(tag("; "), cubes),
-            ),
-        )(input)
-    }
-
-    fn cubes(input: &str) -> Result<Sample> {
-        map(sepl(tag(", "), cube), |seq| {
-            seq.into_iter()
-                .reduce(|l, r| std::array::from_fn(|i| l[i] + r[i]))
-                .expect("Bag with no samples!")
-        })(input)
-    }
-
-    fn cube(input: &str) -> Result<Sample> {
-        map(
-            sepp(
-                pu32,
-                take(1u8),
-                // using the `take` method here gave a performance regression :(
-                alt((tag("red"), tag("green"), tag("blue"))),
-            ),
-            |(amt, colour): (_, &str)| match colour.as_bytes()[0] {
-                b'r' => [amt, 0, 0],
-                b'g' => [0, amt, 0],
-                b'b' => [0, 0, amt],
-                // Cheeky: this is basically a compile-time assertion that the input is
-                // *definitely* correct (trust me bro), but it doesn't cause UB so...
-                _ => unreachable!("Bad colour in input"),
-            },
-        )(input)
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[test]
-        fn test_cube() {
-            assert_eq!(cube("3 blue"), Ok(("", [0, 0, 3])));
-            assert_eq!(cube("28 red"), Ok(("", [28, 0, 0])));
-        }
-
-        #[test]
-        fn test_cubes() {
-            assert_eq!(cubes("3 blue, 1 red"), Ok(("", [1, 0, 3])));
-        }
-    }
+fn parse_game(game: &str) -> impl Iterator<Item = Sample> + '_ {
+    game.split_once(": ")
+        .expect("Bad game format")
+        .1
+        .split("; ")
+        .map(|samp_raw| {
+            let mut amts = [0; 3];
+            for colour in samp_raw.split(", ") {
+                let (amt_raw, colour_lit) = colour.split_once(" ").expect("Bad game format");
+                let amt: u32 = amt_raw.parse().expect("Bad integer literal");
+                amts[match colour_lit.as_bytes()[0] {
+                    b'r' => 0,
+                    b'g' => 1,
+                    b'b' => 2,
+                    _ => panic!("Bad colour specifier"),
+                }] = amt;
+            }
+            amts
+        })
 }
 
-#[aoc_generator(day02)]
-fn generate(input: &str) -> Vec<Game> {
-    parse::games(input).unwrap().1
-}
-
-fn game_maxes(game: &Game) -> [u32; 3] {
-    game.iter()
-        .fold([0, 0, 0], |l, r| array::from_fn(|i| max(l[i], r[i])))
+fn game_maxes(game: impl Iterator<Item = Sample>) -> [u32; 3] {
+    game.fold([0, 0, 0], |l, r| array::from_fn(|i| max(l[i], r[i])))
 }
 
 #[aoc(day02, part1)]
-fn solve_part1(input: &[Game]) -> usize {
+fn solve_part1(input: &str) -> usize {
     const TARGET: [u32; 3] = [12, 13, 14];
 
     input
-        .iter()
+        .lines()
+        .map(parse_game)
         .enumerate()
-        .filter_map(|(id, game)| {
-            let [r, g, b] = game_maxes(game);
+        .filter_map(|(id, mut game)| {
+            let [r, g, b] = game_maxes(&mut game);
             let [tr, tg, tb] = TARGET;
             (r <= tr && g <= tg && b <= tb).then_some(id + 1)
         })
@@ -98,9 +44,10 @@ fn solve_part1(input: &[Game]) -> usize {
 }
 
 #[aoc(day02, part2)]
-fn solve_part2(input: &[Game]) -> u32 {
+fn solve_part2(input: &str) -> u32 {
     input
-        .iter()
+        .lines()
+        .map(parse_game)
         .map(|game| {
             let [r, g, b] = game_maxes(game);
             r * g * b
@@ -124,12 +71,12 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
 
         #[test]
         fn example() {
-            assert_eq!(solve_part1(&generate(SAMPLE_INPUT)), 8);
+            assert_eq!(solve_part1(SAMPLE_INPUT), 8);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part1(&generate(&crate::get_input(02))), 2268);
+            assert_eq!(solve_part1(&crate::get_input(02)), 2268);
         }
     }
 
@@ -138,12 +85,12 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 2286);
+            assert_eq!(solve_part2(SAMPLE_INPUT), 2286);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(02))), 63542);
+            assert_eq!(solve_part2(&crate::get_input(02)), 63542);
         }
     }
 }
