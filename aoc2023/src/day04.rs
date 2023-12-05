@@ -10,7 +10,7 @@ mod parse {
 
     type Result<'a, T> = nom::IResult<&'a str, T>;
 
-    // TODO: BADBADnaughtyBADBADBADprogrammersBADgetnaughtyBADBADBADsignaturesBAD
+    // TODO: B̶̨̞̀̀A̴͎̟̅̿́D̴̩̘̂͒̂͠B̷̭̙́͑͜͝A̶̠̿̓͊̐D̸̢̬̐̍n̷̺̘͝͠a̷̮̳̓̐u̷͋̔̇̚ͅg̵͉̊͗ḩ̸̻̒͋t̵̛̞̠̓͝ỳ̸͈͕̘͋B̶̢̿̈́ͅA̵̳͈̳̓͂̿͘D̴̯͓̊̓͛͑B̴̜̬̾A̶̯̬̩͑́̍̊͜D̵͎̈́͌̚͘p̴̰͉̦̲̔̏͊r̸̫̙̼̿̿̃̏ơ̵̧͕͎͙̾̓g̸̛̯͂̆r̴̟̲̼̆͌ȁ̷̭̥̓̈m̸̧̀̃̊̚ṃ̸̱͚̩̀̊̍̕ė̷̯̙ͅr̶̲̕s̵̼̹̈͠ͅB̷͈̖̬̦͗Ä̸̪͕Ḓ̴͍͉̤͊͛̅͗g̵̘͘ẹ̶̦́̀t̶̥̍̉ṅ̷͔̝̫̆̆̚a̷̧̛̝̞͉̅ǔ̴̯̜̏͗̾g̶̣̍́h̵͍̪̦͋t̶̫̜͍̠̿̀y̶̨͕͎̣͗B̵̜̄̏͠Å̶̙͂͊͛D̸̮̔̄̄̑B̴̝̜̠̘̉Ä̸̹́̾D̶͈̯̹̾̔͐͂B̶̮̜̩̱͒̉̍A̶̖̝̰͒̌̒́D̸̼̃̉s̸͎͈͍̓̎̏̑į̵̯͌g̸͚̗̼͎̒̕n̵͍͎̟̏͠a̸̤͇͊͝t̶͚̃̈ǘ̸̬̤͘r̴̗̥̲̊̎͒͛e̶͎͇̥̫̎ş̴̝̬̒B̷̖̟͖̑̎͂ͅA̴̬͎̠̾̿͘̕D̷͔͇͒̾̄
     pub fn cards<'a>(
         input: &'a str,
     ) -> crate::PIterStr<impl FnMut(&'a str) -> Result<'a, super::Card>> {
