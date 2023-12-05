@@ -12,6 +12,7 @@ mod day04;
 aoc_lib! { year = 2023 }
 
 // TODO: this is absolutely horrendous and I shouldn't have to do it
+#[allow(dead_code)]
 type PIterStr<'a, F> = nom::combinator::ParserIterator<&'a str, nom::error::Error<&'a str>, F>;
 
 #[cfg(test)]

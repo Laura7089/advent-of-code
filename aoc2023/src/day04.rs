@@ -1,96 +1,56 @@
-type Card = (Vec<usize>, Vec<usize>);
-
-mod parse {
-    use nom::{
-        bytes::complete::{is_not, take},
-        character::complete::{newline, space1},
-        combinator::{iterator, opt},
-        sequence::{preceded, separated_pair, terminated, tuple},
-    };
-
-    type Result<'a, T> = nom::IResult<&'a str, T>;
-
-    // TODO: B̶̨̞̀̀A̴͎̟̅̿́D̴̩̘̂͒̂͠B̷̭̙́͑͜͝A̶̠̿̓͊̐D̸̢̬̐̍n̷̺̘͝͠a̷̮̳̓̐u̷͋̔̇̚ͅg̵͉̊͗ḩ̸̻̒͋t̵̛̞̠̓͝ỳ̸͈͕̘͋B̶̢̿̈́ͅA̵̳͈̳̓͂̿͘D̴̯͓̊̓͛͑B̴̜̬̾A̶̯̬̩͑́̍̊͜D̵͎̈́͌̚͘p̴̰͉̦̲̔̏͊r̸̫̙̼̿̿̃̏ơ̵̧͕͎͙̾̓g̸̛̯͂̆r̴̟̲̼̆͌ȁ̷̭̥̓̈m̸̧̀̃̊̚ṃ̸̱͚̩̀̊̍̕ė̷̯̙ͅr̶̲̕s̵̼̹̈͠ͅB̷͈̖̬̦͗Ä̸̪͕Ḓ̴͍͉̤͊͛̅͗g̵̘͘ẹ̶̦́̀t̶̥̍̉ṅ̷͔̝̫̆̆̚a̷̧̛̝̞͉̅ǔ̴̯̜̏͗̾g̶̣̍́h̵͍̪̦͋t̶̫̜͍̠̿̀y̶̨͕͎̣͗B̵̜̄̏͠Å̶̙͂͊͛D̸̮̔̄̄̑B̴̝̜̠̘̉Ä̸̹́̾D̶͈̯̹̾̔͐͂B̶̮̜̩̱͒̉̍A̶̖̝̰͒̌̒́D̸̼̃̉s̸͎͈͍̓̎̏̑į̵̯͌g̸͚̗̼͎̒̕n̵͍͎̟̏͠a̸̤͇͊͝t̶͚̃̈ǘ̸̬̤͘r̴̗̥̲̊̎͒͛e̶͎͇̥̫̎ş̴̝̬̒B̷̖̟͖̑̎͂ͅA̴̬͎̠̾̿͘̕D̷͔͇͒̾̄
-    pub fn cards<'a>(
-        input: &'a str,
-    ) -> crate::PIterStr<impl FnMut(&'a str) -> Result<'a, super::Card>> {
-        iterator(input, terminated(card, opt(newline)))
-    }
-
-    fn card(input: &str) -> Result<super::Card> {
-        preceded(
-            tuple((is_not(":"), take(1usize), space1)),
-            separated_pair(num_list, tuple((take(2usize), space1)), num_list),
-        )(input)
-    }
-
-    #[allow(clippy::unnecessary_wraps)]
-    fn num_list(input: &str) -> Result<Vec<usize>> {
-        let mut nums = Vec::with_capacity(25);
-        let mut ptr = 0;
-
-        for num in input
-            .lines()
-            .flat_map(|l| l.split(" | "))
-            .take(1)
-            .flat_map(|l| l.split(' '))
-        {
-            ptr += num.len() + 1;
-            if let Ok(n) = num.parse() {
-                nums.push(n);
-            }
-        }
-        ptr = ptr.saturating_sub(1);
-
-        Ok((&input[ptr..], nums))
-
-        // All that for a drop of blood?
-        // separated_list1(space1, map(nchar::u32, |v| v as usize))(input)
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-        use test_case::test_case;
-
-        #[test_case(
-            "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53",
-            (vec![41, 48, 83, 86, 17], vec![83, 86, 6, 31, 17, 9, 48, 53])
-        )]
-        #[test_case(
-            "Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1",
-            (vec![1, 21, 53, 59, 44], vec![69, 82, 63, 72, 16, 21, 14, 1])
-        )]
-        fn test_card(raw: &str, res: crate::day04::Card) {
-            assert_eq!(card(raw), Ok(("", res)));
-        }
-    }
+fn sep_nums(raw: &str) -> impl Iterator<Item = usize> + '_ {
+    raw.split_ascii_whitespace()
+        .map(|v| v.parse().expect("Bad integer literal"))
 }
 
-fn nmatches((winners, ours): &Card) -> usize {
-    winners.iter().filter(|n| ours.contains(n)).count()
+fn nmatches_raw<const N: usize>(card: &str, ours_buf: &mut [usize; N]) -> usize {
+    let (winners, ours) = card
+        .split_once(": ")
+        .expect("Bad card format")
+        .1
+        .split_once(" | ")
+        .expect("Bad card format");
+
+    let mut ours = sep_nums(ours);
+    *ours_buf = std::array::from_fn(|_| ours.next().expect("Too few numbers"));
+
+    sep_nums(winners).filter(|n| ours_buf.contains(n)).count()
 }
 
-#[aoc(day04, part1)]
-fn solve_part1(input: &str) -> usize {
-    parse::cards(input)
-        .filter_map(|c| nmatches(&c).checked_sub(1).map(|n| 1 << n))
+fn part1<const N: usize>(input: &str) -> usize {
+    let mut buf = [0; N];
+    input
+        .lines()
+        .filter_map(|card| nmatches_raw(card, &mut buf).checked_sub(1).map(|n| 1 << n))
         .sum()
 }
 
-#[aoc(day04, part2)]
-fn solve_part2(input: &str) -> usize {
-    let cards: Vec<_> = parse::cards(input).collect();
-    let mut copies = vec![1; cards.len()];
+fn part2<const N: usize>(input: &str) -> usize {
+    let mut buf = [0; N];
+    let matches: Vec<_> = input
+        .lines()
+        .map(|card| nmatches_raw(card, &mut buf))
+        .collect();
+    let mut copies = vec![1; matches.len()];
 
-    for (i, card) in cards.iter().enumerate() {
+    for (i, n) in matches.iter().enumerate() {
         let our_copies = copies[i];
-        copies[(i + 1)..=(i + nmatches(card))]
+        copies[(i + 1)..=(i + n)]
             .iter_mut()
             .for_each(|c| *c += our_copies);
     }
 
     copies.into_iter().sum()
+}
+
+#[aoc(day04, part1)]
+fn solve_part1(input: &str) -> usize {
+    part1::<25>(input)
+}
+
+#[aoc(day04, part2)]
+fn solve_part2(input: &str) -> usize {
+    part2::<25>(input)
 }
 
 #[cfg(test)]
@@ -110,7 +70,7 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11";
 
         #[test]
         fn example() {
-            assert_eq!(solve_part1(SAMPLE_INPUT), 13);
+            assert_eq!(part1::<8>(SAMPLE_INPUT), 13);
         }
 
         #[test]
@@ -124,7 +84,7 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11";
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(SAMPLE_INPUT), 30);
+            assert_eq!(part2::<8>(SAMPLE_INPUT), 30);
         }
 
         #[test]
