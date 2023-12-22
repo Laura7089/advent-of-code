@@ -10,7 +10,7 @@ fn parse_game(game: &str) -> impl Iterator<Item = Sample> + '_ {
         .map(|samp_raw| {
             let mut amts = [0; 3];
             for colour in samp_raw.split(", ") {
-                let (amt_raw, colour_lit) = colour.split_once(" ").expect("Bad game format");
+                let (amt_raw, colour_lit) = colour.split_once(' ').expect("Bad game format");
                 let amt: u32 = amt_raw.parse().expect("Bad integer literal");
                 amts[match colour_lit.as_bytes()[0] {
                     b'r' => 0,

@@ -1,7 +1,7 @@
 type MapRange = [usize; 3];
 
 fn parse_range(input: &str) -> MapRange {
-    let mut elems_raw = input.split(" ");
+    let mut elems_raw = input.split(' ');
     std::array::from_fn(|_| {
         elems_raw
             .next()
@@ -39,13 +39,12 @@ impl<'a> Map<&'a str> {
 
 impl<K> Map<K> {
     fn lookup(&self, val: usize) -> usize {
-        for &[ds, ss, len] in self.ranges.iter() {
+        for &[ds, ss, len] in &self.ranges {
             if (ss..=(ss + len)).contains(&val) {
                 if ds > ss {
                     return val + (ds - ss);
-                } else {
-                    return val - (ss - ds);
                 }
+                return val - (ss - ds);
             }
         }
         val
@@ -54,7 +53,7 @@ impl<K> Map<K> {
 
 fn parse_seeds(line: &str) -> impl Iterator<Item = usize> + '_ {
     line[7..]
-        .split(" ")
+        .split(' ')
         .map(|v| v.parse().expect("bad integer literal"))
 }
 
@@ -94,7 +93,7 @@ fn follow_through(maps: &[Map<usize>], seed: usize) -> usize {
 #[aoc(day05, part1)]
 fn solve_part1(input: &str) -> usize {
     let mut iter = input.split("\n\n");
-    let seeds = parse_seeds(&iter.next().expect("empty input"));
+    let seeds = parse_seeds(iter.next().expect("empty input"));
     let maps = parse_input(iter);
 
     seeds
@@ -106,7 +105,7 @@ fn solve_part1(input: &str) -> usize {
 #[aoc(day05, part2)]
 fn solve_part2(input: &str) -> usize {
     let mut iter = input.split("\n\n");
-    let seeds: Vec<_> = parse_seeds(&iter.next().expect("empty input")).collect();
+    let seeds: Vec<_> = parse_seeds(iter.next().expect("empty input")).collect();
     let seeds = seeds.chunks(2).map(|c| (c[0], c[1]));
 
     let maps = parse_input(iter);
