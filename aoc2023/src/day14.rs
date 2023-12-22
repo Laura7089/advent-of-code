@@ -1,4 +1,6 @@
 use ndarray::prelude::*;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Ord, Eq)]
 enum Space {
@@ -9,7 +11,7 @@ enum Space {
 
 #[aoc_generator(day14)]
 fn generate(input: &str) -> Array2<Space> {
-    let line_len = input.find('\n').expect("No newlines in input");
+    let line_len = input.find('\n').unwrap_or(input.len());
     let num_lines = input.len() / line_len;
 
     Array1::from_iter(input.chars().filter(|c| c != &'\n').map(|c| match c {
@@ -35,12 +37,14 @@ fn sum_sliders(total: &mut usize, len: usize, last_static: usize, num_sliders: u
 
 #[aoc(day14, part1)]
 fn solve_part1(input: &Array2<Space>) -> usize {
-    input
-        .columns()
-        .into_iter()
-        .map(|col| {
-            // Iterate from the "north"
-            let (sliders, last_static, mut total) =
+    let iter = input.axis_iter(Axis(1));
+
+    #[cfg(feature = "rayon")]
+    let iter = iter.into_par_iter();
+
+    iter.map(|col| {
+        // Iterate from the "north"
+        let (sliders, last_static, mut total) =
                 // For reasons beyond my mortal understanding,
                 // It's faster to iterate over indices than enumerated elements
                 (0..col.len()).fold((0, 0, 0), |(s, ls, mut sum), ptr| {
@@ -56,10 +60,10 @@ fn solve_part1(input: &Array2<Space>) -> usize {
                         Space::Empty => (s, ls, sum),
                     }
                 });
-            sum_sliders(&mut total, col.len(), last_static, sliders);
-            total
-        })
-        .sum()
+        sum_sliders(&mut total, col.len(), last_static, sliders);
+        total
+    })
+    .sum()
 }
 
 #[aoc(day14, part2)]
