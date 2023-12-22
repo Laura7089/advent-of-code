@@ -21,39 +21,42 @@ fn generate(input: &str) -> Array2<Space> {
     .unwrap()
 }
 
+// Ugly function signature because the addition isn't always necessary so we take a mut
+// reference and do nothing with it if we don't need to add
+#[inline(always)]
+fn sum_sliders(total: &mut usize, len: usize, last_static: usize, num_sliders: usize) {
+    if num_sliders == 0 {
+        return;
+    }
+    let high = len - last_static;
+    let low = high - num_sliders + 1;
+    *total += (low..=high).sum::<usize>();
+}
+
 #[aoc(day14, part1)]
 fn solve_part1(input: &Array2<Space>) -> usize {
     input
         .columns()
         .into_iter()
         .map(|col| {
-            let mut total = 0;
-
-            let mut num_moveable = 0;
-            let mut last_static = 0;
             // Iterate from the "north"
-            for ptr in 0..(col.len()) {
-                match col[ptr] {
-                    Space::Static => {
-                        if num_moveable != 0 {
-                            let max_sd = col.len() - last_static;
-                            let min_sd = max_sd - num_moveable + 1;
-                            total += (min_sd..=max_sd).sum::<usize>();
+            let (sliders, last_static, mut total) =
+                // For reasons beyond my mortal understanding,
+                // It's faster to iterate over indices than enumerated elements
+                (0..col.len()).fold((0, 0, 0), |(s, ls, mut sum), ptr| {
+                    match col[ptr] {
+                        Space::Static => {
+                            sum_sliders(&mut sum, col.len(), ls, s);
+                            // Reset counters
+                            (0, ptr + 1, sum)
                         }
-                        num_moveable = 0;
-                        last_static = ptr + 1;
+                        // Count sliding rocks
+                        Space::Moveable => (s + 1, ls, sum),
+                        // Do nothing
+                        Space::Empty => (s, ls, sum),
                     }
-                    Space::Moveable => num_moveable += 1,
-                    Space::Empty => {}
-                }
-            }
-
-            if num_moveable != 0 {
-                let max_sd = col.len() - last_static;
-                let min_sd = max_sd - num_moveable + 1;
-                total += (min_sd..=max_sd).sum::<usize>();
-            }
-
+                });
+            sum_sliders(&mut total, col.len(), last_static, sliders);
             total
         })
         .sum()
