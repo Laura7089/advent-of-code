@@ -41,10 +41,9 @@ impl<K> Map<K> {
     fn lookup(&self, val: usize) -> usize {
         for &[ds, ss, len] in &self.ranges {
             if (ss..=(ss + len)).contains(&val) {
-                if ds > ss {
-                    return val + (ds - ss);
-                }
-                return val - (ss - ds);
+                return val
+                    .checked_add_signed(ds as isize - ss as isize)
+                    .expect("Exceeded usize, somehow...");
             }
         }
         val
