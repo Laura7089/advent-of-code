@@ -12,7 +12,8 @@ const GOAL: &[u8] = b"ZZZ";
 
 type NodeTree = Vec<([u8; 3], usize, usize)>;
 
-fn label_pos(labels: &mut HashMap<[u8; 3], usize>, label: [u8; 3], cursor: &mut usize) -> usize {
+fn label_pos(labels: &mut HashMap<[u8; 3], usize>, label_raw: &[u8], cursor: &mut usize) -> usize {
+    let label = Label::try_from(label_raw).unwrap();
     *labels.entry(label).or_insert_with(|| {
         let prev = *cursor;
         *cursor += 1;
@@ -41,11 +42,9 @@ fn generate(input: &str) -> (Vec<Direction>, NodeTree, usize, usize) {
         let node_raw = node_raw.as_bytes();
 
         let label = Label::try_from(&node_raw[0..3]).unwrap();
-        let label_i = label_pos(&mut labels, label, &mut cursor);
-        let llabel = Label::try_from(&node_raw[7..10]).unwrap();
-        let llabel_i = label_pos(&mut labels, llabel, &mut cursor);
-        let rlabel = Label::try_from(&node_raw[12..15]).unwrap();
-        let rlabel_i = label_pos(&mut labels, rlabel, &mut cursor);
+        let label_i = label_pos(&mut labels, &node_raw[0..3], &mut cursor);
+        let llabel_i = label_pos(&mut labels, &node_raw[7..10], &mut cursor);
+        let rlabel_i = label_pos(&mut labels, &node_raw[12..15], &mut cursor);
 
         tree[label_i] = Some((label, llabel_i, rlabel_i));
     }
