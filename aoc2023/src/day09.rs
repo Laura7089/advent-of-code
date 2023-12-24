@@ -14,18 +14,22 @@ fn get_diffs(seq: &[isize]) -> Vec<isize> {
     diffs
 }
 
+fn all_diffs(seq: &Vec<isize>) -> Vec<Vec<isize>> {
+    let mut diffs = vec![seq.clone()];
+    let mut cur = 0;
+    while !diffs[cur].iter().all(|x| *x == 0) {
+        diffs.push(get_diffs(&diffs[cur]));
+        cur += 1;
+    }
+    diffs
+}
+
 #[aoc(day09, part1)]
 fn solve_part1(input: &[Vec<isize>]) -> isize {
     input
-        .into_iter()
-        .map(|seq| {
-            let mut diffs = vec![seq.to_owned()];
-            let mut cur = 0;
-            while !diffs[cur].iter().all(|x| *x == 0) {
-                diffs.push(get_diffs(&diffs[cur]));
-                cur += 1;
-            }
-
+        .iter()
+        .map(all_diffs)
+        .map(|mut diffs| {
             for i in (1..diffs.len()).rev() {
                 let ([.., current], [prev, ..]) = diffs.split_at_mut(i) else {
                     panic!("diffs is too small");
@@ -39,8 +43,21 @@ fn solve_part1(input: &[Vec<isize>]) -> isize {
 }
 
 #[aoc(day09, part2)]
-fn solve_part2(_input: &[Vec<isize>]) -> usize {
-    todo!()
+fn solve_part2(input: &[Vec<isize>]) -> isize {
+    input
+        .iter()
+        .map(all_diffs)
+        .map(|mut diffs| {
+            for i in (1..diffs.len()).rev() {
+                let ([.., current], [prev, ..]) = diffs.split_at_mut(i) else {
+                    panic!("diffs is too small");
+                };
+                current.insert(0, current[0] - prev[0]);
+            }
+
+            diffs[0][0]
+        })
+        .sum()
 }
 
 #[cfg(test)]
@@ -71,12 +88,12 @@ mod tests {
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 2);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(09))), todo!());
+            assert_eq!(solve_part2(&generate(&crate::get_input(09))), 1129);
         }
     }
 }
