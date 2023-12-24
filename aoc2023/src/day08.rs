@@ -1,3 +1,5 @@
+#![allow(clippy::similar_names)]
+
 use std::collections::HashMap;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -35,12 +37,13 @@ fn generate(input: &str) -> (Vec<Direction>, NodeTree, usize, usize) {
         .collect();
 
     let mut labels = HashMap::new();
+    // This could definitely be a `Vec` of `MaybeUninit`s to skip mapping
+    // `expect` over them, but invalid input would introduce undefined behaviour
     let mut tree = vec![None; nodes.lines().count()];
     let mut cursor = 0;
 
-    for node_raw in nodes.lines() {
-        let node_raw = node_raw.as_bytes();
-
+    for node_raw in nodes.lines().map(str::as_bytes) {
+        // TODO: ugly, ugly, ugly!
         let label = Label::try_from(&node_raw[0..3]).unwrap();
         let label_i = label_pos(&mut labels, &node_raw[0..3], &mut cursor);
         let llabel_i = label_pos(&mut labels, &node_raw[7..10], &mut cursor);
@@ -51,8 +54,8 @@ fn generate(input: &str) -> (Vec<Direction>, NodeTree, usize, usize) {
 
     (
         dirs,
-        tree.into_iter()
-            .map(|n| n.expect("Uninitialised node found"))
+        tree.iter()
+            .map(|n| n.expect("node referenced but not defined"))
             .collect(),
         labels[START],
         labels[GOAL],
@@ -63,9 +66,10 @@ fn generate(input: &str) -> (Vec<Direction>, NodeTree, usize, usize) {
 fn solve_part1((dirs, tree, start, goal): &(Vec<Direction>, NodeTree, usize, usize)) -> usize {
     let mut cursor = *start;
     for (n, di) in (0..dirs.len()).cycle().enumerate() {
-        cursor = match dirs[di] {
-            Direction::Left => tree[cursor].1,
-            Direction::Right => tree[cursor].2,
+        cursor = match dirs.get(di) {
+            Some(Direction::Left) => tree[cursor].1,
+            Some(Direction::Right) => tree[cursor].2,
+            _ => unreachable!(),
         };
         if cursor == *goal {
             return n + 1;
@@ -89,9 +93,10 @@ fn solve_part2((dirs, tree, _, _): &(Vec<Direction>, NodeTree, usize, usize)) ->
     for (n, di) in (0..dirs.len()).cycle().enumerate() {
         println!("{cursors:?}");
         for cur in &mut cursors {
-            *cur = match dirs[di] {
-                Direction::Left => tree[*cur].1,
-                Direction::Right => tree[*cur].2,
+            *cur = match dirs.get(di) {
+                Some(Direction::Left) => tree[*cur].1,
+                Some(Direction::Right) => tree[*cur].2,
+                _ => unreachable!(),
             };
         }
         if cursors.iter().all(|c| goals.contains(c)) {

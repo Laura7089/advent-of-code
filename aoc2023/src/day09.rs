@@ -14,6 +14,7 @@ fn get_diffs(seq: &[isize]) -> Vec<isize> {
     diffs
 }
 
+#[allow(clippy::ptr_arg)]
 fn all_diffs(seq: &Vec<isize>) -> Vec<Vec<isize>> {
     let mut diffs = vec![seq.clone()];
     let mut cur = 0;

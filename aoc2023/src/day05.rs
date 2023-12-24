@@ -41,6 +41,7 @@ impl<K> Map<K> {
     fn lookup(&self, val: usize) -> usize {
         for &[ds, ss, len] in &self.ranges {
             if (ss..=(ss + len)).contains(&val) {
+                #[allow(clippy::cast_possible_wrap)]
                 return val
                     .checked_add_signed(ds as isize - ss as isize)
                     .expect("Exceeded usize, somehow...");
