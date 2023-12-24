@@ -11,6 +11,7 @@ mod day04;
 mod day05;
 mod day07;
 mod day08;
+mod day09;
 mod day14;
 
 aoc_lib! { year = 2023 }
