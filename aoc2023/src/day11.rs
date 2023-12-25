@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 type Coord = (usize, usize);
 
 #[aoc_generator(day11)]
@@ -38,11 +36,13 @@ fn expand_and_dist(input: &[Coord], factor: usize) -> usize {
     apply_offset(xs, factor);
     apply_offset(ys, factor);
 
-    coords
-        .into_iter()
-        .combinations(2)
-        .map(|comb| crate::manhattan_dist(comb[0], comb[1]))
-        .sum()
+    let mut total = 0;
+    for i in 0..(coords.len() - 1) {
+        for j in i..coords.len() {
+            total += crate::manhattan_dist(coords[i], coords[j]);
+        }
+    }
+    total
 }
 
 #[aoc(day11, part1)]
