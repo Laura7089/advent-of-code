@@ -19,27 +19,22 @@ fn generate(input: &str) -> Vec<Coord> {
 fn apply_offset(mut vals: Vec<&mut usize>, factor: usize) {
     vals.sort_unstable();
 
-    // let mut blanks = Vec::new();
     let mut total_diff = 0;
-    let mut new_vals = Vec::with_capacity(vals.len());
-    new_vals.push(*vals[0]);
-    for i in 0..(vals.len().checked_sub(1).expect("empty sequence")) {
-        let diff = *vals[i + 1] - *vals[i];
+    let mut last = *vals[0];
+    for val in &mut vals[1..] {
+        let diff = **val - last;
+        last = **val;
         if diff > 1 {
-            total_diff += (diff - 1) * (factor - 1);
+            total_diff += (diff - 1) * (factor.saturating_sub(1));
         }
-        new_vals.push(*vals[i + 1] + total_diff);
-    }
-
-    for i in 0..vals.len() {
-        *vals[i] = new_vals[i];
+        **val += total_diff;
     }
 }
 
-fn expand_and_dist(input: &[(usize, usize)], factor: usize) -> usize {
+fn expand_and_dist(input: &[Coord], factor: usize) -> usize {
     let mut coords = input.to_vec();
 
-    let (xs, ys): (Vec<_>, Vec<_>) = coords.iter_mut().map(|c| (&mut c.0, &mut c.1)).unzip();
+    let (xs, ys) = coords.iter_mut().map(|c| (&mut c.0, &mut c.1)).unzip();
     apply_offset(xs, factor);
     apply_offset(ys, factor);
 
