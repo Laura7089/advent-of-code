@@ -19,21 +19,20 @@ fn generate(input: &str) -> Vec<Coord> {
 fn apply_offset(mut vals: Vec<&mut usize>, factor: usize) {
     vals.sort_unstable();
 
-    let mut blanks = Vec::new();
+    // let mut blanks = Vec::new();
     let mut total_diff = 0;
+    let mut new_vals = Vec::with_capacity(vals.len());
+    new_vals.push(*vals[0]);
     for i in 0..(vals.len().checked_sub(1).expect("empty sequence")) {
         let diff = *vals[i + 1] - *vals[i];
-        if diff <= 1 {
-            continue;
+        if diff > 1 {
+            total_diff += (diff - 1) * (factor - 1);
         }
-        total_diff += (diff - 1) * (factor - 1);
-        blanks.push((*vals[i] + 1, total_diff));
+        new_vals.push(*vals[i + 1] + total_diff);
     }
 
-    for v in vals.into_iter() {
-        if let Some((_, off)) = blanks.iter().rev().find(|(t, _)| *v >= *t) {
-            *v += off;
-        }
+    for i in 0..vals.len() {
+        *vals[i] = new_vals[i];
     }
 }
 
