@@ -16,40 +16,33 @@ fn generate(input: &str) -> Vec<Coord> {
         .collect()
 }
 
-fn get_offsets(seq: &[usize]) -> Vec<Coord> {
+fn apply_offset(mut vals: Vec<&mut usize>, factor: usize) {
+    vals.sort_unstable();
+
     let mut blanks = Vec::new();
     let mut total_diff = 0;
-    for i in 0..(seq.len().checked_sub(1).expect("empty sequence")) {
-        let diff = seq[i + 1] - seq[i];
+    for i in 0..(vals.len().checked_sub(1).expect("empty sequence")) {
+        let diff = *vals[i + 1] - *vals[i];
         if diff <= 1 {
             continue;
         }
-        total_diff += diff - 1;
-        blanks.push((seq[i] + 1, total_diff));
+        total_diff += (diff - 1) * (factor - 1);
+        blanks.push((*vals[i] + 1, total_diff));
     }
 
-    blanks
+    for v in vals.into_iter() {
+        if let Some((_, off)) = blanks.iter().rev().find(|(t, _)| *v >= *t) {
+            *v += off;
+        }
+    }
 }
 
-#[aoc(day11, part1)]
-fn solve_part1(input: &[(usize, usize)]) -> usize {
+fn expand_and_dist(input: &[(usize, usize)], factor: usize) -> usize {
     let mut coords = input.to_vec();
 
-    let (mut xs, mut ys): (Vec<_>, Vec<_>) = coords.iter().copied().unzip();
-    xs.sort_unstable();
-    ys.sort_unstable();
-
-    let x_blanks = get_offsets(&xs);
-    let y_blanks = get_offsets(&ys);
-
-    for (x, y) in &mut coords {
-        if let Some((_, off)) = x_blanks.iter().filter(|(t, _)| *x >= *t).last() {
-            *x += off;
-        }
-        if let Some((_, off)) = y_blanks.iter().filter(|(t, _)| *y >= *t).last() {
-            *y += off;
-        }
-    }
+    let (xs, ys): (Vec<_>, Vec<_>) = coords.iter_mut().map(|c| (&mut c.0, &mut c.1)).unzip();
+    apply_offset(xs, factor);
+    apply_offset(ys, factor);
 
     coords
         .into_iter()
@@ -58,9 +51,14 @@ fn solve_part1(input: &[(usize, usize)]) -> usize {
         .sum()
 }
 
+#[aoc(day11, part1)]
+fn solve_part1(input: &[(usize, usize)]) -> usize {
+    expand_and_dist(input, 2)
+}
+
 #[aoc(day11, part2)]
-fn solve_part2(_input: &[(usize, usize)]) -> usize {
-    todo!()
+fn solve_part2(input: &[(usize, usize)]) -> usize {
+    expand_and_dist(input, 1_000_000)
 }
 
 #[cfg(test)]
@@ -96,14 +94,11 @@ mod tests {
     mod part2 {
         use super::*;
 
-        #[test]
-        fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
-        }
+        // Okay AoC, just don't provide a value for the example input in part 2
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(11))), todo!());
+            assert_eq!(solve_part2(&generate(&crate::get_input(11))), 593821230983);
         }
     }
 }
