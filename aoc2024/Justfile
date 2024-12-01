@@ -3,12 +3,10 @@
 # create and edit a new day
 day day=`date +%d`: (newday day)
     $EDITOR "./src/day{{ day }}.rs"
-alias d := day
 
 [private]
 newday day:
-    if [ -f "./src/day{{ day }}.rs" ]; then \
-       echo './src/day{{ day }}.rs already exists!'; \
-    else \
-        jinja2 -D "day={{ day }}" ./day_template.rs.j2 -o "./src/day{{ day }}.rs"; \
-    fi
+    [ -f "./src/day{{ day }}.rs" ] || jinja2 \
+        -D "day={{ day }}" \
+        ./day_template.rs.j2 \
+        -o "./src/day{{ day }}.rs"
