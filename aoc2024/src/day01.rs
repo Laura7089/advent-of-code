@@ -1,15 +1,31 @@
+mod parse {
+    use nom::bytes::complete::take_while;
+    use nom::character::complete::{newline, space1};
+    use nom::combinator::map_res;
+    use nom::multi::separated_list0;
+    use nom::sequence::separated_pair;
+
+    type Input<'a> = &'a str;
+    type IResult<'a, T> = nom::IResult<Input<'a>, T>;
+
+    fn num(input: Input) -> IResult<usize> {
+        map_res(take_while(|c: char| c.is_digit(10)), |raw| {
+            usize::from_str_radix(raw, 10)
+        })(input)
+    }
+
+    fn line(input: Input) -> IResult<(usize, usize)> {
+        separated_pair(num, space1, num)(input)
+    }
+
+    pub fn whole_input(input: Input) -> IResult<Vec<(usize, usize)>> {
+        separated_list0(newline, line)(input)
+    }
+}
+
 #[aoc_generator(day01)]
 fn generate(input: &str) -> Vec<(usize, usize)> {
-    input
-        .lines()
-        .map(|l| {
-            let mut split = l.split("   ");
-            (
-                split.next().unwrap().parse().unwrap(),
-                split.next().unwrap().parse().unwrap(),
-            )
-        })
-        .collect()
+    parse::whole_input(input).unwrap().1
 }
 
 #[inline]
