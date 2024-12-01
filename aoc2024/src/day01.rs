@@ -14,12 +14,12 @@ mod parse {
         })(input)
     }
 
-    fn line(input: Input) -> IResult<(usize, usize)> {
+    fn num_pair(input: Input) -> IResult<(usize, usize)> {
         separated_pair(num, space1, num)(input)
     }
 
     pub fn whole_input(input: Input) -> IResult<Vec<(usize, usize)>> {
-        separated_list0(newline, line)(input)
+        separated_list0(newline, num_pair)(input)
     }
 }
 
@@ -28,12 +28,12 @@ fn generate(input: &str) -> Vec<(usize, usize)> {
     parse::whole_input(input).unwrap().1
 }
 
-#[inline]
-fn make_sorted_vecs(input: &[(usize, usize)]) -> (Vec<usize>, Vec<usize>) {
+#[aoc(day01, part1)]
+fn solve_part1(input: &[(usize, usize)]) -> usize {
     let mut left = Vec::with_capacity(input.len());
     let mut right = Vec::with_capacity(input.len());
 
-    for (l, r) in input.iter().copied() {
+    for &(l, r) in input.iter() {
         left.push(l);
         right.push(r);
     }
@@ -41,65 +41,26 @@ fn make_sorted_vecs(input: &[(usize, usize)]) -> (Vec<usize>, Vec<usize>) {
     left.sort_unstable();
     right.sort_unstable();
 
-    (left, right)
-}
-
-#[aoc(day01, part1)]
-fn solve_part1(input: &[(usize, usize)]) -> usize {
-    let (left, right) = make_sorted_vecs(input);
-
     left.into_iter()
         .zip(right.into_iter())
         .map(|(l, r)| l.abs_diff(r))
         .sum()
 }
 
-type Counts = Vec<(usize, usize)>;
-
-// assumes the list is sorted!
-fn get_counts(list: &[usize]) -> Counts {
-    let mut current = None;
-    let mut cur_count = 0;
-
-    let mut counts = Vec::new();
-
-    for num in list {
-        if Some(num) == current {
-            cur_count += 1;
-        } else {
-            if let Some(&current) = current {
-                counts.push((current, cur_count));
-            }
-
-            current = Some(num);
-            cur_count = 1;
-        }
-    }
-
-    if let Some(&current) = current {
-        counts.push((current, cur_count));
-    }
-
-    counts
-}
+use std::collections::BTreeMap;
 
 #[aoc(day01, part2)]
 fn solve_part2(input: &[(usize, usize)]) -> usize {
-    let (left, right) = make_sorted_vecs(input);
-    let left_counts = get_counts(&left);
-    let right_counts = get_counts(&right);
-
-    let mut right_slice = &right_counts[..];
-    let mut total = 0;
-
-    for (num, lc) in left_counts {
-        if let Some((i, (_, rc))) = right_slice.iter().enumerate().find(|(_, (n, _))| num == *n) {
-            total += num * lc * rc;
-            right_slice = &right_slice[i..];
-        }
+    let mut left = BTreeMap::new();
+    let mut right = BTreeMap::new();
+    for &(l, r) in input {
+        left.entry(l).and_modify(|count| *count += 1).or_insert(1);
+        right.entry(r).and_modify(|count| *count += 1).or_insert(1);
     }
 
-    total
+    left.into_iter()
+        .filter_map(|(num, lc)| right.get(&num).map(|rc| lc * rc * num))
+        .sum()
 }
 
 #[cfg(test)]
