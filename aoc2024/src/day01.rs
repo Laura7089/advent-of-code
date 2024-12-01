@@ -89,16 +89,6 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_get_counts() {
-        let mut left = vec![3, 4, 2, 1, 3, 3];
-
-        // must sort so that get_counts works
-        left.sort_unstable();
-
-        assert_eq!(get_counts(&left), vec![(1, 1), (2, 1), (3, 3), (4, 1)]);
-    }
-
     mod part2 {
         use super::*;
 
