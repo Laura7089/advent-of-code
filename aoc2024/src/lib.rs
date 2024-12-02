@@ -1,7 +1,7 @@
+#![warn(clippy::pedantic)]
+
 #[macro_use]
 extern crate aoc_runner_derive;
-
-mod day01;
 
 #[cfg(test)]
 fn get_input(day: u32) -> String {
@@ -11,4 +11,6 @@ fn get_input(day: u32) -> String {
         .to_owned()
 }
 
+mod day01;
+mod day02;
 aoc_lib! { year = 2024 }
