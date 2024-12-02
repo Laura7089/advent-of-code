@@ -11,18 +11,15 @@ fn generate(input: &str) -> Vec<Vec<usize>> {
 const DESIRED_DIFF: RangeInclusive<usize> = 1..=3;
 
 fn find_unsafe_index(report: &[usize]) -> Option<usize> {
-    let desired_order = match report[0].cmp(&report[1]) {
+    // get the ordering between the first two elements as a baseline
+    let order = match report[0].cmp(&report[1]) {
         Ordering::Equal => return Some(1),
         o => o,
     };
 
     let mut last = report[0];
-
     for (i, num) in report.into_iter().enumerate().skip(1) {
-        if last.cmp(num) != desired_order {
-            return Some(i);
-        }
-        if !DESIRED_DIFF.contains(&last.abs_diff(*num)) {
+        if last.cmp(num) != order || !DESIRED_DIFF.contains(&last.abs_diff(*num)) {
             return Some(i);
         }
         last = *num;
@@ -41,16 +38,22 @@ fn solve_part1(input: &[Vec<usize>]) -> usize {
 
 #[aoc(day02, part2)]
 fn solve_part2(input: &[Vec<usize>]) -> usize {
+    let mut buf = Vec::new();
+
     input
         .into_iter()
         .filter(|rep| {
             let Some(problem_index) = find_unsafe_index(rep) else {
+                // safe without removal
                 return true;
             };
 
-            let mut rep = rep.to_vec();
-            rep.remove(problem_index);
-            find_unsafe_index(&rep).is_none()
+            // try removing the "problem index", but only once
+            // note we reuse buf to avoid reallocating
+            buf.clear();
+            buf.extend_from_slice(&rep);
+            buf.remove(problem_index);
+            find_unsafe_index(&buf).is_none()
         })
         .count()
 }
