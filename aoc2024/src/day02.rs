@@ -20,7 +20,7 @@ fn find_unsafe_index(report: &[usize]) -> Option<(usize, usize)> {
     };
 
     let mut left = report[0];
-    for (ri, right) in report.into_iter().enumerate().skip(1) {
+    for (ri, right) in report.iter().enumerate().skip(1) {
         if left.cmp(right) != order || !DESIRED_DIFF.contains(&left.abs_diff(*right)) {
             return Some((ri - 1, ri));
         }
@@ -33,11 +33,12 @@ fn find_unsafe_index(report: &[usize]) -> Option<(usize, usize)> {
 #[aoc(day02, part1)]
 fn solve_part1(input: &[Vec<usize>]) -> usize {
     input
-        .into_iter()
+        .iter()
         .filter(|rep| find_unsafe_index(rep).is_none())
         .count()
 }
 
+#[inline]
 fn clone_to_buf_without<T: Clone>(buf: &mut Vec<T>, report: &[T], index: usize) {
     buf.clear();
     buf.extend_from_slice(report);
@@ -50,7 +51,7 @@ fn solve_part2(input: &[Vec<usize>]) -> usize {
     let mut buf = Vec::new();
 
     input
-        .into_iter()
+        .iter()
         .filter(|rep| {
             let Some((left, right)) = find_unsafe_index(rep) else {
                 // safe without removal

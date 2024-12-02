@@ -9,7 +9,7 @@ mod parse {
     type IResult<'a, T> = nom::IResult<Input<'a>, T>;
 
     fn num(input: Input) -> IResult<usize> {
-        map_res(take_while(|c: char| c.is_digit(10)), |raw| {
+        map_res(take_while(|c: char| c.is_ascii_digit()), |raw| {
             usize::from_str_radix(raw, 10)
         })(input)
     }
@@ -33,7 +33,7 @@ fn solve_part1(input: &[(usize, usize)]) -> usize {
     let mut left = Vec::with_capacity(input.len());
     let mut right = Vec::with_capacity(input.len());
 
-    for &(l, r) in input.iter() {
+    for &(l, r) in input {
         left.push(l);
         right.push(r);
     }
@@ -42,7 +42,7 @@ fn solve_part1(input: &[(usize, usize)]) -> usize {
     right.sort_unstable();
 
     left.into_iter()
-        .zip(right.into_iter())
+        .zip(right)
         .map(|(l, r)| l.abs_diff(r))
         .sum()
 }
