@@ -10,35 +10,49 @@ fn generate(input: &str) -> Vec<Vec<usize>> {
 
 const DESIRED_DIFF: RangeInclusive<usize> = 1..=3;
 
-fn report_is_safe(report: &[usize]) -> bool {
+fn find_unsafe_index(report: &[usize]) -> Option<usize> {
     let desired_order = match report[0].cmp(&report[1]) {
-        Ordering::Equal => return false,
+        Ordering::Equal => return Some(1),
         o => o,
     };
 
     let mut last = report[0];
 
-    for num in &report[1..] {
+    for (i, num) in report.into_iter().enumerate().skip(1) {
         if last.cmp(num) != desired_order {
-            return false;
+            return Some(i);
         }
         if !DESIRED_DIFF.contains(&last.abs_diff(*num)) {
-            return false;
+            return Some(i);
         }
         last = *num;
     }
 
-    true
+    None
 }
 
 #[aoc(day02, part1)]
 fn solve_part1(input: &[Vec<usize>]) -> usize {
-    input.into_iter().filter(|rep| report_is_safe(rep)).count()
+    input
+        .into_iter()
+        .filter(|rep| find_unsafe_index(rep).is_none())
+        .count()
 }
 
 #[aoc(day02, part2)]
-fn solve_part2(_input: &[Vec<usize>]) -> usize {
-    todo!()
+fn solve_part2(input: &[Vec<usize>]) -> usize {
+    input
+        .into_iter()
+        .filter(|rep| {
+            let Some(problem_index) = find_unsafe_index(rep) else {
+                return true;
+            };
+
+            let mut rep = rep.to_vec();
+            rep.remove(problem_index);
+            find_unsafe_index(&rep).is_none()
+        })
+        .count()
 }
 
 #[cfg(test)]
@@ -72,7 +86,7 @@ mod tests {
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 4);
         }
 
         #[test]
