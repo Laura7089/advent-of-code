@@ -10,19 +10,21 @@ fn generate(input: &str) -> Vec<Vec<usize>> {
 
 const DESIRED_DIFF: RangeInclusive<usize> = 1..=3;
 
-fn find_unsafe_index(report: &[usize]) -> Option<usize> {
+/// Find the first pair that causes a safety violation, and return their indices.
+fn find_unsafe_index(report: &[usize]) -> Option<(usize, usize)> {
     // get the ordering between the first two elements as a baseline
     let order = match report[0].cmp(&report[1]) {
-        Ordering::Equal => return Some(1),
+        // if the first two elements are equal, we've got a problem
+        Ordering::Equal => return Some((0, 1)),
         o => o,
     };
 
-    let mut last = report[0];
-    for (i, num) in report.into_iter().enumerate().skip(1) {
-        if last.cmp(num) != order || !DESIRED_DIFF.contains(&last.abs_diff(*num)) {
-            return Some(i);
+    let mut left = report[0];
+    for (ri, right) in report.into_iter().enumerate().skip(1) {
+        if left.cmp(right) != order || !DESIRED_DIFF.contains(&left.abs_diff(*right)) {
+            return Some((ri - 1, ri));
         }
-        last = *num;
+        left = *right;
     }
 
     None
@@ -36,23 +38,32 @@ fn solve_part1(input: &[Vec<usize>]) -> usize {
         .count()
 }
 
+fn clone_to_buf_without<T: Clone>(buf: &mut Vec<T>, report: &[T], index: usize) {
+    buf.clear();
+    buf.extend_from_slice(report);
+    buf.remove(index);
+}
+
 #[aoc(day02, part2)]
 fn solve_part2(input: &[Vec<usize>]) -> usize {
+    // reusable buffer
     let mut buf = Vec::new();
 
     input
         .into_iter()
         .filter(|rep| {
-            let Some(problem_index) = find_unsafe_index(rep) else {
+            let Some((left, right)) = find_unsafe_index(rep) else {
                 // safe without removal
                 return true;
             };
 
-            // try removing the "problem index", but only once
-            // note we reuse buf to avoid reallocating
-            buf.clear();
-            buf.extend_from_slice(&rep);
-            buf.remove(problem_index);
+            // try removing the "problem indices"
+            // TODO: iterator magic?
+            clone_to_buf_without(&mut buf, rep, left);
+            if find_unsafe_index(&buf).is_none() {
+                return true;
+            }
+            clone_to_buf_without(&mut buf, rep, right);
             find_unsafe_index(&buf).is_none()
         })
         .count()
@@ -62,6 +73,7 @@ fn solve_part2(input: &[Vec<usize>]) -> usize {
 mod tests {
     #![allow(unreachable_code)]
     use super::*;
+    use test_case::test_case;
 
     const SAMPLE_INPUT: &str = "7 6 4 2 1
 1 2 7 8 9
@@ -69,6 +81,14 @@ mod tests {
 1 3 2 4 5
 8 6 4 4 1
 1 3 6 7 9";
+
+    #[test_case(&vec![7, 6, 4, 2, 1] => None)]
+    #[test_case(&vec![1, 3, 2, 4, 5] => Some((1, 2)))]
+    #[test_case(&vec![8, 6, 4, 4, 1] => Some((2, 3)))]
+    #[test_case(&vec![1, 3, 6, 7, 9] => None)]
+    fn test_find_unsafe_index(report: &Vec<usize>) -> Option<(usize, usize)> {
+        find_unsafe_index(report)
+    }
 
     mod part1 {
         use super::*;
