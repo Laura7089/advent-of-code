@@ -10,3 +10,6 @@ newday day:
         -D "day={{ day }}" \
         ./day_template.rs.j2 \
         -o "./src/day{{ day }}.rs"
+    # cursed
+    grep 'mod day{{ day }};' ./src/lib.rs || \
+        sed -i 's/aoc_lib/mod day{{ day }};\naoc_lib/' ./src/lib.rs
