@@ -12,7 +12,7 @@ mod parse {
         bytes::complete::{tag, take_while_m_n},
         character::complete::anychar,
         combinator::{map, map_res, value},
-        multi::{many1, many_till},
+        multi::many_till,
         sequence::{delimited, preceded, separated_pair},
     };
 
@@ -48,24 +48,14 @@ mod parse {
         alt((mul_instr, do_instr, dont_instr))(input)
     }
 
-    fn rubbish_then_instr(input: &str) -> IResult<Instruction> {
-        map(many_till(anychar, instr), |(_chars, instr)| instr)(input)
+    pub fn rubbish_then_instr(input: &str) -> IResult<Instruction> {
+        map(many_till(anychar, instr), |(_rubbish, instr)| instr)(input)
     }
-
-    pub fn get_all_muls(input: &str) -> IResult<Vec<Instruction>> {
-        many1(rubbish_then_instr)(input)
-    }
-}
-
-#[aoc_generator(day03)]
-fn generate(input: &str) -> Vec<Instruction> {
-    parse::get_all_muls(input).expect("parse failure").1
 }
 
 #[aoc(day03, part1)]
-fn solve_part1(input: &[Instruction]) -> usize {
-    input
-        .iter()
+fn solve_part1(input: &str) -> usize {
+    nom::combinator::iterator(input, parse::rubbish_then_instr)
         .filter_map(|ins| match ins {
             Instruction::Mul(l, r) => Some(l * r),
             _ => None,
@@ -74,11 +64,12 @@ fn solve_part1(input: &[Instruction]) -> usize {
 }
 
 #[aoc(day03, part2)]
-fn solve_part2(input: &[Instruction]) -> usize {
+fn solve_part2(input: &str) -> usize {
     let mut enabled = true;
     let mut total = 0;
 
-    for &ins in input {
+    let mut iter = nom::combinator::iterator(input, parse::rubbish_then_instr);
+    for ins in &mut iter {
         match ins {
             Instruction::Mul(l, r) if enabled => total += l * r,
             Instruction::Do if !enabled => enabled = true,
@@ -103,12 +94,12 @@ mod tests {
 
         #[test]
         fn example() {
-            assert_eq!(solve_part1(&generate(SAMPLE_INPUT_PART1)), 161);
+            assert_eq!(solve_part1(SAMPLE_INPUT_PART1), 161);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part1(&generate(&crate::get_input(03))), 169021493);
+            assert_eq!(solve_part1(&crate::get_input(03)), 169021493);
         }
     }
 
@@ -120,12 +111,12 @@ mod tests {
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT_PART2)), 48);
+            assert_eq!(solve_part2(SAMPLE_INPUT_PART2), 48);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(03))), 111762583);
+            assert_eq!(solve_part2(&crate::get_input(03)), 111762583);
         }
     }
 }
