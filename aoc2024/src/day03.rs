@@ -13,7 +13,7 @@ mod parse {
         character::complete::anychar,
         combinator::{map, map_res, value},
         multi::many_till,
-        sequence::{delimited, preceded, separated_pair},
+        sequence::Tuple,
     };
 
     type IResult<'a, T> = nom::IResult<&'a str, T>;
@@ -27,24 +27,14 @@ mod parse {
     }
 
     fn mul_instr(input: &str) -> IResult<Instruction> {
-        map(
-            preceded(
-                tag("mul"),
-                delimited(tag("("), separated_pair(number, tag(","), number), tag(")")),
-            ),
-            |(l, r)| Instruction::Mul(l, r),
-        )(input)
-    }
-
-    fn do_instr(input: &str) -> IResult<Instruction> {
-        value(Instruction::Do, tag("do()"))(input)
-    }
-
-    fn dont_instr(input: &str) -> IResult<Instruction> {
-        value(Instruction::Dont, tag("don't()"))(input)
+        let (rem, (_, l, _, r, _)) =
+            (tag("mul("), number, tag(","), number, tag(")")).parse(input)?;
+        Ok((rem, Instruction::Mul(l, r)))
     }
 
     fn instr(input: &str) -> IResult<Instruction> {
+        let do_instr = value(Instruction::Do, tag("do()"));
+        let dont_instr = value(Instruction::Dont, tag("don't()"));
         alt((mul_instr, do_instr, dont_instr))(input)
     }
 
