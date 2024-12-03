@@ -13,4 +13,5 @@ fn get_input(day: u32) -> String {
 
 mod day01;
 mod day02;
+mod day03;
 aoc_lib! { year = 2024 }
