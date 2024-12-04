@@ -1,3 +1,11 @@
+// There's quite a lot we could do better here.
+// As with the usual Advent of Code conundrum, if we specialise on the *specific*
+// problem that it gives us, then we can almost certainly squeeze more performance out of it.
+// For example, with part 2, it's definitely worth investigating the avenue that we see if
+// we observe that the "middle" character is unique and also a more effective way to search for
+// matches - there are 2 Ms and 2 Ss per "X-MAS", but only one A. Thus, we could search for As
+// to narrow down our raycast search (which is currently naive).
+
 #[aoc_generator(day04)]
 // TODO: return a Vec<&[u8]> instead
 // TODO: ndarray?
@@ -12,9 +20,10 @@ fn get_limits(modi: isize, dim: usize, goal: &[u8]) -> std::ops::Range<usize> {
     // invert the modifier because limits need to encroach opposite
     // the direction of movement
     let modi = modi * -1;
+    let glen = goal.len() - 1;
 
-    let n0 = (goal.len() - 1) * modi.clamp(0, 1) as usize;
-    let n1m = (goal.len() - 1) as isize * modi.clamp(-1, 0);
+    let n0 = glen * modi.clamp(0, 1) as usize;
+    let n1m = glen as isize * modi.clamp(-1, 0);
     let n1 = dim.saturating_add_signed(n1m);
 
     n0..n1
@@ -111,6 +120,7 @@ fn solve_part2(input: &[Vec<u8>]) -> usize {
             }
 
             // offset x
+            // this might behave unexpectedly if P2_GOAL is even in length
             let xm = x + P2_GOAL.len() - 1;
             // then look up-left/down-right
             if try_read_2way(input, P2_GOAL, xm, y, -1, 1) {
