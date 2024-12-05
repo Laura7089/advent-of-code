@@ -102,7 +102,7 @@ impl PartialOrd for OrderedVal<'_> {
 
 impl Ord for OrderedVal<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).expect("input order is not total")
+        self.partial_cmp(other).expect("input order gap found")
     }
 }
 
@@ -140,9 +140,6 @@ fn solve_part2((fragments, updates): &(Vec<PageOrderFragment>, Vec<PageUpdate>))
         // To do this, we need to sort the relevant numbers within the indexes they
         // currently have. Nothing else needs to move - therefore, if none of them
         // are in the middle, then we needn't bother >:)
-        // We need to make assumptions of the imput:
-        // - fragments are together *total*
-        // - updates contain no duplicate pages
 
         let middle = update.len() / 2;
         // note BTreeSets always iterate in order
@@ -157,6 +154,13 @@ fn solve_part2((fragments, updates): &(Vec<PageOrderFragment>, Vec<PageUpdate>))
         // us from mutating it at the beginning of this for loop.
         // TODO: perhaps this can be worked around, but I don't think the compiler is clever
         // enough to recognise the .clear() as removing them (and indeed it might not).
+
+        // Ideally, these three lines could be accomplished fast and more concisely with a
+        // select_nth_unstable_by_key call, but we're kinda hacking around the fact that the
+        // input orderings given are not total, even just over the mismatches and thus the
+        // sort order is ambiguous. The rust stdlib is explicitly *not* designed to deal with
+        // this, but this particular arrangement makes my tests pass and therefore it's
+        // good enough.
         let mut values: Vec<_> = indexes
             .iter()
             .map(|&i| OrderedVal {
