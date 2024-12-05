@@ -6,10 +6,19 @@
 // matches - there are 2 Ms and 2 Ss per "X-MAS", but only one A. Thus, we could search for As
 // to narrow down our raycast search (which is currently naive).
 
-#[aoc_generator(day04)]
+// super::day04_optimal is an attempt to over-optimise like this
+
+#[aoc_generator(day04, part1, Scalable)]
 // TODO: return a Vec<&[u8]> instead
 // TODO: ndarray?
 fn generate(input: &str) -> Vec<Vec<u8>> {
+    input.lines().map(|line| line.as_bytes().to_vec()).collect()
+}
+
+#[aoc_generator(day04, part2, Scalable)]
+// TODO: return a Vec<&[u8]> instead
+// TODO: ndarray?
+fn generate_again(input: &str) -> Vec<Vec<u8>> {
     input.lines().map(|line| line.as_bytes().to_vec()).collect()
 }
 
@@ -89,7 +98,7 @@ fn count_aligned(ymod: isize, xmod: isize, input: &[Vec<u8>]) -> usize {
     acc
 }
 
-#[aoc(day04, part1)]
+#[aoc(day04, part1, Scalable)]
 fn solve_part1(input: &[Vec<u8>]) -> usize {
     [
         // search up and down
@@ -107,7 +116,7 @@ fn solve_part1(input: &[Vec<u8>]) -> usize {
 
 const P2_GOAL: &[u8] = b"MAS";
 
-#[aoc(day04, part2)]
+#[aoc(day04, part2, Scalable)]
 fn solve_part2(input: &[Vec<u8>]) -> usize {
     let (height, width) = (input.len(), input[0].len());
     let mut count = 0;
