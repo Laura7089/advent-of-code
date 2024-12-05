@@ -46,7 +46,7 @@ type PageUpdate = Vec<usize>;
 
 #[inline]
 fn find_index<T: PartialEq>(slice: &[T], item: &T) -> Option<usize> {
-    Some(slice.iter().enumerate().find(|(_i, n)| *n == item)?.0)
+    slice.iter().position(|n| n == item)
 }
 
 #[aoc_generator(day05)]
@@ -78,7 +78,7 @@ fn is_update_valid(update: &PageUpdate, orderings: &[PageOrdering]) -> bool {
 }
 
 #[inline]
-fn middle(update: &PageUpdate) -> usize {
+fn get_middle_val(update: &PageUpdate) -> usize {
     update[update.len() / 2]
 }
 
@@ -86,17 +86,18 @@ fn middle(update: &PageUpdate) -> usize {
 fn solve_part1((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> usize {
     updates
         .iter()
-        .filter_map(|update| is_update_valid(update, orderings).then(|| middle(update)))
+        .filter(|update| is_update_valid(update, orderings))
+        .map(get_middle_val)
         .sum()
 }
 
-#[derive(Ord, Eq)]
+#[derive(Eq)]
 struct ValWithOrdering<'a> {
     ordering: &'a [PageOrdering],
     value: usize,
 }
 
-impl<'a> PartialOrd for ValWithOrdering<'a> {
+impl PartialOrd for ValWithOrdering<'_> {
     // assumes both sides refer to the same page ordering
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         if self.ordering.contains(&(self.value, other.value)) {
@@ -110,7 +111,15 @@ impl<'a> PartialOrd for ValWithOrdering<'a> {
     }
 }
 
-impl<'a> PartialEq for ValWithOrdering<'a> {
+impl Ord for ValWithOrdering<'_> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // let's hope all our orderings are total otherwise we're gonna
+        // get some horrible panics :)
+        self.partial_cmp(other).unwrap()
+    }
+}
+
+impl PartialEq for ValWithOrdering<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.value == other.value
     }
@@ -131,7 +140,7 @@ fn solve_part2((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> u
                 mismatch_buf.push(*ordering);
             }
         }
-        if mismatch_buf.len() == 0 {
+        if mismatch_buf.is_empty() {
             // all the orderings matched
             continue;
         }
@@ -148,18 +157,19 @@ fn solve_part2((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> u
 
         // determine indexes of important elements
         // note BTreeSets always iterate in order
-        let mut indexes: BTreeSet<_> = mismatch_buf
+        let indexes: BTreeSet<_> = mismatch_buf
             .iter()
             // flatten the orderings into a list of numbers for now
             .flat_map(|(l, r)| [l, r].into_iter())
             .map(|n| find_index(update, n).unwrap())
             .collect();
 
-        if !indexes.contains(&(update_buf.len() / 2)) {
+        let middle = update_buf.len() / 2;
+        let Some(middle_in_indexes) = indexes.iter().position(|n| *n == middle) else {
             // the middle element isn't affected by the ordering, so don't bother
-            total += middle(&update_buf);
+            total += get_middle_val(&update_buf);
             continue;
-        }
+        };
 
         let mut values: Vec<_> = indexes
             .iter()
@@ -169,13 +179,7 @@ fn solve_part2((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> u
             })
             .collect();
         values.sort_unstable();
-
-        // TODO: replace with select_nth_unstable
-        for (i, ValWithOrdering { value: new_val, .. }) in indexes.into_iter().zip(values) {
-            update_buf[i] = new_val;
-        }
-
-        total += middle(&update_buf);
+        total += values[middle_in_indexes].value;
     }
 
     total
