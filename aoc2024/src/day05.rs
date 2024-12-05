@@ -126,26 +126,23 @@ impl PartialEq for ValWithOrdering<'_> {
 
 #[aoc(day05, part2)]
 fn solve_part2((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> usize {
-    let mut mismatch_buf = Vec::new();
-    let mut update_buf = Vec::new();
+    // scratch buffers for upcoming calculations
+    let mut mismatches = Vec::new();
+    let mut indexes = BTreeSet::new();
 
     let mut total = 0;
 
     for update in updates {
-        mismatch_buf.clear();
-
+        mismatches.clear();
         for ordering in orderings {
             if !ordering_matches_update(update, ordering) {
-                mismatch_buf.push(*ordering);
+                mismatches.push(*ordering);
             }
         }
-        if mismatch_buf.is_empty() {
+        if mismatches.is_empty() {
             // all the orderings matched
             continue;
         }
-
-        update_buf.clear();
-        update_buf.extend_from_slice(update);
 
         // To do this, we need to sort the relevant numbers within the indexes they
         // currently have. Nothing else needs to move - therefore, if none of them
@@ -156,25 +153,29 @@ fn solve_part2((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> u
 
         // determine indexes of important elements
         // note BTreeSets always iterate in order
-        let indexes: BTreeSet<_> = mismatch_buf
-            .iter()
-            // flatten the orderings into a list of numbers for now
-            .flat_map(|(l, r)| [l, r].into_iter())
-            .map(|n| find_index(update, n).unwrap())
-            .collect();
+        indexes.clear();
+        for (l, r) in &mismatches {
+            indexes.insert(find_index(update, l).unwrap());
+            indexes.insert(find_index(update, r).unwrap());
+        }
 
-        let middle = update_buf.len() / 2;
+        let middle = update.len() / 2;
         let Some(middle_in_indexes) = indexes.iter().position(|n| *n == middle) else {
             // the middle element isn't affected by the ordering, so don't bother
-            total += get_middle_val(&update_buf);
+            total += get_middle_val(&update);
             continue;
         };
 
+        // frustratingly, the borrow checker won't let us use a scratch buffer for this
+        // because values (by type) holds immutable references to mismatches, which stops
+        // us from mutating it at the beginning of this for loop.
+        // TODO: perhaps this can be worked around, but I don't think the compiler is clever
+        // enough to recognise the .clear() as removing them (and indeed it might not).
         let mut values: Vec<_> = indexes
             .iter()
             .map(|&i| ValWithOrdering {
-                ordering: &mismatch_buf,
-                value: update_buf[i],
+                ordering: &mismatches,
+                value: update[i],
             })
             .collect();
         values.sort_unstable();
