@@ -1,7 +1,8 @@
+use std::cmp::Ordering;
 use std::collections::BTreeSet;
 
 mod parse {
-    use super::{PageOrdering, PageUpdate};
+    use super::{PageOrderFragment, PageUpdate};
     use nom::{
         bytes::complete::{tag, take_while},
         character::complete::newline,
@@ -18,7 +19,7 @@ mod parse {
         })(input)
     }
 
-    fn single_ordering(input: &str) -> IResult<PageOrdering> {
+    fn order_fragment(input: &str) -> IResult<PageOrderFragment> {
         separated_pair(num, tag("|"), num)(input)
     }
 
@@ -32,78 +33,66 @@ mod parse {
         })(input)
     }
 
-    pub fn whole_input(input: &str) -> IResult<(Vec<PageOrdering>, Vec<PageUpdate>)> {
-        let orderings = separated_list1(newline, single_ordering);
+    pub fn whole_input(input: &str) -> IResult<(Vec<PageOrderFragment>, Vec<PageUpdate>)> {
+        let fragments = separated_list1(newline, order_fragment);
         let updates = separated_list1(newline, page_update);
         let sep = tuple((newline, newline));
 
-        separated_pair(orderings, sep, updates)(input)
+        separated_pair(fragments, sep, updates)(input)
     }
 }
 
-type PageOrdering = (usize, usize);
+type PageOrderFragment = (usize, usize);
 type PageUpdate = Vec<usize>;
 
-#[inline]
-fn find_index<T: PartialEq>(slice: &[T], item: &T) -> Option<usize> {
-    slice.iter().position(|n| n == item)
-}
-
 #[aoc_generator(day05)]
-fn generate(input: &str) -> (Vec<PageOrdering>, Vec<PageUpdate>) {
+fn generate(input: &str) -> (Vec<PageOrderFragment>, Vec<PageUpdate>) {
     parse::whole_input(input).expect("parse error").1
 }
 
-// note that irrelevant orderings are here considered to match
-fn ordering_matches_update(update: &PageUpdate, &(first, second): &PageOrdering) -> bool {
-    let Some(first_idx) = find_index(update, &first) else {
-        return true;
-    };
-    let Some(second_idx) = find_index(update, &second) else {
-        return true;
-    };
-
-    if first_idx > second_idx {
-        return false;
-    }
-
-    true
-}
-
-#[inline]
-fn is_update_valid(update: &PageUpdate, orderings: &[PageOrdering]) -> bool {
-    orderings
-        .iter()
-        .all(|ordering| ordering_matches_update(update, ordering))
-}
-
-#[inline]
-fn get_middle_val(update: &PageUpdate) -> usize {
-    update[update.len() / 2]
+// note that irrelevant fragments are here considered to match
+fn find_frag_violation(
+    update: &PageUpdate,
+    &(first, second): &PageOrderFragment,
+) -> Option<(usize, usize)> {
+    let first_idx = update.iter().position(|&n| n == first)?;
+    let second_idx = update.iter().position(|&n| n == second)?;
+    // if the first index is behind the second index, that's a violation
+    (first_idx > second_idx).then_some((first_idx, second_idx))
 }
 
 #[aoc(day05, part1)]
-fn solve_part1((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> usize {
+fn solve_part1((fragments, updates): &(Vec<PageOrderFragment>, Vec<PageUpdate>)) -> usize {
     updates
         .iter()
-        .filter(|update| is_update_valid(update, orderings))
-        .map(get_middle_val)
+        .filter(|update| {
+            fragments
+                .iter()
+                .all(|frag| find_frag_violation(update, frag).is_none())
+        })
+        .map(|update| update[update.len() / 2])
         .sum()
 }
 
-#[derive(Eq)]
-struct ValWithOrdering<'a> {
-    ordering: &'a [PageOrdering],
+#[derive(Copy, Clone, Debug, Eq)]
+struct OrderedVal<'a> {
+    fragments: &'a [PageOrderFragment],
     value: usize,
 }
 
-// assumes both sides refer to the same page ordering
-impl PartialOrd for ValWithOrdering<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        if self.ordering.contains(&(self.value, other.value)) {
-            Some(std::cmp::Ordering::Less)
-        } else if self.ordering.contains(&(other.value, self.value)) {
-            Some(std::cmp::Ordering::Greater)
+// assumes both sides refer to the same page order
+// TODO: for reasons unclear, if I swap the contents of partial_cmp and cmp around
+// (they should behave the same way), the order is recognised as not total and the
+// test suite fails. I have no idea why this is, but hence the clippy allow.
+#[allow(clippy::non_canonical_partial_ord_impl)]
+impl PartialOrd for OrderedVal<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self == other {
+            Some(Ordering::Equal)
+        } else if self.fragments.contains(&(self.value, other.value)) {
+            Some(Ordering::Less)
+        } else if self.fragments.contains(&(other.value, self.value)) {
+            Some(Ordering::Greater)
         } else {
             // no defined ordering
             None
@@ -111,21 +100,20 @@ impl PartialOrd for ValWithOrdering<'_> {
     }
 }
 
-impl Ord for ValWithOrdering<'_> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.partial_cmp(other)
-            .expect("input ordering is not total")
+impl Ord for OrderedVal<'_> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).expect("input order is not total")
     }
 }
 
-impl PartialEq for ValWithOrdering<'_> {
+impl PartialEq for OrderedVal<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.value == other.value
     }
 }
 
 #[aoc(day05, part2)]
-fn solve_part2((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> usize {
+fn solve_part2((fragments, updates): &(Vec<PageOrderFragment>, Vec<PageUpdate>)) -> usize {
     // scratch buffers for upcoming calculations
     let mut mismatches = Vec::new();
     let mut indexes = BTreeSet::new();
@@ -134,13 +122,18 @@ fn solve_part2((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> u
 
     for update in updates {
         mismatches.clear();
-        for ordering in orderings {
-            if !ordering_matches_update(update, ordering) {
-                mismatches.push(*ordering);
+        indexes.clear();
+        for frag in fragments {
+            // determine indexes of important (violating) elements
+            if let Some((l, r)) = find_frag_violation(update, frag) {
+                mismatches.push(*frag);
+                indexes.insert(l);
+                indexes.insert(r);
             }
         }
         if mismatches.is_empty() {
-            // all the orderings matched
+            // all the fragments matched so the page update is valid
+            // ergo, into the bin with it :)
             continue;
         }
 
@@ -148,21 +141,14 @@ fn solve_part2((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> u
         // currently have. Nothing else needs to move - therefore, if none of them
         // are in the middle, then we needn't bother >:)
         // We need to make assumptions of the imput:
-        // - orderings are together *total*
+        // - fragments are together *total*
         // - updates contain no duplicate pages
 
-        // determine indexes of important elements
-        // note BTreeSets always iterate in order
-        indexes.clear();
-        for (l, r) in &mismatches {
-            indexes.insert(find_index(update, l).unwrap());
-            indexes.insert(find_index(update, r).unwrap());
-        }
-
         let middle = update.len() / 2;
+        // note BTreeSets always iterate in order
         let Some(middle_in_indexes) = indexes.iter().position(|n| *n == middle) else {
-            // the middle element isn't affected by the ordering, so don't bother
-            total += get_middle_val(&update);
+            // the middle element isn't affected by the order, so don't bother
+            total += update[update.len() / 2];
             continue;
         };
 
@@ -173,8 +159,8 @@ fn solve_part2((orderings, updates): &(Vec<PageOrdering>, Vec<PageUpdate>)) -> u
         // enough to recognise the .clear() as removing them (and indeed it might not).
         let mut values: Vec<_> = indexes
             .iter()
-            .map(|&i| ValWithOrdering {
-                ordering: &mismatches,
+            .map(|&i| OrderedVal {
+                fragments: &mismatches,
                 value: update[i],
             })
             .collect();
