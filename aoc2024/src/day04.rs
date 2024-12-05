@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::cast_sign_loss)]
 // There's quite a lot we could do better here.
 // As with the usual Advent of Code conundrum, if we specialise on the *specific*
 // problem that it gives us, then we can almost certainly squeeze more performance out of it.
@@ -19,7 +21,7 @@ const P1_GOAL: &[u8] = b"XMAS";
 fn get_limits(modi: isize, dim: usize, goal: &[u8]) -> std::ops::Range<usize> {
     // invert the modifier because limits need to encroach opposite
     // the direction of movement
-    let modi = modi * -1;
+    let modi = -modi;
     let glen = goal.len() - 1;
 
     let n0 = glen * modi.clamp(0, 1) as usize;
@@ -60,9 +62,9 @@ fn try_read_2way(
     let x = x.saturating_add_signed((glen - 1) * xmod);
 
     for index in 0isize..glen {
-        // then, work back through the offset (ie. note the -1)
-        let y_ = y.saturating_add_signed(ymod * index * -1);
-        let x_ = x.saturating_add_signed(xmod * index * -1);
+        // then, work back through the offset (ie. note the negative)
+        let y_ = y.saturating_add_signed(-(ymod * index));
+        let x_ = x.saturating_add_signed(-(xmod * index));
         if input[y_][x_] != goal[index as usize] {
             return false;
         }
@@ -112,8 +114,8 @@ fn solve_part2(input: &[Vec<u8>]) -> usize {
     let (height, width) = (input.len(), input[0].len());
     let mut count = 0;
 
-    for y in 0..(height - P2_GOAL.len() + 1) {
-        for x in 0..(width - P2_GOAL.len() + 1) {
+    for y in 0..=(height - P2_GOAL.len()) {
+        for x in 0..=(width - P2_GOAL.len()) {
             // look up-right/down-left
             if !try_read_2way(input, P2_GOAL, x, y, 1, 1) {
                 continue;
