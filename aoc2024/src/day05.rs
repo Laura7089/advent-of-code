@@ -97,15 +97,15 @@ struct ValWithOrdering<'a> {
     value: usize,
 }
 
+// assumes both sides refer to the same page ordering
 impl PartialOrd for ValWithOrdering<'_> {
-    // assumes both sides refer to the same page ordering
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         if self.ordering.contains(&(self.value, other.value)) {
             Some(std::cmp::Ordering::Less)
         } else if self.ordering.contains(&(other.value, self.value)) {
             Some(std::cmp::Ordering::Greater)
         } else {
-            // hopefully this is unreachable otherwise we're knackered
+            // no defined ordering
             None
         }
     }
@@ -113,9 +113,8 @@ impl PartialOrd for ValWithOrdering<'_> {
 
 impl Ord for ValWithOrdering<'_> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // let's hope all our orderings are total otherwise we're gonna
-        // get some horrible panics :)
-        self.partial_cmp(other).unwrap()
+        self.partial_cmp(other)
+            .expect("input ordering is not total")
     }
 }
 
