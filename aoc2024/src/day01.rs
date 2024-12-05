@@ -10,6 +10,7 @@ mod parse {
 
     fn num(input: Input) -> IResult<usize> {
         map_res(take_while(|c: char| c.is_ascii_digit()), |raw| {
+            #[allow(clippy::from_str_radix_10)]
             usize::from_str_radix(raw, 10)
         })(input)
     }
