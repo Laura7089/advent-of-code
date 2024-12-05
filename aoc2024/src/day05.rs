@@ -81,28 +81,27 @@ struct OrderedVal<'a> {
 }
 
 // assumes both sides refer to the same page order
-// TODO: for reasons unclear, if I swap the contents of partial_cmp and cmp around
-// (they should behave the same way), the order is recognised as not total and the
-// test suite fails. I have no idea why this is, but hence the clippy allow.
-#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for OrderedVal<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if self == other {
-            Some(Ordering::Equal)
-        } else if self.fragments.contains(&(self.value, other.value)) {
-            Some(Ordering::Less)
-        } else if self.fragments.contains(&(other.value, self.value)) {
-            Some(Ordering::Greater)
-        } else {
-            // no defined ordering
-            None
-        }
+        Some(self.cmp(other))
     }
 }
 
 impl Ord for OrderedVal<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).expect("input order gap found")
+        if self == other {
+            Ordering::Equal
+        } else if self.fragments.contains(&(self.value, other.value)) {
+            Ordering::Less
+        } else if self.fragments.contains(&(other.value, self.value)) {
+            Ordering::Greater
+        } else {
+            // Oh, egads! The input page order isn't total!
+            // My sort is ruined! But what if...
+            // I were to return Equal and pretend it's a valid answer?
+            Ordering::Equal
+            // [chuckles] Delightfully devilish, Laura.
+        }
     }
 }
 
