@@ -62,11 +62,6 @@ fn solve_part1(input: &[(usize, Vec<usize>)]) -> usize {
         .sum()
 }
 
-#[inline]
-fn concat(left: usize, right: usize) -> usize {
-    left * 10usize.pow(right.ilog10() + 1) + right
-}
-
 fn valid_eq_p2(target: usize, oprs: &[usize]) -> bool {
     let Some((&next, oprs)) = oprs.split_last() else {
         // base case: no more operands, have we reached 0?
@@ -79,19 +74,19 @@ fn valid_eq_p2(target: usize, oprs: &[usize]) -> bool {
     }
 
     // recursive cases
+    // addition
     if valid_eq_p2(target - next, oprs) {
         return true;
     }
+
+    // multiplication
     if target % next == 0 && valid_eq_p2(target / next, oprs) {
         return true;
     }
+
+    // concatenation
     let mag = 10usize.pow(next.ilog10() + 1);
-    // check if the last digits match
-    if (target - next) % mag == 0 {
-        valid_eq_p2((target - next) / mag, oprs)
-    } else {
-        false
-    }
+    target % mag == next && valid_eq_p2(target / mag, oprs)
 }
 
 #[aoc(day07, part2)]
