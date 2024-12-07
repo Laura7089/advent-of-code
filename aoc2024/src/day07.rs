@@ -31,94 +31,73 @@ fn generate(input: &str) -> Vec<(usize, Vec<usize>)> {
     parse::equations(input).expect("parse error").1
 }
 
-fn is_valid_equation_inner_p1(test_value: usize, accumulator: usize, operands: &[usize]) -> bool {
-    let Some((&next, operands)) = operands.split_first() else {
-        // base case: the operands array is empty
-        return test_value == accumulator;
-    };
+fn valid_eq_p1(target: usize, oprs: &[usize]) -> bool {
+    fn inner(target: usize, acc: usize, oprs: &[usize]) -> bool {
+        // base case: we've already exceeded the target
+        if acc > target {
+            return false;
+        }
+        let Some((&next, oprs)) = oprs.split_first() else {
+            // base case: the operands array is empty
+            return target == acc;
+        };
 
-    // try adding
-    // we assume this won't overflow(!)
-    let accumulator_add = accumulator + next;
-    if is_valid_equation_inner_p1(test_value, accumulator_add, operands) {
-        return true;
+        inner(target, acc + next, oprs) || inner(target, acc * next, oprs)
     }
 
-    // try multiplying
-    let Some(accumulator_mul) = accumulator.checked_mul(next) else {
-        // we can't multiply reasonably so neither addition nor multiplication work
-        return false;
-    };
-    is_valid_equation_inner_p1(test_value, accumulator_mul, operands)
-}
-
-fn is_valid_equation_p1(test_value: usize, operands: &[usize]) -> bool {
     // use the first value as the accumulator to avoid resolving a
     // zero multiplication in error (as we would if we used acc=0 for first call)
-    let Some((&acc, operands)) = operands.split_first() else {
+    let Some((&acc, oprs)) = oprs.split_first() else {
         unreachable!("empty operands array in input");
     };
 
-    is_valid_equation_inner_p1(test_value, acc, operands)
+    inner(target, acc, oprs)
 }
 
 #[aoc(day07, part1)]
 fn solve_part1(input: &[(usize, Vec<usize>)]) -> usize {
     input
         .iter()
-        .filter(|(test_value, operands)| is_valid_equation_p1(*test_value, operands))
+        .filter(|(target, oprs)| valid_eq_p1(*target, oprs))
         .map(|(tv, _)| tv)
         .sum()
 }
 
-fn is_valid_equation_inner_p2(test_value: usize, accumulator: usize, operands: &[usize]) -> bool {
-    let Some((&next, operands)) = operands.split_first() else {
-        // base case: the operands array is empty
-        return test_value == accumulator;
-    };
+fn valid_eq_p2(target: usize, oprs: &[usize]) -> bool {
+    fn inner(target: usize, acc: usize, oprs: &[usize]) -> bool {
+        // base case: we've already exceeded the target
+        if acc > target {
+            return false;
+        }
+        let Some((&next, oprs)) = oprs.split_first() else {
+            // base case: the operands array is empty
+            return target == acc;
+        };
 
-    // try adding
-    // we assume this won't overflow(!)
-    let accumulator_add = accumulator + next;
-    if is_valid_equation_inner_p2(test_value, accumulator_add, operands) {
-        return true;
+        // try adding and multiplying
+        if inner(target, acc + next, oprs) || inner(target, acc * next, oprs) {
+            return true;
+        }
+
+        // try concatenating
+        let acc_con = (acc * 10usize.pow(next.ilog10() + 1)) + next;
+        inner(target, acc_con, oprs)
     }
 
-    // try multiplying
-    let Some(accumulator_mul) = accumulator.checked_mul(next) else {
-        // we can't multiply reasonably so neither addition nor multiplication work
-        return false;
-    };
-    if is_valid_equation_inner_p2(test_value, accumulator_mul, operands) {
-        return true;
-    }
-
-    // try concatenating
-    let accumulator_con = {
-        #[allow(clippy::cast_possible_truncation)]
-        #[allow(clippy::cast_sign_loss)]
-        #[allow(clippy::cast_precision_loss)]
-        let len_next = (next as f64).log10() as u32 + 1;
-        (accumulator * 10usize.pow(len_next)) + next
-    };
-    is_valid_equation_inner_p2(test_value, accumulator_con, operands)
-}
-
-fn is_valid_equation_p2(test_value: usize, operands: &[usize]) -> bool {
     // use the first value as the accumulator to avoid resolving a
     // zero multiplication in error (as we would if we used acc=0 for first call)
-    let Some((&acc, operands)) = operands.split_first() else {
+    let Some((&acc, oprs)) = oprs.split_first() else {
         unreachable!("empty operands array in input");
     };
 
-    is_valid_equation_inner_p2(test_value, acc, operands)
+    inner(target, acc, oprs)
 }
 
 #[aoc(day07, part2)]
 fn solve_part2(input: &[(usize, Vec<usize>)]) -> usize {
     input
         .iter()
-        .filter(|(test_value, operands)| is_valid_equation_p2(*test_value, operands))
+        .filter(|(target, oprs)| valid_eq_p2(*target, oprs))
         .map(|(tv, _)| tv)
         .sum()
 }
