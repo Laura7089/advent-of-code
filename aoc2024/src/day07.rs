@@ -54,13 +54,40 @@ fn valid_eq_p1(target: usize, oprs: &[usize]) -> bool {
     inner(target, acc, oprs)
 }
 
+fn valid_eq_p1_backwards(target: usize, oprs: &[usize]) -> bool {
+    let Some((&next, oprs)) = oprs.split_last() else {
+        // base case: no more operands, have we reached 0?
+        return target == 0;
+    };
+    if next > target {
+        // base case: our next operand is larger than the target
+        // and therefore cannot reduce it in a valid way
+        return false;
+    }
+
+    // recursive cases
+    if valid_eq_p1_backwards(target - next, oprs) {
+        return true;
+    }
+    if target % next == 0 {
+        valid_eq_p1_backwards(target / next, oprs)
+    } else {
+        false
+    }
+}
+
 #[aoc(day07, part1)]
 fn solve_part1(input: &[(usize, Vec<usize>)]) -> usize {
     input
         .iter()
-        .filter(|(target, oprs)| valid_eq_p1(*target, oprs))
+        .filter(|(target, oprs)| valid_eq_p1_backwards(*target, oprs))
         .map(|(tv, _)| tv)
         .sum()
+}
+
+#[inline]
+fn concat(left: usize, right: usize) -> usize {
+    left * 10usize.pow(right.ilog10() + 1) + right
 }
 
 fn valid_eq_p2(target: usize, oprs: &[usize]) -> bool {
@@ -80,8 +107,7 @@ fn valid_eq_p2(target: usize, oprs: &[usize]) -> bool {
         }
 
         // try concatenating
-        let acc_con = (acc * 10usize.pow(next.ilog10() + 1)) + next;
-        inner(target, acc_con, oprs)
+        inner(target, concat(acc, next), oprs)
     }
 
     // use the first value as the accumulator to avoid resolving a
