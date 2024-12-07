@@ -32,29 +32,6 @@ fn generate(input: &str) -> Vec<(usize, Vec<usize>)> {
 }
 
 fn valid_eq_p1(target: usize, oprs: &[usize]) -> bool {
-    fn inner(target: usize, acc: usize, oprs: &[usize]) -> bool {
-        // base case: we've already exceeded the target
-        if acc > target {
-            return false;
-        }
-        let Some((&next, oprs)) = oprs.split_first() else {
-            // base case: the operands array is empty
-            return target == acc;
-        };
-
-        inner(target, acc + next, oprs) || inner(target, acc * next, oprs)
-    }
-
-    // use the first value as the accumulator to avoid resolving a
-    // zero multiplication in error (as we would if we used acc=0 for first call)
-    let Some((&acc, oprs)) = oprs.split_first() else {
-        unreachable!("empty operands array in input");
-    };
-
-    inner(target, acc, oprs)
-}
-
-fn valid_eq_p1_backwards(target: usize, oprs: &[usize]) -> bool {
     let Some((&next, oprs)) = oprs.split_last() else {
         // base case: no more operands, have we reached 0?
         return target == 0;
@@ -66,11 +43,11 @@ fn valid_eq_p1_backwards(target: usize, oprs: &[usize]) -> bool {
     }
 
     // recursive cases
-    if valid_eq_p1_backwards(target - next, oprs) {
+    if valid_eq_p1(target - next, oprs) {
         return true;
     }
     if target % next == 0 {
-        valid_eq_p1_backwards(target / next, oprs)
+        valid_eq_p1(target / next, oprs)
     } else {
         false
     }
@@ -80,7 +57,7 @@ fn valid_eq_p1_backwards(target: usize, oprs: &[usize]) -> bool {
 fn solve_part1(input: &[(usize, Vec<usize>)]) -> usize {
     input
         .iter()
-        .filter(|(target, oprs)| valid_eq_p1_backwards(*target, oprs))
+        .filter(|(target, oprs)| valid_eq_p1(*target, oprs))
         .map(|(tv, _)| tv)
         .sum()
 }
@@ -91,32 +68,30 @@ fn concat(left: usize, right: usize) -> usize {
 }
 
 fn valid_eq_p2(target: usize, oprs: &[usize]) -> bool {
-    fn inner(target: usize, acc: usize, oprs: &[usize]) -> bool {
-        // base case: we've already exceeded the target
-        if acc > target {
-            return false;
-        }
-        let Some((&next, oprs)) = oprs.split_first() else {
-            // base case: the operands array is empty
-            return target == acc;
-        };
-
-        // try adding and multiplying
-        if inner(target, acc + next, oprs) || inner(target, acc * next, oprs) {
-            return true;
-        }
-
-        // try concatenating
-        inner(target, concat(acc, next), oprs)
+    let Some((&next, oprs)) = oprs.split_last() else {
+        // base case: no more operands, have we reached 0?
+        return target == 0;
+    };
+    if next > target {
+        // base case: our next operand is larger than the target
+        // and therefore cannot reduce it in a valid way
+        return false;
     }
 
-    // use the first value as the accumulator to avoid resolving a
-    // zero multiplication in error (as we would if we used acc=0 for first call)
-    let Some((&acc, oprs)) = oprs.split_first() else {
-        unreachable!("empty operands array in input");
-    };
-
-    inner(target, acc, oprs)
+    // recursive cases
+    if valid_eq_p2(target - next, oprs) {
+        return true;
+    }
+    if target % next == 0 && valid_eq_p2(target / next, oprs) {
+        return true;
+    }
+    let mag = 10usize.pow(next.ilog10() + 1);
+    // check if the last digits match
+    if (target - next) % mag == 0 {
+        valid_eq_p2((target - next) / mag, oprs)
+    } else {
+        false
+    }
 }
 
 #[aoc(day07, part2)]
