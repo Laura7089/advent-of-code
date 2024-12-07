@@ -1,3 +1,11 @@
+mod parse {
+    type IResult<'a, T> = nom::IResult<&'a str, T>;
+
+    pub fn final_parse(input: &str) -> IResult<&str> {
+        todo!()
+    }
+}
+
 #[aoc_generator(day{{ day }})]
 fn generate(input: &str) -> String {
     input.to_owned()
