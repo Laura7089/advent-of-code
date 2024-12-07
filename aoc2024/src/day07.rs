@@ -1,7 +1,7 @@
 mod parse {
     use nom::{
         bytes::complete::{tag, take_while},
-        character::{complete::newline, is_digit},
+        character::complete::newline,
         combinator::map_res,
         multi::separated_list0,
         sequence::separated_pair,
@@ -66,7 +66,7 @@ fn is_valid_equation_p1(test_value: usize, operands: &[usize]) -> bool {
 fn solve_part1(input: &[(usize, Vec<usize>)]) -> usize {
     input
         .iter()
-        .filter(|(test_value, operands)| is_valid_equation_p1(*test_value, &operands))
+        .filter(|(test_value, operands)| is_valid_equation_p1(*test_value, operands))
         .map(|(tv, _)| tv)
         .sum()
 }
@@ -95,6 +95,9 @@ fn is_valid_equation_inner_p2(test_value: usize, accumulator: usize, operands: &
 
     // try concatenating
     let accumulator_con = {
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_sign_loss)]
+        #[allow(clippy::cast_precision_loss)]
         let len_next = (next as f64).log10() as u32 + 1;
         (accumulator * 10usize.pow(len_next)) + next
     };
@@ -115,7 +118,7 @@ fn is_valid_equation_p2(test_value: usize, operands: &[usize]) -> bool {
 fn solve_part2(input: &[(usize, Vec<usize>)]) -> usize {
     input
         .iter()
-        .filter(|(test_value, operands)| is_valid_equation_p2(*test_value, &operands))
+        .filter(|(test_value, operands)| is_valid_equation_p2(*test_value, operands))
         .map(|(tv, _)| tv)
         .sum()
 }
