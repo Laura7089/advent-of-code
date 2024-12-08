@@ -21,6 +21,15 @@ impl Field {
             Some((x, y))
         }
     }
+
+    fn cast(&self, start: Point, xdiff: isize, ydiff: isize) -> Raycast {
+        Raycast {
+            field: self,
+            cursor: start,
+            xdiff,
+            ydiff,
+        }
+    }
 }
 
 #[aoc_generator(day08)]
@@ -52,7 +61,7 @@ fn antinodes_p1(field: &Field) -> BTreeSet<Point> {
 
     for antennas in field.antennas.values() {
         for i in 0..(antennas.len() - 1) {
-            let (_, [first, rem @ ..]) = antennas.split_at(i) else {
+            let (&[.., first], rem) = antennas.split_at(i + 1) else {
                 continue;
             };
 
@@ -60,7 +69,7 @@ fn antinodes_p1(field: &Field) -> BTreeSet<Point> {
                 let xdiff = first.0 as isize - second.0 as isize;
                 let ydiff = first.1 as isize - second.1 as isize;
 
-                if let Some(first_antinode) = field.offset_point(*first, xdiff, ydiff) {
+                if let Some(first_antinode) = field.offset_point(first, xdiff, ydiff) {
                     nodes.insert(first_antinode);
                 }
 
@@ -79,43 +88,43 @@ fn solve_part1(input: &Field) -> usize {
     antinodes_p1(input).len()
 }
 
+#[derive(Clone, Debug)]
+struct Raycast<'a> {
+    field: &'a Field,
+    cursor: Point,
+    xdiff: isize,
+    ydiff: isize,
+}
+
+impl Iterator for Raycast<'_> {
+    type Item = Point;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let antinode = self.field.offset_point(self.cursor, self.xdiff, self.ydiff);
+        if let Some(p) = antinode {
+            self.cursor = p;
+        }
+        antinode
+    }
+}
+
 fn antinodes_p2(field: &Field) -> BTreeSet<Point> {
     let mut nodes = BTreeSet::new();
 
     for antennas in field.antennas.values() {
         for i in 0..(antennas.len() - 1) {
-            let (_, [first, rem @ ..]) = antennas.split_at(i) else {
+            let (&[.., first], rem) = antennas.split_at(i + 1) else {
                 continue;
             };
 
             for &second in rem {
-                nodes.insert(*first);
-                nodes.insert(second);
-
                 let xdiff = first.0 as isize - second.0 as isize;
                 let ydiff = first.1 as isize - second.1 as isize;
 
-                let mut cursor = *first;
-                let away_from_first = std::iter::from_fn(|| {
-                    let antinode = field.offset_point(cursor, xdiff, ydiff);
-                    if let Some(p) = antinode {
-                        cursor = p;
-                    }
-                    antinode
-                });
-                for node in away_from_first {
+                for node in field.cast(first, -xdiff, -ydiff) {
                     nodes.insert(node);
                 }
-
-                cursor = second;
-                let away_from_second = std::iter::from_fn(|| {
-                    let antinode = field.offset_point(cursor, -xdiff, -ydiff);
-                    if let Some(p) = antinode {
-                        cursor = p;
-                    }
-                    antinode
-                });
-                for node in away_from_second {
+                for node in field.cast(second, xdiff, ydiff) {
                     nodes.insert(node);
                 }
             }
