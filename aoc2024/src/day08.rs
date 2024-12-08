@@ -60,12 +60,8 @@ fn antinodes_p1(field: &Field) -> BTreeSet<Point> {
     let mut nodes = BTreeSet::new();
 
     for antennas in field.antennas.values() {
-        for i in 1..antennas.len() {
-            let (&[.., first], rem) = antennas.split_at(i) else {
-                continue;
-            };
-
-            for &second in rem {
+        for (i, &first) in antennas.iter().enumerate() {
+            for &second in antennas.iter().skip(i + 1) {
                 let (xdiff, ydiff) = get_vector(second, first);
                 if let Some(first_antinode) = field.offset_point(first, xdiff, ydiff) {
                     nodes.insert(first_antinode);
@@ -108,17 +104,13 @@ fn antinodes_p2(field: &Field) -> BTreeSet<Point> {
     let mut nodes = BTreeSet::new();
 
     for antennas in field.antennas.values() {
-        for i in 1..antennas.len() {
-            let (&[.., first], rem) = antennas.split_at(i) else {
-                continue;
-            };
-
-            for &second in rem {
+        for (i, &first) in antennas.iter().enumerate() {
+            for &second in antennas.iter().skip(i + 1) {
                 let (xdiff, ydiff) = get_vector(second, first);
-                for node in field.raycast(first, -xdiff, -ydiff) {
-                    nodes.insert(node);
-                }
-                for node in field.raycast(second, xdiff, ydiff) {
+                for node in field
+                    .raycast(first, -xdiff, -ydiff)
+                    .chain(field.raycast(second, xdiff, ydiff))
+                {
                     nodes.insert(node);
                 }
             }
