@@ -47,7 +47,7 @@ fn generate(input: &str) -> Field {
     }
 }
 
-fn antinodes(field: &Field) -> BTreeSet<Point> {
+fn antinodes_p1(field: &Field) -> BTreeSet<Point> {
     let mut nodes = BTreeSet::new();
 
     for antennas in field.antennas.values() {
@@ -76,12 +76,58 @@ fn antinodes(field: &Field) -> BTreeSet<Point> {
 
 #[aoc(day08, part1)]
 fn solve_part1(input: &Field) -> usize {
-    antinodes(input).len()
+    antinodes_p1(input).len()
+}
+
+fn antinodes_p2(field: &Field) -> BTreeSet<Point> {
+    let mut nodes = BTreeSet::new();
+
+    for antennas in field.antennas.values() {
+        for i in 0..(antennas.len() - 1) {
+            let (_, [first, rem @ ..]) = antennas.split_at(i) else {
+                continue;
+            };
+
+            for &second in rem {
+                nodes.insert(*first);
+                nodes.insert(second);
+
+                let xdiff = first.0 as isize - second.0 as isize;
+                let ydiff = first.1 as isize - second.1 as isize;
+
+                let mut cursor = *first;
+                let away_from_first = std::iter::from_fn(|| {
+                    let antinode = field.offset_point(cursor, xdiff, ydiff);
+                    if let Some(p) = antinode {
+                        cursor = p;
+                    }
+                    antinode
+                });
+                for node in away_from_first {
+                    nodes.insert(node);
+                }
+
+                cursor = second;
+                let away_from_second = std::iter::from_fn(|| {
+                    let antinode = field.offset_point(cursor, -xdiff, -ydiff);
+                    if let Some(p) = antinode {
+                        cursor = p;
+                    }
+                    antinode
+                });
+                for node in away_from_second {
+                    nodes.insert(node);
+                }
+            }
+        }
+    }
+
+    nodes
 }
 
 #[aoc(day08, part2)]
-fn solve_part2(_input: &Field) -> usize {
-    todo!()
+fn solve_part2(input: &Field) -> usize {
+    antinodes_p2(input).len()
 }
 
 #[cfg(test)]
@@ -119,7 +165,7 @@ mod tests {
 ..........";
             let field = generate(partial);
             println!("{field:?}");
-            let antinodes = antinodes(&field);
+            let antinodes = antinodes_p1(&field);
             println!("{antinodes:?}");
             assert!(antinodes.contains(&(6, 2)));
             assert!(antinodes.contains(&(3, 8)));
@@ -141,12 +187,12 @@ mod tests {
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 34);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(08))), todo!());
+            assert_eq!(solve_part2(&generate(&crate::get_input(08))), 1174);
         }
     }
 }
