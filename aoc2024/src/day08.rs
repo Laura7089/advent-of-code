@@ -13,23 +13,26 @@ impl Field {
         let x = x.checked_add_signed(xdiff)?;
         let y = y.checked_add_signed(ydiff)?;
 
-        if x >= self.width {
-            None
-        } else if y >= self.height {
-            None
-        } else {
-            Some((x, y))
-        }
+        (x < self.width && y < self.height).then_some((x, y))
     }
 
-    fn cast(&self, start: Point, xdiff: isize, ydiff: isize) -> Raycast {
-        Raycast {
+    fn raycast(&self, start: Point, xdiff: isize, ydiff: isize) -> SteppedRaycast {
+        SteppedRaycast {
             field: self,
-            cursor: start,
+            cursor: Some(start),
             xdiff,
             ydiff,
         }
     }
+}
+
+#[inline]
+#[allow(clippy::cast_possible_wrap)]
+fn get_vector(first: Point, second: Point) -> (isize, isize) {
+    (
+        second.0 as isize - first.0 as isize,
+        second.1 as isize - first.1 as isize,
+    )
 }
 
 #[aoc_generator(day08)]
@@ -42,10 +45,7 @@ fn generate(input: &str) -> Field {
                 continue;
             }
 
-            antennas
-                .entry(ch)
-                .or_insert_with(|| Vec::new())
-                .push((x, y));
+            antennas.entry(ch).or_insert_with(Vec::new).push((x, y));
         }
     }
 
@@ -60,19 +60,16 @@ fn antinodes_p1(field: &Field) -> BTreeSet<Point> {
     let mut nodes = BTreeSet::new();
 
     for antennas in field.antennas.values() {
-        for i in 0..(antennas.len() - 1) {
-            let (&[.., first], rem) = antennas.split_at(i + 1) else {
+        for i in 1..antennas.len() {
+            let (&[.., first], rem) = antennas.split_at(i) else {
                 continue;
             };
 
             for &second in rem {
-                let xdiff = first.0 as isize - second.0 as isize;
-                let ydiff = first.1 as isize - second.1 as isize;
-
+                let (xdiff, ydiff) = get_vector(second, first);
                 if let Some(first_antinode) = field.offset_point(first, xdiff, ydiff) {
                     nodes.insert(first_antinode);
                 }
-
                 if let Some(second_antinode) = field.offset_point(second, -xdiff, -ydiff) {
                     nodes.insert(second_antinode);
                 }
@@ -89,22 +86,21 @@ fn solve_part1(input: &Field) -> usize {
 }
 
 #[derive(Clone, Debug)]
-struct Raycast<'a> {
+struct SteppedRaycast<'a> {
     field: &'a Field,
-    cursor: Point,
+    cursor: Option<Point>,
     xdiff: isize,
     ydiff: isize,
 }
 
-impl Iterator for Raycast<'_> {
+impl Iterator for SteppedRaycast<'_> {
     type Item = Point;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let antinode = self.field.offset_point(self.cursor, self.xdiff, self.ydiff);
-        if let Some(p) = antinode {
-            self.cursor = p;
-        }
-        antinode
+        self.cursor = self
+            .field
+            .offset_point(self.cursor?, self.xdiff, self.ydiff);
+        self.cursor
     }
 }
 
@@ -112,19 +108,17 @@ fn antinodes_p2(field: &Field) -> BTreeSet<Point> {
     let mut nodes = BTreeSet::new();
 
     for antennas in field.antennas.values() {
-        for i in 0..(antennas.len() - 1) {
-            let (&[.., first], rem) = antennas.split_at(i + 1) else {
+        for i in 1..antennas.len() {
+            let (&[.., first], rem) = antennas.split_at(i) else {
                 continue;
             };
 
             for &second in rem {
-                let xdiff = first.0 as isize - second.0 as isize;
-                let ydiff = first.1 as isize - second.1 as isize;
-
-                for node in field.cast(first, -xdiff, -ydiff) {
+                let (xdiff, ydiff) = get_vector(second, first);
+                for node in field.raycast(first, -xdiff, -ydiff) {
                     nodes.insert(node);
                 }
-                for node in field.cast(second, xdiff, ydiff) {
+                for node in field.raycast(second, xdiff, ydiff) {
                     nodes.insert(node);
                 }
             }
