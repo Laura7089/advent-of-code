@@ -159,11 +159,10 @@ mod tests {
 ..........
 ..........";
             let field = generate(partial);
-            println!("{field:?}");
             let antinodes = antinodes_p1(&field);
-            println!("{antinodes:?}");
             assert!(antinodes.contains(&(6, 2)));
             assert!(antinodes.contains(&(3, 8)));
+            assert_eq!(antinodes.len(), 2);
         }
 
         #[test]
