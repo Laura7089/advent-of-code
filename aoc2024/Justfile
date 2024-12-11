@@ -21,3 +21,5 @@ flamegraph day=TODAY *args="--ignore-status":
     -cargo aoc -d{{day}} --profile
     flamegraph {{args}} -- \
         ./target/aoc/aoc-autobuild/target/release/aoc-autobuild
+    "{{env_var_or_default("BROWSER", "librewolf")}}" flamegraph.svg
+alias flame := flamegraph
