@@ -6,10 +6,10 @@ fn generate(input: &[u8]) -> Disk {
     for slice in input.chunks(2) {
         match *slice {
             [size, space] => {
-                files.push(size - 48);
-                spaces.push(space - 48);
+                files.push(size as usize - 48);
+                spaces.push(space as usize - 48);
             }
-            [size] => files.push(size - 48),
+            [size] => files.push(size as usize - 48),
             _ => unreachable!(),
         }
     }
@@ -21,91 +21,111 @@ fn generate(input: &[u8]) -> Disk {
 
 #[derive(Debug, Clone)]
 struct Disk {
-    files: Vec<u8>,
-    spaces: Vec<u8>,
+    files: Vec<usize>,
+    spaces: Vec<usize>,
+}
+
+#[derive(Copy, Clone, Debug)]
+enum Item {
+    File { id: usize },
+    Space { id: usize },
+}
+
+impl std::ops::Index<Item> for Disk {
+    type Output = usize;
+
+    fn index(&self, index: Item) -> &Self::Output {
+        match index {
+            Item::File { id } => self.files.get(id).unwrap(),
+            Item::Space { id } => self.spaces.get(id).unwrap(),
+        }
+    }
 }
 
 impl Disk {
-    fn get(&self, index: usize) -> Option<usize> {
-        let mut offset = 0;
-        for id in 0..self.files.len() {
-            offset += self.files[id] as usize;
-            if index < offset {
-                return Some(id);
-            }
-            if let Some(&space_size) = self.spaces.get(id) {
-                offset += space_size as usize;
-                if index < offset {
-                    return None;
-                }
-            }
-        }
-
-        None
-    }
-
     fn len(&self) -> usize {
-        self.files
-            .iter()
-            .chain(self.spaces.iter())
-            .map(|&len| len as usize)
-            .sum()
-    }
-
-    fn total_space(&self) -> usize {
-        self.spaces.iter().map(|&size| size as usize).sum()
-    }
-
-    fn start_compress(self) -> CompressingDisk {
-        let disk_len = self.len();
-        CompressingDisk {
-            disk: self,
-            cursor: 0,
-            disk_len,
-        }
+        self.files.iter().chain(self.spaces.iter()).copied().sum()
     }
 }
 
 #[derive(Debug, Clone)]
-struct CompressingDisk {
-    disk: Disk,
-    cursor: usize,
-    disk_len: usize,
+struct Compress<'a> {
+    disk: &'a Disk,
+    // front cursor and cached items
+    front_cursor: usize,
+    front_item: Item,
+    front_item_start: usize,
+    // back cursor and cached items
+    back_cursor: usize,
+    back_file_id: usize,
+    back_file_start: usize,
 }
 
-impl Iterator for CompressingDisk {
+impl<'a> Compress<'a> {
+    fn disk(disk: &'a Disk) -> Self {
+        let back_file_id = disk.files.len() - 1;
+        let disk_len = disk.len();
+        Self {
+            front_item: Item::File { id: 0 },
+            front_item_start: 0,
+            front_cursor: 0,
+            back_cursor: disk_len - 1,
+            back_file_id,
+            back_file_start: disk_len - disk.files[back_file_id],
+            disk,
+        }
+    }
+
+    fn bump_front(&mut self) {
+        self.front_cursor += 1;
+        let next_item_start = self.front_item_start + self.disk[self.front_item];
+        if self.front_cursor >= next_item_start {
+            self.front_item_start = next_item_start;
+            self.front_item = match self.front_item {
+                Item::File { id } => Item::Space { id },
+                Item::Space { id } => Item::File { id: id + 1 },
+            }
+        }
+    }
+
+    fn bump_back(&mut self) {
+        self.back_cursor -= 1;
+        if self.back_cursor < self.back_file_start {
+            self.back_file_id -= 1;
+            let skipped_space = self.disk.spaces[self.back_file_id];
+            self.back_cursor -= skipped_space;
+            self.back_file_start -= self.disk.files[self.back_file_id] + skipped_space;
+        }
+    }
+}
+
+impl Iterator for Compress<'_> {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.disk_len <= self.cursor {
+        // if we're past the end of the disk, end iteration
+        if self.front_cursor > self.back_cursor {
             return None;
         }
 
-        if let id @ Some(_) = self.disk.get(self.cursor) {
-            self.cursor += 1;
-            return id;
-        }
+        let id = if let Item::File { id } = self.front_item {
+            // we're still in a file
+            id
+        } else {
+            // we're in a space, get the last file in the disk
+            let id = self.back_file_id;
+            self.bump_back();
+            id
+        };
 
-        let file_id = self.disk.files.len() - 1;
-        let file_size = &mut self.disk.files[file_id];
-
-        *file_size -= 1;
-        self.disk_len -= 1;
-        if *file_size == 0 {
-            self.disk.files.pop();
-            self.disk_len -= self.disk.spaces.pop().expect("couldn't pop space") as usize;
-        }
-
-        self.cursor += 1;
-        Some(file_id)
+        self.bump_front();
+        Some(id)
     }
 }
 
 #[aoc(day09, part1)]
 fn solve_part1(input: &Disk) -> usize {
-    input
-        .clone()
-        .start_compress()
+    Compress::disk(input)
         .enumerate()
         .map(|(pos, id)| pos * id)
         .sum()
@@ -124,36 +144,47 @@ mod tests {
 
     const SAMPLE_INPUT: &[u8] = b"2333133121414131402";
 
-    #[test_case(SAMPLE_INPUT, 0 => Some(0))]
-    #[test_case(SAMPLE_INPUT, 2 => None)]
-    #[test_case(SAMPLE_INPUT, 4 => None)]
-    #[test_case(SAMPLE_INPUT, 5 => Some(1))]
-    #[test_case(SAMPLE_INPUT, 7 => Some(1))]
-    fn get_on_disk(disk_raw: &[u8], index: usize) -> Option<usize> {
-        generate(disk_raw).get(index)
-    }
-
-    fn disk_len() {
-        assert_eq!(generate(SAMPLE_INPUT).len(), 41);
-    }
-
-    #[test_case(SAMPLE_INPUT, 6 => vec![0, 0, 9, 9, 8, 1])]
-    fn compress_disk(disk_raw: &[u8], len: usize) -> Vec<usize> {
-        generate(disk_raw).start_compress().take(len).collect()
+    #[test_case(SAMPLE_INPUT, Item::File{id: 0} => 2)]
+    #[test_case(SAMPLE_INPUT, Item::Space{id: 0} => 3)]
+    #[test_case(SAMPLE_INPUT, Item::File{id: 6} => 4)]
+    #[test_case(SAMPLE_INPUT, Item::File{id: 2} => 1)]
+    fn index_disk(disk_raw: &[u8], index: Item) -> usize {
+        generate(disk_raw)[index]
     }
 
     #[test]
-    fn compress_example() {
-        let expected: Vec<_> = b"0099811188827773336446555566"
-            .iter()
-            .map(|&id| id as usize - 48)
-            .collect();
-        let actual: Vec<_> = generate(SAMPLE_INPUT).start_compress().collect();
-        assert_eq!(actual, expected);
+    fn disk_len() {
+        assert_eq!(generate(SAMPLE_INPUT).len(), 42);
     }
 
     mod part1 {
         use super::*;
+        use test_case::test_case;
+
+        #[test_case(SAMPLE_INPUT, 6 => vec![0, 0, 9, 9, 8, 1])]
+        fn compress_disk(disk_raw: &[u8], len: usize) -> Vec<usize> {
+            Compress::disk(&generate(disk_raw)).take(len).collect()
+        }
+
+        #[test]
+        fn compress_example() {
+            let expected: Vec<_> = b"0099811188827773336446555566"
+                .iter()
+                .map(|&id| id as usize - 48)
+                .collect();
+            let actual: Vec<_> = Compress::disk(&generate(SAMPLE_INPUT)).collect();
+            assert_eq!(actual, expected);
+        }
+
+        #[test_case(SAMPLE_INPUT)]
+        #[test_case(crate::get_input(09).as_bytes(); "mine")]
+        #[test_case(b"12345")]
+        fn compressed_length(disk_raw: &[u8]) {
+            let disk = generate(disk_raw);
+            let disk_files_len: usize = disk.files.iter().map(|&len| len as usize).sum();
+            let compressed_len = Compress::disk(&disk).count();
+            assert_eq!(disk_files_len, compressed_len);
+        }
 
         #[test]
         fn example() {
