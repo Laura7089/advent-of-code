@@ -1,7 +1,9 @@
 #!/bin/env -S just --justfile
 
+TODAY := `date +%d`
+
 # create and edit a new day
-day day=`date +%d`: (newday day)
+day day=TODAY: (newday day)
     $EDITOR "./src/day{{ day }}.rs"
 
 [private]
@@ -13,3 +15,9 @@ newday day:
     # cursed
     grep 'mod day{{ day }};' ./src/lib.rs || \
         sed -i 's/aoc_lib/mod day{{ day }};\naoc_lib/' ./src/lib.rs
+
+# generate a flamegraph profile for a day
+flamegraph day=TODAY *args="--ignore-status":
+    -cargo aoc -d{{day}} --profile
+    flamegraph {{args}} -- \
+        ./target/aoc/aoc-autobuild/target/release/aoc-autobuild
