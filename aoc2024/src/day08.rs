@@ -1,39 +1,8 @@
+use crate::grid::{get_vector, Point};
 use std::collections::{BTreeSet, HashMap};
 
-type Point = (usize, usize);
-#[derive(Debug, Clone)]
-struct Field {
-    antennas: HashMap<u8, Vec<Point>>,
-    width: usize,
-    height: usize,
-}
-
-impl Field {
-    fn offset_point(&self, (x, y): Point, xdiff: isize, ydiff: isize) -> Option<Point> {
-        let x = x.checked_add_signed(xdiff)?;
-        let y = y.checked_add_signed(ydiff)?;
-
-        (x < self.width && y < self.height).then_some((x, y))
-    }
-
-    fn raycast(&self, start: Point, xdiff: isize, ydiff: isize) -> SteppedRaycast {
-        SteppedRaycast {
-            field: self,
-            cursor: Some(start),
-            xdiff,
-            ydiff,
-        }
-    }
-}
-
-#[inline]
-#[allow(clippy::cast_possible_wrap)]
-fn get_vector(first: Point, second: Point) -> (isize, isize) {
-    (
-        second.0 as isize - first.0 as isize,
-        second.1 as isize - first.1 as isize,
-    )
-}
+type Grid = crate::grid::Grid<()>;
+type Field = (HashMap<u8, Vec<Point>>, Grid);
 
 #[aoc_generator(day08)]
 fn generate(input: &str) -> Field {
@@ -49,24 +18,26 @@ fn generate(input: &str) -> Field {
         }
     }
 
-    Field {
+    (
         antennas,
-        width: input.lines().next().unwrap().as_bytes().len(),
-        height: input.lines().count(),
-    }
+        Grid::empty(
+            input.lines().next().unwrap().as_bytes().len(),
+            input.lines().count(),
+        ),
+    )
 }
 
-fn antinodes_p1(field: &Field) -> BTreeSet<Point> {
+fn antinodes_p1((antennas, grid): &Field) -> BTreeSet<Point> {
     let mut nodes = BTreeSet::new();
 
-    for antennas in field.antennas.values() {
+    for antennas in antennas.values() {
         for (i, &first) in antennas.iter().enumerate() {
             for &second in antennas.iter().skip(i + 1) {
                 let (xdiff, ydiff) = get_vector(second, first);
-                if let Some(first_antinode) = field.offset_point(first, xdiff, ydiff) {
+                if let Some(first_antinode) = grid.offset_point(first, (xdiff, ydiff)) {
                     nodes.insert(first_antinode);
                 }
-                if let Some(second_antinode) = field.offset_point(second, -xdiff, -ydiff) {
+                if let Some(second_antinode) = grid.offset_point(second, (-xdiff, -ydiff)) {
                     nodes.insert(second_antinode);
                 }
             }
@@ -81,35 +52,16 @@ fn solve_part1(input: &Field) -> usize {
     antinodes_p1(input).len()
 }
 
-#[derive(Clone, Debug)]
-struct SteppedRaycast<'a> {
-    field: &'a Field,
-    cursor: Option<Point>,
-    xdiff: isize,
-    ydiff: isize,
-}
-
-impl Iterator for SteppedRaycast<'_> {
-    type Item = Point;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.cursor = self
-            .field
-            .offset_point(self.cursor?, self.xdiff, self.ydiff);
-        self.cursor
-    }
-}
-
-fn antinodes_p2(field: &Field) -> BTreeSet<Point> {
+fn antinodes_p2((antennas, grid): &Field) -> BTreeSet<Point> {
     let mut nodes = BTreeSet::new();
 
-    for antennas in field.antennas.values() {
+    for antennas in antennas.values() {
         for (i, &first) in antennas.iter().enumerate() {
             for &second in antennas.iter().skip(i + 1) {
                 let (xdiff, ydiff) = get_vector(second, first);
-                for node in field
-                    .raycast(first, -xdiff, -ydiff)
-                    .chain(field.raycast(second, xdiff, ydiff))
+                for node in grid
+                    .raycast(first, (-xdiff, -ydiff))
+                    .chain(grid.raycast(second, (xdiff, ydiff)))
                 {
                     nodes.insert(node);
                 }
