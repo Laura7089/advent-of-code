@@ -1,8 +1,7 @@
-use crate::grid::{get_vector, Point};
+use crate::grid::{get_vector, Grid, Point};
 use std::collections::{BTreeSet, HashMap};
 
-type Grid = crate::grid::Grid<()>;
-type Field = (HashMap<u8, Vec<Point>>, Grid);
+type Field = (HashMap<u8, Vec<Point>>, Grid<()>);
 
 #[aoc_generator(day08)]
 fn generate(input: &str) -> Field {

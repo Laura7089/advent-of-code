@@ -62,6 +62,20 @@ impl<T> std::ops::IndexMut<Point> for Grid<T> {
     }
 }
 
+impl Grid<()> {
+    /// Create a `Grid` with no elements.
+    ///
+    /// Useful for index and point calculations without needing to allocate memory.
+    #[must_use]
+    pub fn empty(width: usize, height: usize) -> Self {
+        Self {
+            width,
+            height,
+            elems: Vec::new(),
+        }
+    }
+}
+
 impl<T> Grid<T> {
     /// Create a new `Grid`.
     ///
@@ -83,16 +97,6 @@ impl<T> Grid<T> {
             width,
             height,
             elems,
-        }
-    }
-
-    /// Create a `Grid` with no elements.
-    #[must_use]
-    pub fn empty(width: usize, height: usize) -> Self {
-        Self {
-            width,
-            height,
-            elems: Vec::new(),
         }
     }
 
