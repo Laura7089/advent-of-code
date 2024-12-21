@@ -2,10 +2,10 @@
 struct Computer {
     prog: Vec<u8>,
     pc: usize,
-    output: Vec<usize>,
-    rega: usize,
-    regb: usize,
-    regc: usize,
+    output: Vec<u32>,
+    rega: u32,
+    regb: u32,
+    regc: u32,
 }
 
 mod parse {
@@ -25,7 +25,7 @@ mod parse {
         preceded(prefix, separated_list0(tag(","), single_u8))(input)
     }
 
-    fn num(input: &str) -> IResult<usize> {
+    fn num(input: &str) -> IResult<u32> {
         map_res(take_while(|c: char| c.is_ascii_digit()), |raw: &str| {
             raw.parse()
         })(input)
@@ -62,9 +62,9 @@ fn generate(input: &str) -> Computer {
 }
 
 impl Computer {
-    fn resolve_combo_operand(&self, operand: u8) -> usize {
+    fn combo_opr(&self, operand: u8) -> u32 {
         match operand {
-            0..=3 => operand as usize,
+            0..=3 => operand as u32,
             4 => self.rega,
             5 => self.regb,
             6 => self.regc,
@@ -84,12 +84,12 @@ impl Computer {
         match opcode {
             // adv
             0 => {
-                self.rega /= 2usize.pow(self.resolve_combo_operand(operand) as u32);
+                self.rega /= 2u32.pow(self.combo_opr(operand) as u32);
             }
             // bxl
-            1 => self.regb ^= operand as usize,
+            1 => self.regb ^= operand as u32,
             // bst
-            2 => self.regb = self.resolve_combo_operand(operand) % 8,
+            2 => self.regb = self.combo_opr(operand) % 8,
             // jnz
             3 => {
                 if self.rega != 0 {
@@ -100,15 +100,11 @@ impl Computer {
             // bxc
             4 => self.regb ^= self.regc,
             // out
-            5 => self.output.push(self.resolve_combo_operand(operand) % 8),
+            5 => self.output.push(self.combo_opr(operand) % 8),
             // bdv
-            6 => {
-                self.regb = self.rega / 2usize.pow(self.resolve_combo_operand(operand) as u32);
-            }
+            6 => self.regb = self.rega / 2u32.pow(self.combo_opr(operand) as u32),
             // cdv
-            7 => {
-                self.regc = self.rega / 2usize.pow(self.resolve_combo_operand(operand) as u32);
-            }
+            7 => self.regc = self.rega / 2u32.pow(self.combo_opr(operand) as u32),
             other => panic!("bad opcode {other}"),
         }
 
