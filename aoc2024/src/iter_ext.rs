@@ -1,7 +1,12 @@
+#![warn(missing_docs)]
+//! Convenience extensions for iterators.
+
+/// Utility trait that extends [`Iterator`].
 pub trait IterExt: Iterator
 where
     Self: Sized,
 {
+    /// Iterate over the cartesian product of `self` and `other`.
     fn cart_prod<'a, T, I>(
         self,
         other: I,
@@ -14,6 +19,7 @@ where
         self.flat_map(move |elem| std::iter::repeat(elem).zip(other.clone()))
     }
 
+    /// Apply `callback` to each element of `self` and iterate over tuples of the element and result.
     fn cart_prod_with<'a, T, I, F>(
         self,
         mut callback: F,
@@ -24,10 +30,7 @@ where
         Self: 'a,
         <Self as Iterator>::Item: Copy,
     {
-        self.flat_map(move |elem| {
-            let other = callback(elem);
-            std::iter::repeat(elem).zip(other)
-        })
+        self.flat_map(move |elem| std::iter::repeat(elem).zip(callback(elem)))
     }
 }
 
