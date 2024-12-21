@@ -12,6 +12,7 @@ fn get_input(day: u32) -> String {
 }
 
 pub mod grid;
+pub mod iter_ext;
 
 mod day01;
 mod day02;
