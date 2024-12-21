@@ -31,4 +31,4 @@ where
     }
 }
 
-impl<E: Copy, I: Iterator<Item = E>> IterExt for I {}
+impl<I: Iterator> IterExt for I {}
