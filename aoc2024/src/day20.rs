@@ -1,4 +1,5 @@
 use crate::grid::{Grid, Point};
+use crate::iter_ext::IterExt;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum Square {
@@ -55,32 +56,36 @@ fn route_from_maze(maze: &Maze, start: Point, end: Point) -> Vec<Point> {
 }
 
 const LOOK_AHEAD: usize = 4;
-const MIN_SKIP: usize = 100;
+const MIN_SAVE: usize = 100;
+
+fn count_cheats<const MAX_CHEAT_LEN: usize>(route: &[Point]) -> usize {
+    route
+        .iter()
+        .enumerate()
+        .cart_prod_with(|(start, _)| route.iter().enumerate().skip(start + LOOK_AHEAD))
+        .filter(|((skip_start, &(sx, sy)), (skip_end, &(ex, ey)))| {
+            let cheat_len = sx.abs_diff(ex) + sy.abs_diff(ey);
+            if cheat_len > MAX_CHEAT_LEN {
+                return false;
+            }
+
+            let skipped_len = skip_end - skip_start;
+            let time_saved = skipped_len.saturating_sub(cheat_len);
+            time_saved >= MIN_SAVE
+        })
+        .count()
+}
 
 #[aoc(day20, part1)]
 fn solve_part1((maze, start, end): &(Maze, Point, Point)) -> usize {
     let route = route_from_maze(maze, *start, *end);
-
-    let mut count = 0;
-    for (skip_start, &(sx, sy)) in route.iter().enumerate() {
-        for (skip_end, &(ex, ey)) in route.iter().enumerate().skip(skip_start + LOOK_AHEAD) {
-            let mut jumps = [sx.abs_diff(ex), sy.abs_diff(ey)];
-            jumps.sort_unstable();
-            if jumps == [0, 2] {
-                let skip = skip_end - skip_start - 1;
-                if skip >= MIN_SKIP {
-                    count += 1;
-                }
-            }
-        }
-    }
-
-    count
+    count_cheats::<2>(&route)
 }
 
 #[aoc(day20, part2)]
-fn solve_part2(_input: &(Maze, Point, Point)) -> usize {
-    todo!()
+fn solve_part2((maze, start, end): &(Maze, Point, Point)) -> usize {
+    let route = route_from_maze(maze, *start, *end);
+    count_cheats::<20>(&route)
 }
 
 #[cfg(test)]
@@ -88,24 +93,9 @@ mod tests {
     #![allow(unreachable_code)]
     use super::*;
 
-    const SAMPLE_INPUT: &str = "###############
-#...#...#.....#
-#.#.#.#.#.###.#
-#S#...#.#.#...#
-#######.#.#.###
-#######.#.#...#
-#######.#.###.#
-###..E#...#...#
-###.#######.###
-#...###...#...#
-#.#####.#.###.#
-#.#...#.#.#...#
-#.#.#.#.#.#.###
-#...#...#...###
-###############";
-
     mod part1 {
         use super::*;
+
         #[test]
         fn mine() {
             assert_eq!(solve_part1(&generate(&crate::get_input(20))), 1445);
@@ -114,11 +104,6 @@ mod tests {
 
     mod part2 {
         use super::*;
-
-        #[test]
-        fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
-        }
 
         #[test]
         fn mine() {
