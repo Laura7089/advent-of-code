@@ -28,7 +28,7 @@ fn generate(input: &str) -> Vec<Point> {
                     Square::Space
                 }
                 _ => panic!("unsupported square char {c}"),
-            })
+            });
         }
         grid.push(parsed_line);
     }
@@ -73,12 +73,12 @@ fn count_cheats<const MAX_CHEAT_LEN: usize>(route: &[Point]) -> usize {
 }
 
 #[aoc(day20, part1)]
-fn solve_part1(route: &Vec<Point>) -> usize {
+fn solve_part1(route: &[Point]) -> usize {
     count_cheats::<2>(route)
 }
 
 #[aoc(day20, part2)]
-fn solve_part2(route: &Vec<Point>) -> usize {
+fn solve_part2(route: &[Point]) -> usize {
     count_cheats::<20>(route)
 }
 

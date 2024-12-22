@@ -1,5 +1,3 @@
-use nom::combinator::ParserIterator;
-
 #[aoc_generator(day11)]
 fn generate(input: &str) -> Vec<usize> {
     input.split(' ').map(|num| num.parse().unwrap()).collect()
@@ -30,12 +28,12 @@ fn stone_blink(stone: usize, mut iterations: usize) -> usize {
 }
 
 #[aoc(day11, part1)]
-fn solve_part1(stones: &Vec<usize>) -> usize {
+fn solve_part1(stones: &[usize]) -> usize {
     stones.iter().map(|&stone| stone_blink(stone, 0)).sum()
 }
 
 #[aoc(day11, part2)]
-fn solve_part2(_input: &Vec<usize>) -> usize {
+fn solve_part2(_input: &[usize]) -> usize {
     todo!()
 }
 

@@ -32,6 +32,7 @@ fn get_score_p1(map: &TopoMap, trailhead: Point, visited: &mut BTreeSet<Point>) 
 
 #[aoc(day10, part1)]
 fn solve_part1(input: &TopoMap) -> usize {
+    #[allow(clippy::filter_map_bool_then)]
     input
         .iter_all()
         .filter_map(|(p, &sq)| (sq == 0).then(|| get_score_p1(input, p, &mut BTreeSet::new())))
@@ -55,6 +56,7 @@ fn get_score_p2(map: &TopoMap, trailhead: Point) -> usize {
 
 #[aoc(day10, part2)]
 fn solve_part2(input: &TopoMap) -> usize {
+    #[allow(clippy::filter_map_bool_then)]
     input
         .iter_all()
         .filter_map(|(p, &sq)| (sq == 0).then(|| get_score_p2(input, p)))

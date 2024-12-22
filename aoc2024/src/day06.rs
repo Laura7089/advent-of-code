@@ -38,9 +38,6 @@ struct Field {
 
 impl Field {
     fn visited_spaces(&self, start: &Point) -> BTreeSet<Point> {
-        let mut visited = BTreeSet::new();
-        let mut pos = *start;
-
         fn insert_vert(visited: &mut BTreeSet<Point>, x: usize, min: usize, max: usize) {
             for y in min..max {
                 visited.insert((x, y));
@@ -52,6 +49,9 @@ impl Field {
                 visited.insert((x, y));
             }
         }
+
+        let mut visited = BTreeSet::new();
+        let mut pos = *start;
 
         loop {
             // up

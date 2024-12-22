@@ -1,3 +1,5 @@
+#![allow(clippy::cast_lossless)]
+
 #[derive(Clone, Debug)]
 struct Computer {
     prog: Vec<u8>,
@@ -16,7 +18,7 @@ mod parse {
         sequence::{preceded, Tuple},
     };
 
-    use super::*;
+    use super::Computer;
     type IResult<'a, T> = nom::IResult<&'a str, T>;
 
     fn program(input: &str) -> IResult<Vec<u8>> {
@@ -84,7 +86,7 @@ impl Computer {
         match opcode {
             // adv
             0 => {
-                self.rega /= 2u32.pow(self.combo_opr(operand) as u32);
+                self.rega /= 2u32.pow(self.combo_opr(operand));
             }
             // bxl
             1 => self.regb ^= operand as u32,
@@ -102,9 +104,9 @@ impl Computer {
             // out
             5 => self.output.push(self.combo_opr(operand) % 8),
             // bdv
-            6 => self.regb = self.rega / 2u32.pow(self.combo_opr(operand) as u32),
+            6 => self.regb = self.rega / 2u32.pow(self.combo_opr(operand)),
             // cdv
-            7 => self.regc = self.rega / 2u32.pow(self.combo_opr(operand) as u32),
+            7 => self.regc = self.rega / 2u32.pow(self.combo_opr(operand)),
             other => panic!("bad opcode {other}"),
         }
 
