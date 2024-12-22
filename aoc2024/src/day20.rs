@@ -9,8 +9,8 @@ enum Square {
 
 #[aoc_generator(day20)]
 fn generate(input: &str) -> Vec<Point> {
-    let mut start = (0, 0);
-    let mut end = (0, 0);
+    let mut start = Point { x: 0, y: 0 };
+    let mut end = Point { x: 0, y: 0 };
 
     let mut grid = Vec::new();
     for (y, line) in input.lines().enumerate() {
@@ -20,11 +20,11 @@ fn generate(input: &str) -> Vec<Point> {
                 '#' => Square::Wall,
                 '.' => Square::Space,
                 'S' => {
-                    start = (x, y);
+                    start = (x, y).into();
                     Square::Space
                 }
                 'E' => {
-                    end = (x, y);
+                    end = (x, y).into();
                     Square::Space
                 }
                 _ => panic!("unsupported square char {c}"),
@@ -59,8 +59,8 @@ fn count_cheats<const MAX_CHEAT_LEN: usize>(route: &[Point]) -> usize {
         .iter()
         .enumerate()
         .cart_prod_with(|(start, _)| route.iter().enumerate().skip(start + LOOK_AHEAD))
-        .filter(|((skip_start, &(sx, sy)), (skip_end, &(ex, ey)))| {
-            let cheat_len = sx.abs_diff(ex) + sy.abs_diff(ey);
+        .filter(|((skip_start, &start), (skip_end, &end))| {
+            let cheat_len = start.dist(end);
             if cheat_len > MAX_CHEAT_LEN {
                 return false;
             }

@@ -3,10 +3,53 @@
 
 use std::marker::PhantomData;
 
-/// Two-dimensional coordinate pair.
-pub type Point = (usize, usize);
 /// Two-dimensional directional pair.
 pub type Vector = (isize, isize);
+
+/// Two-dimensional coordinate pair.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
+pub struct Point {
+    pub x: usize,
+    pub y: usize,
+}
+
+impl From<(usize, usize)> for Point {
+    fn from(value: (usize, usize)) -> Self {
+        Point {
+            x: value.0,
+            y: value.1,
+        }
+    }
+}
+
+impl std::ops::Add<Vector> for Point {
+    type Output = Option<Self>;
+
+    fn add(self, rhs: Vector) -> Self::Output {
+        Some(Self {
+            x: self.x.checked_add_signed(rhs.0)?,
+            y: self.y.checked_add_signed(rhs.1)?,
+        })
+    }
+}
+
+impl Point {
+    /// Calculate the [`Vector`] offset between two [`Point`]s.
+    #[inline]
+    #[allow(clippy::cast_possible_wrap)]
+    #[must_use]
+    pub fn get_vector(first: Self, second: Self) -> Vector {
+        (
+            second.x as isize - first.x as isize,
+            second.y as isize - first.y as isize,
+        )
+    }
+
+    /// Calculate the absolute distance between two [`Point`]s.
+    pub fn dist(self, Point { x: rx, y: ry }: Point) -> usize {
+        self.x.abs_diff(rx) + self.y.abs_diff(ry)
+    }
+}
 
 /// Adjacency method for a 2D grid.
 pub trait Adjacency {
@@ -15,6 +58,11 @@ pub trait Adjacency {
 
     /// Check if two [`Point`]s are adjacent in this system.
     fn adjacent(left: Point, right: Point) -> bool;
+
+    /// Get all adjacent coordinates to `start`.
+    fn adjacent_coords(start: Point) -> impl Iterator<Item = Point> {
+        Self::OFFSETS.iter().filter_map(move |&off| start + off)
+    }
 }
 
 /// Orthgonal adjacency system marker.
@@ -25,7 +73,7 @@ impl Adjacency for Orthogonal {
     /// Runs clockwise from "directly up".
     const OFFSETS: &[Vector] = &[(0, 1), (1, 0), (0, -1), (-1, 0)];
 
-    fn adjacent((lx, ly): Point, (rx, ry): Point) -> bool {
+    fn adjacent(Point { x: lx, y: ly }: Point, Point { x: rx, y: ry }: Point) -> bool {
         lx.abs_diff(rx) + ly.abs_diff(ry) == 1
     }
 }
@@ -47,22 +95,11 @@ impl Adjacency for Diagonal {
         (-1, 1),
     ];
 
-    fn adjacent((lx, ly): Point, (rx, ry): Point) -> bool {
+    fn adjacent(Point { x: lx, y: ly }: Point, Point { x: rx, y: ry }: Point) -> bool {
         let xdiff = lx.abs_diff(rx);
         let ydiff = ly.abs_diff(ry);
         xdiff + ydiff == 1 || (xdiff == 1 && ydiff == 1)
     }
-}
-
-/// Calculate the [`Vector`] offset between two [`Point`]s.
-#[inline]
-#[allow(clippy::cast_possible_wrap)]
-#[must_use]
-pub fn get_vector(first: Point, second: Point) -> Vector {
-    (
-        second.0 as isize - first.0 as isize,
-        second.1 as isize - first.1 as isize,
-    )
 }
 
 /// Two-dimensional row-major ordered grid of `T`.
@@ -82,13 +119,13 @@ pub struct Grid<T, A = Diagonal> {
 impl<T, A> std::ops::Index<Point> for Grid<T, A> {
     type Output = T;
 
-    fn index(&self, (x, y): Point) -> &Self::Output {
+    fn index(&self, Point { x, y }: Point) -> &Self::Output {
         &self.elems[y][x]
     }
 }
 
 impl<T> std::ops::IndexMut<Point> for Grid<T> {
-    fn index_mut(&mut self, (x, y): Point) -> &mut Self::Output {
+    fn index_mut(&mut self, Point { x, y }: Point) -> &mut Self::Output {
         &mut self.elems[y][x]
     }
 }
@@ -145,16 +182,16 @@ impl<T, A> Grid<T, A> {
     ///
     /// Returns `None` if the resulting [`Point`] would be out of bounds.
     #[must_use]
-    pub fn offset_point(&self, (x, y): Point, (dx, dy): Vector) -> Option<Point> {
-        let xmod = match x.checked_add_signed(dx) {
-            Some(x) if x < self.width => x,
-            _ => return None,
-        };
-        let ymod = match y.checked_add_signed(dy) {
-            Some(y) if y < self.height => y,
-            _ => return None,
-        };
-        Some((xmod, ymod))
+    pub fn offset_point(&self, point: Point, offset: Vector) -> Option<Point> {
+        let offed = (point + offset)?;
+
+        if offed.x >= self.width {
+            None
+        } else if offed.y >= self.height {
+            None
+        } else {
+            Some(offed)
+        }
     }
 
     /// Convert this grid to use a different adjacency system.
@@ -170,10 +207,11 @@ impl<T, A> Grid<T, A> {
 
     /// Iterate over all points in the grid (and their coordinates).
     pub fn iter_all(&self) -> impl Iterator<Item = (Point, &T)> {
-        self.elems
-            .iter()
-            .enumerate()
-            .flat_map(|(y, row)| row.iter().enumerate().map(move |(x, sq)| ((x, y), sq)))
+        self.elems.iter().enumerate().flat_map(|(y, row)| {
+            row.iter()
+                .enumerate()
+                .map(move |(x, sq)| ((x, y).into(), sq))
+        })
     }
 }
 

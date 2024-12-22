@@ -1,4 +1,4 @@
-use crate::grid::{get_vector, Grid, Point};
+use crate::grid::{Grid, Point};
 use std::collections::{BTreeSet, HashMap};
 
 type Field = (HashMap<u8, Vec<Point>>, Grid<()>);
@@ -13,7 +13,10 @@ fn generate(input: &str) -> Field {
                 continue;
             }
 
-            antennas.entry(ch).or_insert_with(Vec::new).push((x, y));
+            antennas
+                .entry(ch)
+                .or_insert_with(Vec::new)
+                .push((x, y).into());
         }
     }
 
@@ -32,7 +35,7 @@ fn antinodes_p1((antennas, grid): &Field) -> BTreeSet<Point> {
     for antennas in antennas.values() {
         for (i, &first) in antennas.iter().enumerate() {
             for &second in antennas.iter().skip(i + 1) {
-                let (xdiff, ydiff) = get_vector(second, first);
+                let (xdiff, ydiff) = Point::get_vector(second, first);
                 if let Some(first_antinode) = grid.offset_point(first, (xdiff, ydiff)) {
                     nodes.insert(first_antinode);
                 }
@@ -57,7 +60,7 @@ fn antinodes_p2((antennas, grid): &Field) -> BTreeSet<Point> {
     for antennas in antennas.values() {
         for (i, &first) in antennas.iter().enumerate() {
             for &second in antennas.iter().skip(i + 1) {
-                let (xdiff, ydiff) = get_vector(second, first);
+                let (xdiff, ydiff) = Point::get_vector(second, first);
                 for node in grid
                     .raycast(first, (-xdiff, -ydiff))
                     .chain(grid.raycast(second, (xdiff, ydiff)))
@@ -111,8 +114,8 @@ mod tests {
 ..........";
             let field = generate(partial);
             let antinodes = antinodes_p1(&field);
-            assert!(antinodes.contains(&(6, 2)));
-            assert!(antinodes.contains(&(3, 8)));
+            assert!(antinodes.contains(&(6, 2).into()));
+            assert!(antinodes.contains(&(3, 8).into()));
             assert_eq!(antinodes.len(), 2);
         }
 
