@@ -38,10 +38,10 @@ impl Point {
     #[inline]
     #[allow(clippy::cast_possible_wrap)]
     #[must_use]
-    pub fn get_vector(first: Self, second: Self) -> Vector {
+    pub fn vector(self, right: Self) -> Vector {
         (
-            second.x as isize - first.x as isize,
-            second.y as isize - first.y as isize,
+            right.x as isize - self.x as isize,
+            right.y as isize - self.y as isize,
         )
     }
 
