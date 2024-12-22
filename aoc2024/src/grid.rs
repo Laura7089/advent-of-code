@@ -143,6 +143,16 @@ impl<T, A> Grid<T, A> {
         };
         Some((xmod, ymod))
     }
+
+    /// Convert this grid to use a different adjacency system.
+    pub fn into_adjacency<AN>(self) -> Grid<T, AN> {
+        Grid {
+            width: self.width,
+            height: self.height,
+            elems: self.elems,
+            _adj: PhantomData,
+        }
+    }
 }
 
 impl<T, A: Adjacency> Grid<T, A> {
