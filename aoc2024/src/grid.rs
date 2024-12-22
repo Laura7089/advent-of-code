@@ -3,10 +3,18 @@
 
 use std::marker::PhantomData;
 
+/// Two-dimensional coordinate pair.
+pub type Point = (usize, usize);
+/// Two-dimensional directional pair.
+pub type Vector = (isize, isize);
+
 /// Adjacency method for a 2D grid.
 pub trait Adjacency {
     /// Relative offsets of adjacents points to a given location in the grid.
     const OFFSETS: &[Vector];
+
+    /// Check if two [`Point`]s are adjacent in this system.
+    fn adjacent(left: Point, right: Point) -> bool;
 }
 
 /// Orthgonal adjacency system marker.
@@ -16,6 +24,10 @@ impl Adjacency for Orthogonal {
     ///
     /// Runs clockwise from "directly up".
     const OFFSETS: &[Vector] = &[(0, 1), (1, 0), (0, -1), (-1, 0)];
+
+    fn adjacent((lx, ly): Point, (rx, ry): Point) -> bool {
+        lx.abs_diff(rx) + ly.abs_diff(ry) == 1
+    }
 }
 
 /// Diagonal **and orthogonal** adjacency marker.
@@ -34,6 +46,23 @@ impl Adjacency for Diagonal {
         (-1, 0),
         (-1, 1),
     ];
+
+    fn adjacent((lx, ly): Point, (rx, ry): Point) -> bool {
+        let xdiff = lx.abs_diff(rx);
+        let ydiff = ly.abs_diff(ry);
+        xdiff + ydiff == 1 || (xdiff == 1 && ydiff == 1)
+    }
+}
+
+/// Calculate the [`Vector`] offset between two [`Point`]s.
+#[inline]
+#[allow(clippy::cast_possible_wrap)]
+#[must_use]
+pub fn get_vector(first: Point, second: Point) -> Vector {
+    (
+        second.0 as isize - first.0 as isize,
+        second.1 as isize - first.1 as isize,
+    )
 }
 
 /// Two-dimensional row-major ordered grid of `T`.
@@ -48,22 +77,6 @@ pub struct Grid<T, A = Diagonal> {
     /// Elements stored by `self`.
     pub elems: Vec<Vec<T>>,
     _adj: PhantomData<A>,
-}
-
-/// Two-dimensional coordinate pair.
-pub type Point = (usize, usize);
-/// Two-dimensional directional pair.
-pub type Vector = (isize, isize);
-
-/// Calculate the [`Vector`] offset between two [`Point`]s.
-#[inline]
-#[allow(clippy::cast_possible_wrap)]
-#[must_use]
-pub fn get_vector(first: Point, second: Point) -> Vector {
-    (
-        second.0 as isize - first.0 as isize,
-        second.1 as isize - first.1 as isize,
-    )
 }
 
 impl<T, A> std::ops::Index<Point> for Grid<T, A> {
@@ -154,6 +167,14 @@ impl<T, A> Grid<T, A> {
             _adj: PhantomData,
         }
     }
+
+    /// Iterate over all points in the grid (and their coordinates).
+    pub fn iter_all(&self) -> impl Iterator<Item = (Point, &T)> {
+        self.elems
+            .iter()
+            .enumerate()
+            .flat_map(|(y, row)| row.iter().enumerate().map(move |(x, sq)| ((x, y), sq)))
+    }
 }
 
 impl<T, A: Adjacency> Grid<T, A> {
@@ -181,12 +202,12 @@ impl<T, A: Adjacency> Grid<T, A> {
         }
     }
 
-    /// Iterate over all points in the grid (and their coordinates).
-    pub fn iter_all(&self) -> impl Iterator<Item = (Point, &T)> {
-        self.elems
-            .iter()
-            .enumerate()
-            .flat_map(|(y, row)| row.iter().enumerate().map(move |(x, sq)| ((x, y), sq)))
+    /// Check if two points are adjacent in the grid.
+    ///
+    /// Forwards to [`Adjacency::adjacent`] on `A`.
+    #[must_use]
+    pub fn adjacent(left: Point, right: Point) -> bool {
+        A::adjacent(left, right)
     }
 }
 
