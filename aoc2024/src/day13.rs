@@ -166,6 +166,7 @@ Prize: X=18641, Y=10279";
         }
 
         #[test]
+        #[ignore]
         fn mine() {
             assert_eq!(solve_part2(&generate(&crate::get_input(13))), todo!());
         }
