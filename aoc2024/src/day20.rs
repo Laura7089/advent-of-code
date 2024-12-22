@@ -7,10 +7,8 @@ enum Square {
     Space,
 }
 
-type Maze = Grid<Square>;
-
 #[aoc_generator(day20)]
-fn generate(input: &str) -> (Maze, Point, Point) {
+fn generate(input: &str) -> Vec<Point> {
     let mut start = (0, 0);
     let mut end = (0, 0);
 
@@ -35,19 +33,17 @@ fn generate(input: &str) -> (Maze, Point, Point) {
         grid.push(parsed_line);
     }
 
-    (Grid::new(grid), start, end)
-}
-
-fn route_from_maze(maze: &Maze, start: Point, end: Point) -> Vec<Point> {
+    let maze = Grid::new(grid);
     let mut visited = Vec::new();
     let mut current = start;
 
     while current != end {
         let last = *visited.last().unwrap_or(&start);
         let next = maze
-            .adj_coords_orth(current)
-            .find(|p| p != &last && maze[*p] != Square::Wall)
-            .expect("found a dead end");
+            .neighbours_orth(current)
+            .find(|&(p, sq)| p != last && sq != &Square::Wall)
+            .expect("found a dead end")
+            .0;
         visited.push(current);
         current = next;
     }
@@ -77,15 +73,13 @@ fn count_cheats<const MAX_CHEAT_LEN: usize>(route: &[Point]) -> usize {
 }
 
 #[aoc(day20, part1)]
-fn solve_part1((maze, start, end): &(Maze, Point, Point)) -> usize {
-    let route = route_from_maze(maze, *start, *end);
-    count_cheats::<2>(&route)
+fn solve_part1(route: &Vec<Point>) -> usize {
+    count_cheats::<2>(route)
 }
 
 #[aoc(day20, part2)]
-fn solve_part2((maze, start, end): &(Maze, Point, Point)) -> usize {
-    let route = route_from_maze(maze, *start, *end);
-    count_cheats::<20>(&route)
+fn solve_part2(route: &Vec<Point>) -> usize {
+    count_cheats::<20>(route)
 }
 
 #[cfg(test)]
