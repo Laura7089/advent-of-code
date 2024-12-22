@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use crate::grid::Point;
 
-type TopoMap = crate::grid::Grid<u8>;
+type TopoMap = crate::grid::Grid<u8, crate::grid::Orthogonal>;
 
 #[aoc_generator(day10)]
 fn generate(input: &str) -> TopoMap {
@@ -24,7 +24,7 @@ fn get_score_p1(map: &TopoMap, trailhead: Point, visited: &mut BTreeSet<Point>) 
     }
 
     // recursive case(s)
-    map.neighbours_orth(trailhead)
+    map.neighbours(trailhead)
         .filter(|(_, &h)| (h == t_height + 1))
         .map(|(p, _)| get_score_p1(map, p, visited))
         .sum()
@@ -47,7 +47,7 @@ fn get_score_p2(map: &TopoMap, trailhead: Point) -> usize {
     }
 
     // recursive case(s)
-    map.neighbours_orth(trailhead)
+    map.neighbours(trailhead)
         .filter(|(_, &h)| (h == t_height + 1))
         .map(|(p, _)| get_score_p2(map, p))
         .sum()

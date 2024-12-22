@@ -33,14 +33,14 @@ fn generate(input: &str) -> Vec<Point> {
         grid.push(parsed_line);
     }
 
-    let maze = Grid::new(grid);
+    let maze: Grid<Square, crate::grid::Orthogonal> = Grid::new(grid);
     let mut visited = Vec::new();
     let mut current = start;
 
     while current != end {
         let last = *visited.last().unwrap_or(&start);
         let next = maze
-            .neighbours_orth(current)
+            .neighbours(current)
             .find(|&(p, sq)| p != last && sq != &Square::Wall)
             .expect("found a dead end")
             .0;
