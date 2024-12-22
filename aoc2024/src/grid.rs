@@ -66,7 +66,7 @@ pub fn get_vector(first: Point, second: Point) -> Vector {
     )
 }
 
-impl<T, A: Adjacency> std::ops::Index<Point> for Grid<T, A> {
+impl<T, A> std::ops::Index<Point> for Grid<T, A> {
     type Output = T;
 
     fn index(&self, (x, y): Point) -> &Self::Output {
@@ -80,7 +80,7 @@ impl<T> std::ops::IndexMut<Point> for Grid<T> {
     }
 }
 
-impl Grid<()> {
+impl<A> Grid<(), A> {
     /// Create a `Grid` with no elements.
     ///
     /// Useful for index and point calculations without needing to allocate memory.
@@ -145,6 +145,7 @@ impl<T, A> Grid<T, A> {
     }
 
     /// Convert this grid to use a different adjacency system.
+    #[must_use]
     pub fn into_adjacency<AN>(self) -> Grid<T, AN> {
         Grid {
             width: self.width,
@@ -159,7 +160,7 @@ impl<T, A: Adjacency> Grid<T, A> {
     /// Iterate over adjacent coordinates to `point` in `self`.
     pub fn adj_coords(&self, point: Point) -> impl Iterator<Item = Point> + '_ {
         A::OFFSETS
-            .into_iter()
+            .iter()
             .filter_map(move |&offset| self.offset_point(point, offset))
     }
 
