@@ -160,6 +160,14 @@ impl<T> Grid<T> {
             offset,
         }
     }
+
+    /// Iterate over all points in the grid (and their coordinates).
+    pub fn iter_all(&self) -> impl Iterator<Item = (Point, &T)> {
+        self.elems
+            .iter()
+            .enumerate()
+            .flat_map(|(y, row)| row.iter().enumerate().map(move |(x, sq)| ((x, y), sq)))
+    }
 }
 
 /// Iterator over coordinates in a particular raycast direction.
