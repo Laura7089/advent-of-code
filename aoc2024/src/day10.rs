@@ -14,7 +14,7 @@ fn generate(input: &str) -> TopoMap {
     )
 }
 
-fn get_score(map: &TopoMap, trailhead: Point, visited: &mut BTreeSet<Point>) -> usize {
+fn get_score_p1(map: &TopoMap, trailhead: Point, visited: &mut BTreeSet<Point>) -> usize {
     let t_height = map[trailhead];
 
     // base case
@@ -26,7 +26,7 @@ fn get_score(map: &TopoMap, trailhead: Point, visited: &mut BTreeSet<Point>) -> 
     // recursive case(s)
     map.neighbours_orth(trailhead)
         .filter(|(_, &h)| (h == t_height + 1))
-        .map(|(p, _)| get_score(map, p, visited))
+        .map(|(p, _)| get_score_p1(map, p, visited))
         .sum()
 }
 
@@ -34,13 +34,31 @@ fn get_score(map: &TopoMap, trailhead: Point, visited: &mut BTreeSet<Point>) -> 
 fn solve_part1(input: &TopoMap) -> usize {
     input
         .iter_all()
-        .filter_map(|(p, &sq)| (sq == 0).then(|| get_score(input, p, &mut BTreeSet::new())))
+        .filter_map(|(p, &sq)| (sq == 0).then(|| get_score_p1(input, p, &mut BTreeSet::new())))
+        .sum()
+}
+
+fn get_score_p2(map: &TopoMap, trailhead: Point) -> usize {
+    let t_height = map[trailhead];
+
+    // base case
+    if t_height == 9 {
+        return 1;
+    }
+
+    // recursive case(s)
+    map.neighbours_orth(trailhead)
+        .filter(|(_, &h)| (h == t_height + 1))
+        .map(|(p, _)| get_score_p2(map, p))
         .sum()
 }
 
 #[aoc(day10, part2)]
-fn solve_part2(_input: &TopoMap) -> usize {
-    todo!()
+fn solve_part2(input: &TopoMap) -> usize {
+    input
+        .iter_all()
+        .filter_map(|(p, &sq)| (sq == 0).then(|| get_score_p2(input, p)))
+        .sum()
 }
 
 #[cfg(test)]
@@ -76,12 +94,12 @@ mod tests {
 
         #[test]
         fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
+            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 81);
         }
 
         #[test]
         fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(10))), todo!());
+            assert_eq!(solve_part2(&generate(&crate::get_input(10))), 1875);
         }
     }
 }
