@@ -7,9 +7,11 @@ use std::marker::PhantomData;
 pub type Vector = (isize, isize);
 
 /// Two-dimensional coordinate pair.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct Point {
+    /// X coordinate.
     pub x: usize,
+    /// Y coordinate.
     pub y: usize,
 }
 
@@ -185,13 +187,7 @@ impl<T, A> Grid<T, A> {
     pub fn offset_point(&self, point: Point, offset: Vector) -> Option<Point> {
         let offed = (point + offset)?;
 
-        if offed.x >= self.width {
-            None
-        } else if offed.y >= self.height {
-            None
-        } else {
-            Some(offed)
-        }
+        (offed.x < self.width && offed.y < self.height).then_some(offed)
     }
 
     /// Convert this grid to use a different adjacency system.
