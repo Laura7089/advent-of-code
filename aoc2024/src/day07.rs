@@ -1,34 +1,31 @@
 mod parse {
-    use nom::{
-        bytes::complete::{tag, take_while},
-        character::complete::newline,
-        combinator::map_res,
-        multi::separated_list0,
-        sequence::separated_pair,
+    use winnow::{
+        ascii::digit1,
+        combinator::{separated, separated_pair},
+        prelude::*,
+        Result,
     };
 
-    type IResult<'a, T> = nom::IResult<&'a str, T>;
-
-    fn num(input: &str) -> IResult<usize> {
-        map_res(take_while(|c: char| c.is_ascii_digit()), |raw: &str| {
-            raw.parse()
-        })(input)
+    fn num(input: &mut &str) -> Result<usize> {
+        digit1.parse_to().parse_next(input)
     }
 
-    fn equation(input: &str) -> IResult<(usize, Vec<usize>)> {
-        let operands = separated_list0(tag(" "), num);
+    fn equation(input: &mut &str) -> Result<(usize, Vec<usize>)> {
+        let operands = separated(0.., num, " ");
 
-        separated_pair(num, tag(": "), operands)(input)
+        separated_pair(num, ": ", operands).parse_next(input)
     }
 
-    pub fn equations(input: &str) -> IResult<Vec<(usize, Vec<usize>)>> {
-        separated_list0(newline, equation)(input)
+    pub fn equations(input: &mut &str) -> Result<Vec<(usize, Vec<usize>)>> {
+        separated(0.., equation, '\n').parse_next(input)
     }
 }
 
+use winnow::Parser;
+
 #[aoc_generator(day07)]
 fn generate(input: &str) -> Vec<(usize, Vec<usize>)> {
-    parse::equations(input).expect("parse error").1
+    parse::equations.parse(input).expect("parse error")
 }
 
 fn valid_eq_p1(target: usize, oprs: &[usize]) -> bool {
