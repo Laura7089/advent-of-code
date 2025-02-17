@@ -16,13 +16,13 @@ mod parse {
         ascii::digit1,
         combinator::{preceded, separated},
         prelude::*,
-        token::take,
+        token::any,
         Result,
     };
 
     fn program(input: &mut &str) -> Result<Vec<u8>> {
-        let single_u8 = take(1usize).map(|n: &str| n.as_bytes()[0] - b'0');
-        preceded("Program: ", separated(0.., single_u8, ",")).parse_next(input)
+        let single_u8 = any.map(|n| n as u8 - b'0');
+        preceded("Program: ", separated(0.., single_u8, ',')).parse_next(input)
     }
 
     fn num(input: &mut &str) -> Result<u32> {
@@ -30,25 +30,21 @@ mod parse {
     }
 
     pub fn computer(input: &mut &str) -> Result<Computer> {
-        let (_, register_a, _, register_b, _, register_c) = (
-            "Register A: ",
-            num,
-            "\nRegister B: ",
-            num,
-            "\nRegister C: ",
-            num,
+        (
+            preceded("Register A: ", num),
+            preceded("\nRegister B: ", num),
+            preceded("\nRegister C: ", num),
+            preceded("\n\n", program),
         )
-            .parse_next(input)?;
-
-        let program = preceded("\n\n", program).parse_next(input)?;
-        Ok(Computer {
-            prog: program,
-            rega: register_a,
-            regb: register_b,
-            regc: register_c,
-            pc: 0,
-            output: Vec::new(),
-        })
+            .map(|(rega, regb, regc, prog)| Computer {
+                prog,
+                rega,
+                regb,
+                regc,
+                pc: 0,
+                output: Vec::new(),
+            })
+            .parse_next(input)
     }
 }
 
