@@ -7,45 +7,42 @@ enum Instruction {
 
 mod parse {
     use super::Instruction;
-    use nom::{
-        branch::alt,
-        bytes::complete::{tag, take_while_m_n},
-        character::complete::anychar,
-        combinator::{map, map_res, value},
-        multi::many_till,
-        sequence::Tuple,
+
+    use winnow::{
+        combinator::{alt, repeat_till},
+        prelude::*,
+        token::{any, take_while},
+        Result,
     };
 
-    type IResult<'a, T> = nom::IResult<&'a str, T>;
-
-    fn number(input: &str) -> IResult<usize> {
-        // select 1..=3 ascii digits and parse them into a integer
-        map_res(
-            take_while_m_n(1, 3, |c: char| c.is_ascii_digit()),
-            |raw: &str| raw.parse(),
-        )(input)
+    fn number(input: &mut &str) -> Result<usize> {
+        take_while(1..=3, '0'..='9').parse_to().parse_next(input)
     }
 
-    fn mul_instr(input: &str) -> IResult<Instruction> {
-        let (rem, (_, l, _, r, _)) =
-            (tag("mul("), number, tag(","), number, tag(")")).parse(input)?;
-        Ok((rem, Instruction::Mul(l, r)))
+    fn mul_instr(input: &mut &str) -> Result<Instruction> {
+        ("mul(", number, ',', number, ')')
+            .map(|(_, l, _, r, _)| Instruction::Mul(l, r))
+            .parse_next(input)
     }
 
-    fn instr(input: &str) -> IResult<Instruction> {
-        let do_instr = value(Instruction::Do, tag("do()"));
-        let dont_instr = value(Instruction::Dont, tag("don't()"));
-        alt((mul_instr, do_instr, dont_instr))(input)
+    fn instr(input: &mut &str) -> Result<Instruction> {
+        alt((
+            "do()".value(Instruction::Do),
+            "don't()".value(Instruction::Dont),
+            mul_instr,
+        ))
+        .parse_next(input)
     }
 
-    pub fn rubbish_then_instr(input: &str) -> IResult<Instruction> {
-        map(many_till(anychar, instr), |(_rubbish, instr)| instr)(input)
+    pub fn rubbish_then_instr(input: &mut &str) -> Result<Instruction> {
+        let out: ((), Instruction) = repeat_till(0.., any, instr).parse_next(input)?;
+        Ok(out.1)
     }
 }
 
 #[aoc(day03, part1)]
 fn solve_part1(input: &str) -> usize {
-    nom::combinator::iterator(input, parse::rubbish_then_instr)
+    winnow::combinator::iterator(input, parse::rubbish_then_instr)
         .filter_map(|ins| match ins {
             Instruction::Mul(l, r) => Some(l * r),
             _ => None,
@@ -58,7 +55,7 @@ fn solve_part2(input: &str) -> usize {
     let mut enabled = true;
     let mut total = 0;
 
-    let mut iter = nom::combinator::iterator(input, parse::rubbish_then_instr);
+    let mut iter = winnow::combinator::iterator(input, parse::rubbish_then_instr);
     for ins in &mut iter {
         match ins {
             Instruction::Mul(l, r) if enabled => total += l * r,
