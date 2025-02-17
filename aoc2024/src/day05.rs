@@ -3,51 +3,44 @@ use std::collections::BTreeSet;
 
 mod parse {
     use super::{PageOrderFragment, PageUpdate};
-    use nom::{
-        bytes::complete::{tag, take_while},
-        character::complete::newline,
-        combinator::map_res,
-        multi::separated_list1,
-        sequence::{separated_pair, tuple},
+
+    use winnow::{
+        ascii::digit1,
+        combinator::{separated, separated_pair},
+        prelude::*,
+        Result,
     };
 
-    type IResult<'a, T> = nom::IResult<&'a str, T>;
-
-    fn num(input: &str) -> IResult<usize> {
-        map_res(take_while(|c: char| c.is_ascii_digit()), |raw: &str| {
-            raw.parse()
-        })(input)
+    fn num(input: &mut &str) -> Result<usize> {
+        digit1.parse_to().parse_next(input)
     }
 
-    fn order_fragment(input: &str) -> IResult<PageOrderFragment> {
-        separated_pair(num, tag("|"), num)(input)
+    fn order_fragment(input: &mut &str) -> Result<PageOrderFragment> {
+        separated_pair(num, '|', num).parse_next(input)
     }
 
-    fn page_update(input: &str) -> IResult<PageUpdate> {
-        map_res(separated_list1(tag(","), num), |list| {
-            if list.len() % 2 == 0 {
-                Err("even-length page update encountered")
-            } else {
-                Ok(list)
-            }
-        })(input)
+    fn page_update(input: &mut &str) -> Result<PageUpdate> {
+        separated(1.., num, ',')
+            .verify(|list: &Vec<_>| list.len() % 2 != 0)
+            .parse_next(input)
     }
 
-    pub fn whole_input(input: &str) -> IResult<(Vec<PageOrderFragment>, Vec<PageUpdate>)> {
-        let fragments = separated_list1(newline, order_fragment);
-        let updates = separated_list1(newline, page_update);
-        let sep = tuple((newline, newline));
+    pub fn whole_input(input: &mut &str) -> Result<(Vec<PageOrderFragment>, Vec<PageUpdate>)> {
+        let fragments = separated(0.., order_fragment, '\n');
+        let updates = separated(0.., page_update, '\n');
 
-        separated_pair(fragments, sep, updates)(input)
+        separated_pair(fragments, "\n\n", updates).parse_next(input)
     }
 }
+
+use winnow::Parser;
 
 type PageOrderFragment = (usize, usize);
 type PageUpdate = Vec<usize>;
 
 #[aoc_generator(day05)]
 fn generate(input: &str) -> (Vec<PageOrderFragment>, Vec<PageUpdate>) {
-    parse::whole_input(input).expect("parse error").1
+    parse::whole_input.parse(input).expect("parse error")
 }
 
 // note that irrelevant fragments are here considered to match
