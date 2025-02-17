@@ -8,14 +8,14 @@ pub type Vector = (isize, isize);
 
 /// Two-dimensional coordinate pair.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
-pub struct Point {
+pub struct Point<C = usize> {
     /// X coordinate.
-    pub x: usize,
+    pub x: C,
     /// Y coordinate.
-    pub y: usize,
+    pub y: C,
 }
 
-impl From<(usize, usize)> for Point {
+impl From<(usize, usize)> for Point<usize> {
     fn from(value: (usize, usize)) -> Self {
         Point {
             x: value.0,
@@ -24,7 +24,7 @@ impl From<(usize, usize)> for Point {
     }
 }
 
-impl std::ops::Add<Vector> for Point {
+impl std::ops::Add<Vector> for Point<usize> {
     type Output = Option<Self>;
 
     fn add(self, rhs: Vector) -> Self::Output {
@@ -35,7 +35,7 @@ impl std::ops::Add<Vector> for Point {
     }
 }
 
-impl Point {
+impl Point<usize> {
     /// Calculate the [`Vector`] offset between two [`Point`]s.
     #[inline]
     #[allow(clippy::cast_possible_wrap)]
