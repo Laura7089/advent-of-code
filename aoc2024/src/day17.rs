@@ -11,56 +11,52 @@ struct Computer {
 }
 
 mod parse {
-    use nom::{
-        bytes::complete::{tag, take, take_while},
-        combinator::{map, map_res},
-        multi::separated_list0,
-        sequence::{preceded, Tuple},
+    use super::Computer;
+    use winnow::{
+        ascii::digit1,
+        combinator::{preceded, separated},
+        prelude::*,
+        token::take,
+        Result,
     };
 
-    use super::Computer;
-    type IResult<'a, T> = nom::IResult<&'a str, T>;
-
-    fn program(input: &str) -> IResult<Vec<u8>> {
-        let prefix = tag("Program: ");
-        let single_u8 = map(take(1usize), |n: &str| n.as_bytes()[0] - b'0');
-        preceded(prefix, separated_list0(tag(","), single_u8))(input)
+    fn program(input: &mut &str) -> Result<Vec<u8>> {
+        let single_u8 = take(1usize).map(|n: &str| n.as_bytes()[0] - b'0');
+        preceded("Program: ", separated(0.., single_u8, ",")).parse_next(input)
     }
 
-    fn num(input: &str) -> IResult<u32> {
-        map_res(take_while(|c: char| c.is_ascii_digit()), |raw: &str| {
-            raw.parse()
-        })(input)
+    fn num(input: &mut &str) -> Result<u32> {
+        digit1.parse_to().parse_next(input)
     }
 
-    pub fn computer(input: &str) -> IResult<Computer> {
-        let (rem, (register_a, _, register_b, _, register_c)) = (
-            preceded(tag("Register A: "), num),
-            tag("\n"),
-            preceded(tag("Register B: "), num),
-            tag("\n"),
-            preceded(tag("Register C: "), num),
+    pub fn computer(input: &mut &str) -> Result<Computer> {
+        let (_, register_a, _, register_b, _, register_c) = (
+            "Register A: ",
+            num,
+            "\nRegister B: ",
+            num,
+            "\nRegister C: ",
+            num,
         )
-            .parse(input)?;
+            .parse_next(input)?;
 
-        let (rem, program) = preceded(tag("\n\n"), program)(rem)?;
-        Ok((
-            rem,
-            Computer {
-                prog: program,
-                rega: register_a,
-                regb: register_b,
-                regc: register_c,
-                pc: 0,
-                output: Vec::new(),
-            },
-        ))
+        let program = preceded("\n\n", program).parse_next(input)?;
+        Ok(Computer {
+            prog: program,
+            rega: register_a,
+            regb: register_b,
+            regc: register_c,
+            pc: 0,
+            output: Vec::new(),
+        })
     }
 }
 
+use winnow::Parser;
+
 #[aoc_generator(day17)]
 fn generate(input: &str) -> Computer {
-    parse::computer(input).expect("parse error").1
+    parse::computer.parse(input).expect("parse error")
 }
 
 impl Computer {
