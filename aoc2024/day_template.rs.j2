@@ -1,7 +1,7 @@
 mod parse {
-    type IResult<'a, T> = nom::IResult<&'a str, T>;
+    use winnow::{prelude::*, Result};
 
-    pub fn final_parse(input: &str) -> IResult<&str> {
+    pub fn final_parse(input: &mut &str) -> Result<&str> {
         todo!()
     }
 }
