@@ -50,62 +50,49 @@ impl Machine {
 
 mod parse {
     use super::{Button, Machine};
-    use nom::{
-        bytes::complete::{is_a, tag, take_while1},
-        character::complete::newline,
-        combinator::map_res,
-        multi::separated_list0,
-        sequence::Tuple,
+    use winnow::{
+        ascii::digit1,
+        combinator::{alt, separated},
+        prelude::*,
+        Result,
     };
 
-    type IResult<'a, T> = nom::IResult<&'a str, T>;
-
-    fn num(input: &str) -> IResult<usize> {
-        map_res(take_while1(|c: char| c.is_ascii_digit()), |raw: &str| {
-            raw.parse::<usize>()
-        })(input)
+    fn num(input: &mut &str) -> Result<usize> {
+        digit1.parse_to().parse_next(input)
     }
 
-    fn button(input: &str) -> IResult<Button> {
-        let mut parser = (
-            tag("Button "),
-            is_a("AB"),
-            tag(": X+"),
-            num,
-            tag(", Y+"),
-            num,
-        );
-        let (rem, (_, _, _, xdiff, _, ydiff)) = parser.parse(input)?;
-        Ok((rem, (xdiff, ydiff)))
+    fn button(input: &mut &str) -> Result<Button> {
+        ("Button ", alt(('A', 'B')), ": X+", num, ", Y+", num)
+            .map(|(_, _, _, l, _, r)| (l, r))
+            .parse_next(input)
     }
 
-    fn prize(input: &str) -> IResult<(usize, usize)> {
-        let mut parser = (tag("Prize: X="), num, tag(", Y="), num);
-        let (rem, (_, x, _, y)) = parser.parse(input)?;
-        Ok((rem, (x, y)))
+    fn prize(input: &mut &str) -> Result<(usize, usize)> {
+        ("Prize: X=", num, ", Y=", num)
+            .map(|(_, x, _, y)| (x, y))
+            .parse_next(input)
     }
 
-    fn machine(input: &str) -> IResult<Machine> {
-        let mut parser = (button, newline, button, newline, prize);
-        let (rem, (button_a, _, button_b, _, prize)) = parser.parse(input)?;
-        Ok((
-            rem,
-            Machine {
+    fn machine(input: &mut &str) -> Result<Machine> {
+        (button, '\n', button, '\n', prize)
+            .map(|(button_a, _, button_b, _, prize)| Machine {
                 button_a,
                 button_b,
                 prize,
-            },
-        ))
+            })
+            .parse_next(input)
     }
 
-    pub fn parse(input: &str) -> IResult<Vec<Machine>> {
-        separated_list0(tag("\n\n"), machine)(input)
+    pub fn parse(input: &mut &str) -> Result<Vec<Machine>> {
+        separated(0.., machine, "\n\n").parse_next(input)
     }
 }
 
+use winnow::Parser;
+
 #[aoc_generator(day13)]
 fn generate(input: &str) -> Vec<Machine> {
-    parse::parse(input).expect("parse error").1
+    parse::parse.parse(input).expect("parse error")
 }
 
 #[aoc(day13, part1)]
