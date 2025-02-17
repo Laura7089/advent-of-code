@@ -6,53 +6,48 @@ mod parse {
     }
 }
 
+type Generated = String;
+
 #[aoc_generator(day{{ day }})]
-fn generate(input: &str) -> String {
+fn generate(input: &str) -> Generated {
     input.to_owned()
 }
 
 #[aoc(day{{ day }}, part1)]
-fn solve_part1(_input: &str) -> usize {
+fn solve_part1(_input: &Generated) -> usize {
     todo!()
 }
 
 #[aoc(day{{ day }}, part2)]
-fn solve_part2(_input: &str) -> usize {
+fn solve_part2(_input: &Generated) -> usize {
     todo!()
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     #![allow(unreachable_code)]
     use super::*;
+    use test_case::test_case;
 
     const SAMPLE_INPUT: &str = todo!();
 
-    mod part1 {
-        use super::*;
-
-        #[test]
-        fn example() {
-            assert_eq!(solve_part1(&generate(SAMPLE_INPUT)), todo!());
-        }
-
-        #[test]
-        fn mine() {
-            assert_eq!(solve_part1(&generate(&crate::get_input({{ day }}))), todo!());
-        }
+    fn sample_parsed() -> Generated {
+        generate(SAMPLE_INPUT)
     }
 
-    mod part2 {
-        use super::*;
+    fn mine_parsed() -> Generated {
+        generate(&crate::get_input({{ day }}))
+    }
 
-        #[test]
-        fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), todo!());
-        }
+    #[test_case(sample_parsed(), todo!(); "sample")]
+    #[test_case(mine_parsed(), todo!(); "mine")]
+    fn part1(parsed: Generated, solution: usize) {
+        assert_eq!(solve_part1(&parsed), solution);
+    }
 
-        #[test]
-        fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input({{ day }}))), todo!());
-        }
+    #[test_case(sample_parsed(), todo!(); "sample")]
+    #[test_case(mine_parsed(), todo!(); "mine")]
+    fn part2(parsed: Generated, solution: usize) {
+        assert_eq!(solve_part2(&parsed), solution);
     }
 }
