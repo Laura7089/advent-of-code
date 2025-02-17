@@ -24,13 +24,15 @@ mod parse {
     }
 }
 
+type Generated = Vec<(usize, usize)>;
+
 #[aoc_generator(day01)]
-fn generate(input: &str) -> Vec<(usize, usize)> {
+fn generate(input: &str) -> Generated {
     parse::whole_input(input).unwrap().1
 }
 
 #[aoc(day01, part1)]
-fn solve_part1(input: &[(usize, usize)]) -> usize {
+fn solve_part1(input: &Generated) -> usize {
     let mut left = Vec::with_capacity(input.len());
     let mut right = Vec::with_capacity(input.len());
 
@@ -51,7 +53,7 @@ fn solve_part1(input: &[(usize, usize)]) -> usize {
 use std::collections::BTreeMap;
 
 #[aoc(day01, part2)]
-fn solve_part2(input: &[(usize, usize)]) -> usize {
+fn solve_part2(input: &Generated) -> usize {
     let mut left = BTreeMap::new();
     let mut right = BTreeMap::new();
     for &(l, r) in input {
@@ -68,6 +70,7 @@ fn solve_part2(input: &[(usize, usize)]) -> usize {
 mod test {
     #![allow(unreachable_code)]
     use super::*;
+    use test_case::test_case;
 
     const SAMPLE_INPUT: &str = "3   4
 4   3
@@ -76,31 +79,23 @@ mod test {
 3   9
 3   3";
 
-    mod part1 {
-        use super::*;
-
-        #[test]
-        fn example() {
-            assert_eq!(solve_part1(&generate(SAMPLE_INPUT)), 11);
-        }
-
-        #[test]
-        fn mine() {
-            assert_eq!(solve_part1(&generate(&crate::get_input(01))), 3714264);
-        }
+    fn sample_parsed() -> Generated {
+        generate(SAMPLE_INPUT)
     }
 
-    mod part2 {
-        use super::*;
+    fn mine_parsed() -> Generated {
+        generate(&crate::get_input(01))
+    }
 
-        #[test]
-        fn example() {
-            assert_eq!(solve_part2(&generate(SAMPLE_INPUT)), 31);
-        }
+    #[test_case(sample_parsed(), 11; "sample")]
+    #[test_case(mine_parsed(), 3714264; "mine")]
+    fn part1(parsed: Generated, solution: usize) {
+        assert_eq!(solve_part1(&parsed), solution);
+    }
 
-        #[test]
-        fn mine() {
-            assert_eq!(solve_part2(&generate(&crate::get_input(01))), 18805872);
-        }
+    #[test_case(sample_parsed(), 31; "sample")]
+    #[test_case(mine_parsed(), 18805872; "mine")]
+    fn part2(parsed: Generated, solution: usize) {
+        assert_eq!(solve_part2(&parsed), solution);
     }
 }
