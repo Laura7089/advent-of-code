@@ -1,34 +1,29 @@
 mod parse {
-    use nom::bytes::complete::take_while;
-    use nom::character::complete::{newline, space1};
-    use nom::combinator::map_res;
-    use nom::multi::separated_list0;
-    use nom::sequence::separated_pair;
+    use winnow::ascii::digit1;
+    use winnow::combinator::{separated, separated_pair};
+    use winnow::prelude::*;
+    use winnow::Result;
 
-    type Input<'a> = &'a str;
-    type IResult<'a, T> = nom::IResult<Input<'a>, T>;
-
-    fn num(input: Input) -> IResult<usize> {
-        map_res(take_while(|c: char| c.is_ascii_digit()), |raw| {
-            #[allow(clippy::from_str_radix_10)]
-            usize::from_str_radix(raw, 10)
-        })(input)
+    fn num(input: &mut &str) -> Result<usize> {
+        digit1.parse_to().parse_next(input)
     }
 
-    fn num_pair(input: Input) -> IResult<(usize, usize)> {
-        separated_pair(num, space1, num)(input)
+    fn num_pair(input: &mut &str) -> Result<(usize, usize)> {
+        separated_pair(num, "   ", num).parse_next(input)
     }
 
-    pub fn whole_input(input: Input) -> IResult<Vec<(usize, usize)>> {
-        separated_list0(newline, num_pair)(input)
+    pub fn whole_input(input: &mut &str) -> Result<Vec<(usize, usize)>> {
+        separated(0.., num_pair, '\n').parse_next(input)
     }
 }
+
+use winnow::Parser;
 
 type Generated = Vec<(usize, usize)>;
 
 #[aoc_generator(day01)]
-fn generate(input: &str) -> Generated {
-    parse::whole_input(input).unwrap().1
+fn generate(mut input: &str) -> Generated {
+    parse::whole_input.parse(&mut input).unwrap()
 }
 
 #[aoc(day01, part1)]
