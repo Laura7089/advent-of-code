@@ -62,8 +62,8 @@ mod parse {
     }
 
     fn button(input: &mut &str) -> Result<Button> {
-        ("Button ", alt(('A', 'B')), ": X+", num, ", Y+", num)
-            .map(|(_, _, _, l, _, r)| (l, r))
+        (("Button ", alt(('A', 'B')), ": X+"), num, ", Y+", num)
+            .map(|(_, l, _, r)| (l, r))
             .parse_next(input)
     }
 
